@@ -14,7 +14,7 @@ from defusedxml import ElementTree
 from spicerack.puppet import PuppetHosts
 from spicerack.remote import Remote
 
-from cookbooks.wmcs.libs.common import ArgparsableEnum, run_one_raw
+from wmcs_libs.common import ArgparsableEnum, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 

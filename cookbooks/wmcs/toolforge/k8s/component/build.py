@@ -13,7 +13,7 @@ from typing import List, Optional
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from cookbooks.wmcs.libs.common import TestUtils
-from cookbooks.wmcs.libs.grid import GridQueueInfo
+from wmcs_libs.common import TestUtils
+from wmcs_libs.grid import GridQueueInfo
 
 
 @pytest.mark.parametrize(

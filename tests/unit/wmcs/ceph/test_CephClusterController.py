@@ -6,7 +6,7 @@ import pytest
 from cumin.transports import Command
 from spicerack import Spicerack
 
-from cookbooks.wmcs.libs.ceph import (
+from wmcs_libs.ceph import (
     CephClusterController,
     CephClusterUnhealthy,
     CephFlagSetError,
@@ -18,7 +18,7 @@ from cookbooks.wmcs.libs.ceph import (
     OSDStatus,
     OSDTreeEntry,
 )
-from cookbooks.wmcs.libs.inventory import CephClusterName
+from wmcs_libs.inventory import CephClusterName
 
 
 def parametrize(params: Dict[str, Any]):
@@ -404,9 +404,7 @@ def test_wait_for_progress_events_happy_path(
         spicerack=mock.MagicMock(spec=Spicerack),
     )
 
-    with mock.patch("cookbooks.wmcs.libs.common.time.time", side_effect=time_ticks), mock.patch(
-        "cookbooks.wmcs.libs.common.time.sleep"
-    ):
+    with mock.patch("wmcs_libs.common.time.time", side_effect=time_ticks), mock.patch("wmcs_libs.common.time.sleep"):
         if timeout_seconds is not None:
             my_controller.wait_for_in_progress_events(timeout_seconds=timeout_seconds)
         else:
@@ -436,8 +434,8 @@ def test_wait_for_progress_events_raises(
         spicerack=mock.MagicMock(spec=Spicerack),
     )
 
-    with mock.patch("cookbooks.wmcs.libs.common.time.time", side_effect=time_ticks), mock.patch(
-        "cookbooks.wmcs.libs.common.time.sleep"
+    with mock.patch("wmcs_libs.common.time.time", side_effect=time_ticks), mock.patch(
+        "wmcs_libs.common.time.sleep"
     ), pytest.raises(CephTimeout):
         my_controller.wait_for_in_progress_events(timeout_seconds=timeout_seconds)
 
@@ -481,9 +479,7 @@ def test_wait_for_cluster_health_happy_path(
     if timeout_seconds is not None:
         params["timeout_seconds"] = timeout_seconds
 
-    with mock.patch("cookbooks.wmcs.libs.common.time.time", side_effect=time_ticks), mock.patch(
-        "cookbooks.wmcs.libs.common.time.sleep"
-    ):
+    with mock.patch("wmcs_libs.common.time.time", side_effect=time_ticks), mock.patch("wmcs_libs.common.time.sleep"):
         my_controller.wait_for_cluster_healthy(**params)
 
 
@@ -524,8 +520,8 @@ def test_wait_for_cluster_health_raises(
     if consider_maintenance_healthy is not None:
         params["consider_maintenance_healthy"] = consider_maintenance_healthy
 
-    with mock.patch("cookbooks.wmcs.libs.common.time.time", side_effect=time_ticks), mock.patch(
-        "cookbooks.wmcs.libs.common.time.sleep"
+    with mock.patch("wmcs_libs.common.time.time", side_effect=time_ticks), mock.patch(
+        "wmcs_libs.common.time.sleep"
     ), pytest.raises(CephClusterUnhealthy):
         my_controller.wait_for_cluster_healthy(**params)
 

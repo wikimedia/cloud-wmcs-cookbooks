@@ -12,8 +12,8 @@ from typing import Optional
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.libs.common import WMCSCookbookRunnerBase
-from cookbooks.wmcs.libs.grid import GridController, GridNodeNotFound
+from wmcs_libs.common import WMCSCookbookRunnerBase
+from wmcs_libs.grid import GridController, GridNodeNotFound
 
 LOGGER = logging.getLogger(__name__)
 

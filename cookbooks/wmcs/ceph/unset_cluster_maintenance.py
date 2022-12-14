@@ -12,10 +12,10 @@ from typing import List, Optional
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.alerts import SilenceID
-from cookbooks.wmcs.libs.ceph import CephClusterController
-from cookbooks.wmcs.libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from cookbooks.wmcs.libs.inventory import CephClusterName
+from wmcs_libs.alerts import SilenceID
+from wmcs_libs.ceph import CephClusterController
+from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.inventory import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 

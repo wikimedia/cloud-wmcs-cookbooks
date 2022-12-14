@@ -15,9 +15,9 @@ from typing import Optional
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.common import CmdChecklist, WMCSCookbookRunnerBase
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import get_control_nodes
+from wmcs_libs.common import CmdChecklist, WMCSCookbookRunnerBase
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import get_control_nodes
 
 LOGGER = logging.getLogger(__name__)
 

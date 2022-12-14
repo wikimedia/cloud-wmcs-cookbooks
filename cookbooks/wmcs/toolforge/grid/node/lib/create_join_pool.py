@@ -15,15 +15,6 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from spicerack.puppet import PuppetHosts
 
-from cookbooks.wmcs.libs.common import (
-    CommonOpts,
-    DebianVersion,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    with_common_opts,
-)
-from cookbooks.wmcs.libs.grid import GridController, GridNodeType
 from cookbooks.wmcs.vps.create_instance_with_prefix import (
     CreateInstanceWithPrefix,
     InstanceCreationOpts,
@@ -31,6 +22,15 @@ from cookbooks.wmcs.vps.create_instance_with_prefix import (
     with_instance_creation_options,
 )
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
+from wmcs_libs.common import (
+    CommonOpts,
+    DebianVersion,
+    SALLogger,
+    WMCSCookbookRunnerBase,
+    add_common_opts,
+    with_common_opts,
+)
+from wmcs_libs.grid import GridController, GridNodeType
 
 LOGGER = logging.getLogger(__name__)
 

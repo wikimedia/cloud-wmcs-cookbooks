@@ -11,10 +11,10 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.common import WMCSCookbookRunnerBase
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
-from cookbooks.wmcs.libs.openstack.neutron import NeutronAgentType, NeutronController
+from wmcs_libs.common import WMCSCookbookRunnerBase
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.neutron import NeutronAgentType, NeutronController
 
 LOGGER = logging.getLogger(__name__)
 

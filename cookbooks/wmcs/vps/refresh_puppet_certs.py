@@ -13,7 +13,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts, PuppetMaster
 from spicerack.remote import RemoteExecutionError
 
-from cookbooks.wmcs.libs.common import WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import WMCSCookbookRunnerBase, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 

@@ -13,10 +13,10 @@ from cumin.transports import Command
 from spicerack import RemoteHosts, Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase, CookbookRunnerBase
 
-from cookbooks.wmcs.libs.alerts import downtime_host, uptime_host
-from cookbooks.wmcs.libs.common import CommonOpts, SALLogger, add_common_opts, run_one_raw, with_common_opts
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
 from cookbooks.wmcs.openstack.network.tests import NetworkTests
+from wmcs_libs.alerts import downtime_host, uptime_host
+from wmcs_libs.common import CommonOpts, SALLogger, add_common_opts, run_one_raw, with_common_opts
+from wmcs_libs.inventory import OpenstackClusterName
 
 LOGGER = logging.getLogger(__name__)
 

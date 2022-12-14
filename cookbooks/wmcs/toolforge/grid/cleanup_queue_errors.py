@@ -11,7 +11,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -19,7 +19,7 @@ from cookbooks.wmcs.libs.common import (
     parser_type_str_hostname,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.grid import GridController
+from wmcs_libs.grid import GridController
 
 LOGGER = logging.getLogger(__name__)
 

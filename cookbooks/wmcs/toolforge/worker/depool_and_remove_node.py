@@ -14,7 +14,9 @@ from typing import Any, Dict, List, Optional
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.common import (
+from cookbooks.wmcs.toolforge.worker.drain import Drain
+from cookbooks.wmcs.vps.remove_instance import RemoveInstance
+from wmcs_libs.common import (
     CommonOpts,
     KubernetesController,
     SALLogger,
@@ -23,10 +25,8 @@ from cookbooks.wmcs.libs.common import (
     natural_sort_key,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
-from cookbooks.wmcs.toolforge.worker.drain import Drain
-from cookbooks.wmcs.vps.remove_instance import RemoveInstance
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
 

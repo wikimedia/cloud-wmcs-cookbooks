@@ -12,9 +12,9 @@ from typing import Any, Dict, List
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.ceph import CephClusterController
-from cookbooks.wmcs.libs.common import WMCSCookbookRunnerBase
-from cookbooks.wmcs.libs.inventory import CephClusterName
+from wmcs_libs.ceph import CephClusterController
+from wmcs_libs.common import WMCSCookbookRunnerBase
+from wmcs_libs.inventory import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 

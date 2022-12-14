@@ -16,7 +16,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.remote import RemoteHosts
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,

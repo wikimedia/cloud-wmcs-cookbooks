@@ -14,9 +14,9 @@ from typing import Optional
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.common import WMCSCookbookRunnerBase
 from cookbooks.wmcs.toolforge.etcd.add_node_to_cluster import AddNodeToCluster
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
+from wmcs_libs.common import WMCSCookbookRunnerBase
 
 LOGGER = logging.getLogger(__name__)
 

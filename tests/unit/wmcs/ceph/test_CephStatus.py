@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 import pytest
 
-from cookbooks.wmcs.libs.ceph import CephClusterStatus, CephClusterUnhealthy, CephOSDFlag, CephTestUtils
+from wmcs_libs.ceph import CephClusterStatus, CephClusterUnhealthy, CephOSDFlag, CephTestUtils
 
 
 # the examples are trimmed down from the output of `ceph status -f json-pretty`

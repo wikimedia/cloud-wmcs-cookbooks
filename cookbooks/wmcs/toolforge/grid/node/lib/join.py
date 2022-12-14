@@ -16,10 +16,10 @@ from spicerack.cookbook import CookbookBase
 from spicerack.puppet import PuppetHosts
 from spicerack.remote import RemoteError
 
-from cookbooks.wmcs.libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from cookbooks.wmcs.libs.grid import GridController
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
+from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.grid import GridController
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
 

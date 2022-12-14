@@ -12,9 +12,9 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.alerts import downtime_host, uptime_host
-from cookbooks.wmcs.libs.ceph import CephClusterController, CephOSDFlag, get_node_cluster_name
-from cookbooks.wmcs.libs.common import WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.alerts import downtime_host, uptime_host
+from wmcs_libs.ceph import CephClusterController, CephOSDFlag, get_node_cluster_name
+from wmcs_libs.common import WMCSCookbookRunnerBase, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 

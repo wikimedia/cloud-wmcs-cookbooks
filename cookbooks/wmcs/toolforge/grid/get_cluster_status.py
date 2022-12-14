@@ -12,14 +12,8 @@ import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.libs.common import WMCSCookbookRunnerBase
-from cookbooks.wmcs.libs.grid import (
-    GridController,
-    GridQueueState,
-    GridQueueStatesSet,
-    GridQueueType,
-    GridQueueTypesSet,
-)
+from wmcs_libs.common import WMCSCookbookRunnerBase
+from wmcs_libs.grid import GridController, GridQueueState, GridQueueStatesSet, GridQueueType, GridQueueTypesSet
 
 LOGGER = logging.getLogger(__name__)
 

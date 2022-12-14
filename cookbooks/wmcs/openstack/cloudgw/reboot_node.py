@@ -12,11 +12,11 @@ from datetime import datetime
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.alerts import downtime_host, uptime_host
-from cookbooks.wmcs.libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import get_gateway_nodes, get_node_cluster_name
 from cookbooks.wmcs.openstack.network.tests import NetworkTests
+from wmcs_libs.alerts import downtime_host, uptime_host
+from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import get_gateway_nodes, get_node_cluster_name
 
 LOGGER = logging.getLogger(__name__)
 

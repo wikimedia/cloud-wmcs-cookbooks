@@ -13,7 +13,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetMaster
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -21,8 +21,8 @@ from cookbooks.wmcs.libs.common import (
     run_one_raw,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
 

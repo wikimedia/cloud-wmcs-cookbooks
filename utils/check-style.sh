@@ -11,6 +11,7 @@ black \
     --check \
     --diff \
     cookbooks/wmcs \
+    wmcs_libs \
     tests/unit/wmcs \
 || fail
 
@@ -18,5 +19,6 @@ isort \
     --check-only \
     --diff \
     cookbooks/wmcs \
+    wmcs_libs \
     tests/unit/wmcs \
 || fail

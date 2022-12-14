@@ -20,9 +20,9 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
 
-from cookbooks.wmcs.libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_raw
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
+from wmcs_libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
 

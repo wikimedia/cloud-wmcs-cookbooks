@@ -13,7 +13,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase, CookbookRunnerBase
 
-from cookbooks.wmcs.libs.grid import GridController
+from wmcs_libs.grid import GridController
 
 LOGGER = logging.getLogger(__name__)
 

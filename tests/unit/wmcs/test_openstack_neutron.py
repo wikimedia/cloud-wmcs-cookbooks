@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 import cumin
 import pytest
 
-from cookbooks.wmcs.libs.common import TestUtils
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
-from cookbooks.wmcs.libs.openstack.neutron import (
+from wmcs_libs.common import TestUtils
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.neutron import (
     NetworkUnhealthy,
     NeutronAgent,
     NeutronAgentHAState,

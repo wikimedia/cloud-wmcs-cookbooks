@@ -12,7 +12,7 @@ from typing import Optional
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CmdChecklist,
     CommonOpts,
     WMCSCookbookRunnerBase,

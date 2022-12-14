@@ -18,7 +18,10 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.remote import Remote, RemoteHosts
 
-from cookbooks.wmcs.libs.common import (
+from cookbooks.wmcs.toolforge.etcd.remove_node_from_hiera import RemoveNodeFromHiera
+from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
+from cookbooks.wmcs.vps.remove_instance import RemoveInstance
+from wmcs_libs.common import (
     OutputFormat,
     WMCSCookbookRunnerBase,
     natural_sort_key,
@@ -26,11 +29,8 @@ from cookbooks.wmcs.libs.common import (
     run_one_raw,
     simple_create_file,
 )
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
-from cookbooks.wmcs.toolforge.etcd.remove_node_from_hiera import RemoveNodeFromHiera
-from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
-from cookbooks.wmcs.vps.remove_instance import RemoveInstance
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
 

@@ -17,7 +17,9 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
 
-from cookbooks.wmcs.libs.common import (
+from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
+from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
+from wmcs_libs.common import (
     CommonOpts,
     KubeadmController,
     KubernetesController,
@@ -27,9 +29,7 @@ from cookbooks.wmcs.libs.common import (
     run_one_raw,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI, OpenstackServerGroupPolicy
-from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
-from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
+from wmcs_libs.openstack.common import OpenstackAPI, OpenstackServerGroupPolicy
 
 LOGGER = logging.getLogger(__name__)
 

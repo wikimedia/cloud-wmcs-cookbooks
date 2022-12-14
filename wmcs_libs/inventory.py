@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Union, cast
 
-from cookbooks.wmcs.libs.common import ArgparsableEnum
+from wmcs_libs.common import ArgparsableEnum
 
 
 class InventoryError(Exception):

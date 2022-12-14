@@ -1,6 +1,6 @@
 """Package configuration."""
 
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, find_packages, setup
 
 # The below list is only for CI
 # For prod add the libs to modules/profile/manifests/spicerack.pp
@@ -39,7 +39,10 @@ setup(
     keywords=['wmf', 'automation', 'orchestration', 'cookbooks', 'wmcs'],
     license='GPLv3+',
     name='wmcs-cookbooks',
-    packages=find_packages(exclude=['*.tests', '*.tests.*']),
+    packages=(
+        find_packages(exclude=['*.tests', '*.tests.*'])
+        + find_namespace_packages(include=["cookbooks.*"])
+    ),
     platforms=['GNU/Linux'],
     setup_requires=setup_requires,
     use_scm_version=True,

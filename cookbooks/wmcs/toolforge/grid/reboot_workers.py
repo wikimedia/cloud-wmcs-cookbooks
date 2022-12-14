@@ -13,7 +13,7 @@ from datetime import datetime
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CommonOpts,
     DebianVersion,
     SALLogger,
@@ -21,7 +21,7 @@ from cookbooks.wmcs.libs.common import (
     add_common_opts,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.grid import GridController, GridNodeType
+from wmcs_libs.grid import GridController, GridNodeType
 
 LOGGER = logging.getLogger(__name__)
 

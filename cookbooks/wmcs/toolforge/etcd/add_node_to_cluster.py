@@ -20,7 +20,9 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.remote import Remote, RemoteHosts
 
-from cookbooks.wmcs.libs.common import (
+from cookbooks.wmcs.toolforge.etcd.add_node_to_hiera import AddNodeToHiera
+from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
+from wmcs_libs.common import (
     OutputFormat,
     WMCSCookbookRunnerBase,
     natural_sort_key,
@@ -28,8 +30,6 @@ from cookbooks.wmcs.libs.common import (
     run_one_raw,
     simple_create_file,
 )
-from cookbooks.wmcs.toolforge.etcd.add_node_to_hiera import AddNodeToHiera
-from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 
 LOGGER = logging.getLogger(__name__)
 

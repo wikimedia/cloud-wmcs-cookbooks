@@ -13,8 +13,8 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmflib.interactive import ask_confirmation
 
-from cookbooks.wmcs.libs.ceph import CephClusterController, CephClusterUnhealthy
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.ceph import CephClusterController, CephClusterUnhealthy
+from wmcs_libs.common import (
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -22,7 +22,7 @@ from cookbooks.wmcs.libs.common import (
     run_one_raw,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.inventory import CephClusterName
+from wmcs_libs.inventory import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 

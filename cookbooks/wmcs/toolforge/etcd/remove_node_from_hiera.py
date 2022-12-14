@@ -22,7 +22,7 @@ import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
+from wmcs_libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 

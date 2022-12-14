@@ -6,14 +6,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from cookbooks.wmcs.libs.common import CommandRunnerMixin
-from cookbooks.wmcs.libs.openstack.common import (
-    OpenstackAPI,
-    OpenstackError,
-    OpenstackID,
-    OpenstackIdentifier,
-    wait_for_it,
-)
+from wmcs_libs.common import CommandRunnerMixin
+from wmcs_libs.openstack.common import OpenstackAPI, OpenstackError, OpenstackID, OpenstackIdentifier, wait_for_it
 
 LOGGER = logging.getLogger(__name__)
 

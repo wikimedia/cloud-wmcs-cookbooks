@@ -26,7 +26,7 @@ from spicerack import ICINGA_DOMAIN, Spicerack
 from spicerack.cookbook import CookbookRunnerBase
 from spicerack.remote import Remote, RemoteHosts
 
-from cookbooks.wmcs.libs.proxy import with_proxy
+from wmcs_libs.proxy import with_proxy
 
 LOGGER = logging.getLogger(__name__)
 PHABRICATOR_BOT_CONFIG_FILE = "/etc/phabricator_ops-monitoring-bot.conf"

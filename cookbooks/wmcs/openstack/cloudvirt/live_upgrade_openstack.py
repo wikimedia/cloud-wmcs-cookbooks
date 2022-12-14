@@ -11,7 +11,7 @@ from cumin.transports import Command
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.common import WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import WMCSCookbookRunnerBase, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 

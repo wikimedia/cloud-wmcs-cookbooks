@@ -10,20 +10,14 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.libs.common import (
-    CommonOpts,
-    DebianVersion,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    with_common_opts,
-)
-from cookbooks.wmcs.libs.openstack.common import OpenstackServerGroupPolicy
 from cookbooks.wmcs.toolforge.grid.node.lib.create_join_pool import ToolforgeGridNodeCreateJoinPool
 from cookbooks.wmcs.vps.create_instance_with_prefix import (
     InstanceCreationOpts,
     add_instance_creation_options,
     with_instance_creation_options,
 )
+from wmcs_libs.common import CommonOpts, DebianVersion, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.openstack.common import OpenstackServerGroupPolicy
 
 LOGGER = logging.getLogger(__name__)
 

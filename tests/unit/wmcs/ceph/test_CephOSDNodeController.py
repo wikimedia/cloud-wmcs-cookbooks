@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cookbooks.wmcs.libs.ceph import CephMalformedInfo, CephOSDNodeController, CephTestUtils
+from wmcs_libs.ceph import CephMalformedInfo, CephOSDNodeController, CephTestUtils
 
 
 def parametrize(params: Dict[str, Any]):
@@ -132,7 +132,7 @@ def test_add_all_available_devices_happy_path(lsblk_command_output: str, interac
     my_controller.add_all_available_devices(interactive=interactive)
 
 
-@patch("cookbooks.wmcs.libs.ceph.ask_confirmation")
+@patch("wmcs_libs.ceph.ask_confirmation")
 def test_add_all_available_devices_asks_confirmation_if_interaciteve_is_True_and_theres_available_devices(
     mock_ask_confirmation,
 ):
@@ -152,7 +152,7 @@ def test_add_all_available_devices_asks_confirmation_if_interaciteve_is_True_and
     mock_ask_confirmation.assert_called()
 
 
-@patch("cookbooks.wmcs.libs.ceph.ask_confirmation")
+@patch("wmcs_libs.ceph.ask_confirmation")
 def test_add_all_available_devices_does_not_ask_confirmation_if_interaciteve_is_False_and_theres_available_devices(
     mock_ask_confirmation,
 ):

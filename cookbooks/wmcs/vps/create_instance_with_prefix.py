@@ -24,7 +24,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.remote import RemoteExecutionError
 from wmflib.decorators import retry
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CommonOpts,
     WMCSCookbookRunnerBase,
     add_common_opts,
@@ -32,8 +32,8 @@ from cookbooks.wmcs.libs.common import (
     run_one_raw,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI, OpenstackIdentifier, OpenstackServerGroupPolicy
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI, OpenstackIdentifier, OpenstackServerGroupPolicy
 
 LOGGER = logging.getLogger(__name__)
 

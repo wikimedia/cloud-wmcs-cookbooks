@@ -12,7 +12,7 @@ from typing import List, Optional
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -20,9 +20,9 @@ from cookbooks.wmcs.libs.common import (
     parser_type_list_hostnames,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.grid import GridController, GridNodeNotFound
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
+from wmcs_libs.grid import GridController, GridNodeNotFound
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
 

@@ -10,7 +10,7 @@ import yaml
 from cumin.transports import Command
 from spicerack.remote import Remote, RemoteHosts
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     ArgparsableEnum,
     CommandRunnerMixin,
     OutputFormat,
@@ -18,7 +18,7 @@ from cookbooks.wmcs.libs.common import (
     run_one_raw,
     simple_create_file,
 )
-from cookbooks.wmcs.libs.inventory import (
+from wmcs_libs.inventory import (
     OpenstackClusterName,
     OpenstackNodeRoleName,
     generic_get_node_cluster_name,

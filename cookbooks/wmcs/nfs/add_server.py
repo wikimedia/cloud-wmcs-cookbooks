@@ -16,15 +16,15 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
-from cookbooks.wmcs.libs.inventory import OpenstackClusterName
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI
 from cookbooks.wmcs.vps.create_instance_with_prefix import (
     CreateInstanceWithPrefix,
     InstanceCreationOpts,
     add_instance_creation_options,
     with_instance_creation_options,
 )
+from wmcs_libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
+from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
 

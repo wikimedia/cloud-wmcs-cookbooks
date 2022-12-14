@@ -12,9 +12,9 @@ from spicerack import Remote, Spicerack
 from spicerack.remote import RemoteExecutionError
 from wmflib.interactive import ask_confirmation
 
-from cookbooks.wmcs.libs.alerts import SilenceID, downtime_alert, uptime_alert
-from cookbooks.wmcs.libs.common import ArgparsableEnum, CommandRunnerMixin, TestUtils, run_one_formatted, run_one_raw
-from cookbooks.wmcs.libs.inventory import (
+from wmcs_libs.alerts import SilenceID, downtime_alert, uptime_alert
+from wmcs_libs.common import ArgparsableEnum, CommandRunnerMixin, TestUtils, run_one_formatted, run_one_raw
+from wmcs_libs.inventory import (
     CephClusterName,
     CephNodeRoleName,
     generic_get_node_cluster_name,

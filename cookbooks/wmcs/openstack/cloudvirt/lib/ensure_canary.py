@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.libs.common import (
+from wmcs_libs.common import (
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -22,8 +22,8 @@ from cookbooks.wmcs.libs.common import (
     parser_type_list_hostnames,
     with_common_opts,
 )
-from cookbooks.wmcs.libs.inventory import get_openstack_internal_network_name
-from cookbooks.wmcs.libs.openstack.common import OpenstackAPI, OpenstackClusterName, OpenstackName, get_control_nodes
+from wmcs_libs.inventory import get_openstack_internal_network_name
+from wmcs_libs.openstack.common import OpenstackAPI, OpenstackClusterName, OpenstackName, get_control_nodes
 
 LOGGER = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ from unittest import mock
 
 import pytest
 
-from cookbooks.wmcs.libs.common import TestUtils
-from cookbooks.wmcs.libs.inventory import (
+from wmcs_libs.common import TestUtils
+from wmcs_libs.inventory import (
     CephNodeRoleName,
     Cluster,
     ClusterName,
@@ -142,7 +142,7 @@ def get_dummy_inventory(
 def test_get_node_inventory_info(
     node_fqdn: str, expected_node_inventory_info: NodeInventoryInfo, inventory: Dict[SiteName, Site]
 ):
-    with mock.patch("cookbooks.wmcs.libs.inventory.get_inventory", return_value=inventory):
+    with mock.patch("wmcs_libs.inventory.get_inventory", return_value=inventory):
         gotten_inventory_info = get_node_inventory_info(node=node_fqdn)
 
     assert gotten_inventory_info == expected_node_inventory_info

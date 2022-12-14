@@ -7,7 +7,8 @@ set -o nounset
 DEFAULT_CONFIG_DIR="$HOME/.config/spicerack"
 DEFAULT_COOKBOOK_CONFIG_PATH="$DEFAULT_CONFIG_DIR/cookbook.yaml"
 DEFAULT_LOGS_DIR="/tmp/spicerack_logs"
-DEFAULT_COOKBOOKS_DIR="$PWD"
+DEFAULT_COOKBOOKS_WMCS_DIR="$PWD"
+DEFAULT_COOKBOOKS_SRE_DIR="$(basedir "$PWD")/operations-cookbooks"
 DEFAULT_CUMIN_CONFIG_PATH="$DEFAULT_CONFIG_DIR/cumin.yaml"
 
 help() {
@@ -27,7 +28,8 @@ help() {
                 DEFAULT_CONFIG_DIR=$DEFAULT_CONFIG_DIR
                 DEFAULT_COOKBOOK_CONFIG_PATH=$DEFAULT_COOKBOOK_CONFIG_PATH
                 DEFAULT_LOGS_DIR=$DEFAULT_LOGS_DIR
-                DEFAULT_COOKBOOKS_DIR=$DEFAULT_COOKBOOKS_DIR
+                DEFAULT_COOKBOOKS_WMCS_DIR=$DEFAULT_COOKBOOKS_WMCS_DIR
+                DEFAULT_COOKBOOKS_SRE_DIR=$DEFAULT_COOKBOOKS_SRE_DIR
                 DEFAULT_CUMIN_CONFIG_PATH=$DEFAULT_CUMIN_CONFIG_PATH
 
 EOH
@@ -39,7 +41,8 @@ main() {
         config_dir \
         cookbook_config_path \
         logs_dir \
-        cookbooks_dir \
+        cookbooks_wmcs_dir \
+        cookbooks_sre_dir \
         cumin_config_path \
         rewrite="no" \
         use_defaults="no"
@@ -86,17 +89,24 @@ main() {
             cumin_config_path="$DEFAULT_CUMIN_CONFIG_PATH"
         fi
 
-        echo "What will be the path where the cookbooks will be? [default: $DEFAULT_COOKBOOKS_DIR]"
-        read -r cookbooks_dir
-        if [[ $cookbooks_dir = "" ]]; then
-            cookbooks_dir="$DEFAULT_COOKBOOKS_DIR"
+        echo "What will be the path where the cookbooks will be? [default: $DEFAULT_COOKBOOKS_WMCS_DIR]"
+        read -r cookbooks_wmcs_dir
+        if [[ $cookbooks_wmcs_dir = "" ]]; then
+            cookbooks_wmcs_dir="$DEFAULT_COOKBOOKS_WMCS_DIR"
+        fi
+
+        echo "What will be the path where the sre cookbooks will be? [default: $DEFAULT_COOKBOOKS_SRE_DIR]"
+        read -r cookbooks_sre_dir
+        if [[ $cookbooks_sre_dir = "" ]]; then
+            cookbooks_sre_dir="$DEFAULT_COOKBOOKS_SRE_DIR"
         fi
     else
         config_dir="$DEFAULT_CONFIG_DIR"
         cookbook_config_path=$DEFAULT_COOKBOOK_CONFIG_PATH
         logs_dir="$DEFAULT_LOGS_DIR"
         cumin_config_path="$DEFAULT_CUMIN_CONFIG_PATH"
-        cookbooks_dir="$DEFAULT_COOKBOOKS_DIR"
+        cookbooks_wmcs_dir="$DEFAULT_COOKBOOKS_WMCS_DIR"
+        cookbooks_sre_dir="$DEFAULT_COOKBOOKS_SRE_DIR"
     fi
 
     [[ -e $config_dir ]] || mkdir -p "$config_dir"
@@ -114,7 +124,9 @@ main() {
     if [[ $rewrite == "yes" ]]; then
         cat > "$cookbook_config_path" <<EOC
 # Base path of the cookbooks. It's usually a checkout of a different repository that has all the cookbooks.
-cookbooks_base_dir: $cookbooks_dir
+cookbooks_base_dirs:
+  - $cookbooks_wmcs_dir
+  - $cookbooks_sre_dir
 # Base directory for cookbook's logs.
 logs_base_dir:  $logs_dir
 # [optional] Hostname and port to use for the special IRC logging using tcpircbot.
