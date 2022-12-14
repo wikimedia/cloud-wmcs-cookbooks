@@ -2,7 +2,7 @@
 /.tox/
 /.idea/
 /build/
-/wikimedia_cookbooks.egg-info/
+/*.egg-info/
 __pycache__/
 *.pyc
 *.sw?
