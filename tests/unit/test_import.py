@@ -5,23 +5,8 @@ import os
 
 from pkgutil import iter_modules
 from setuptools import find_packages
-from unittest import mock
 
 import pytest
-
-
-MOCKED_SRE_SWITCHDC_SERVICES_YAML = """---
-a-service:
-  active_active: true
-  rec:
-    codfw: a-service.svc.codfw.wmnet
-    eqiad: a-service.svc.eqiad.wmnet
-b-service:
-  active_active: false
-  rec:
-    codfw: b-service.svc.codfw.wmnet
-    eqiad: b-service.svc.eqiad.wmnet
-"""
 
 
 def get_modules():
@@ -42,5 +27,4 @@ def get_modules():
 @pytest.mark.parametrize('module_name', get_modules())
 def test_import(module_name):
     """It should successfully import all defined cookbooks and their packages."""
-    with mock.patch('builtins.open', mock.mock_open(read_data=MOCKED_SRE_SWITCHDC_SERVICES_YAML)):
-        importlib.import_module(module_name)  # Will raise on failure
+    importlib.import_module(module_name)  # Will raise on failure
