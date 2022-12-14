@@ -1,6 +1,7 @@
 [gerrit]
 host=gerrit.wikimedia.org
 port=29418
-project=operations/cookbooks.git
+project=cloud/wmcs-cookbooks.git
 track=1
-defaultbranch=wmcs
+defaultrebase=0
+defaultbranch=main
