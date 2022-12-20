@@ -539,7 +539,9 @@ class CephClusterController(CommandRunnerMixin):
     def wait_for_cluster_healthy(
         self,
         consider_maintenance_healthy: bool = False,
-        timeout_seconds: int = 600,
+        # Ceph uses the 15-minute average to measure health, so we need to wait
+        #  a long time for it to feel better after a reboot
+        timeout_seconds: int = 1800,
         health_issues_to_ignore: Optional[Iterable[str]] = None,
     ) -> None:
         """Wait until a cluster becomes healthy."""
