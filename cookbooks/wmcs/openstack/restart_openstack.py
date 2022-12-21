@@ -118,6 +118,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
             "trove": ["trove-api", "trove-conductor", "trove-taskmanager"],
             "heat": ["heat-api", "heat-api-cfn", "heat-engine"],
             "magnum": ["magnum-api", "magnum-conductor"],
+            "neutron": ["neutron-api", "neutron-rpc-server"],
         }
 
         cloudcontrols = {s[0] for s in self.get_nova_service_list() if s[0].startswith("cloudcontrol")}
@@ -156,7 +157,10 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         if vars(self.args)["cinder"] or self.args.all:
             restart_list.extend(self.get_cinder_service_list())
         if vars(self.args)["neutron"] or self.args.all:
+            # Neutron supports discovery for most, but not all
+            #  of its services
             restart_list.extend(self.get_neutron_service_list())
+            restart_list.extend(self.get_misc_service_list("neutron"))
         if vars(self.args)["designate"] or self.args.all:
             restart_list.extend(self.get_designate_service_list())
         if vars(self.args)["trove"] or self.args.all:
