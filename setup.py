@@ -15,14 +15,8 @@ install_requires = [
 extras_require = {
     # Test dependencies
     'tests': [
-        'bandit>=1.5.0',
-        'flake8>=3.2.1',
         'pytest>=6.1.0',
-    ],
-    'prospector': [
-        'prospector[with_everything]>=0.12.4,<=1.7.7',
-        'pylint<2.15.7',  # Temporary upper limit for an upstream regression
-        'pytest>=6.1.0',
+        'pre-commit',
     ],
 }
 
