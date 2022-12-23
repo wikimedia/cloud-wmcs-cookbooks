@@ -142,6 +142,26 @@ class OSDTreeEntry:
 
 
 @dataclass(frozen=True)
+class MGRMap:
+    """Ceph mgrmap structure in the status."""
+
+    available: bool
+    num_standbys: int
+    modules: List[str]
+    services: Dict[str, str]
+
+    @classmethod
+    def from_dict(cls, obj_dict: Dict[str, Any]) -> "MGRMap":
+        """Create the MGRMap from the output of ceph status -f json | jq '.mgrmap'"""
+        return cls(
+            available=obj_dict["available"],
+            num_standbys=obj_dict.get("num_standbys", 0),
+            modules=obj_dict.get("modules", []),
+            services=obj_dict.get("services", {}),
+        )
+
+
+@dataclass(frozen=True)
 class CephClusterStatus:
     """Status of a CEPH cluster."""
 
@@ -232,6 +252,10 @@ class CephClusterStatus:
     def get_health_issues(self) -> Dict[str, Any]:
         """Get the current health issues."""
         return self.status_dict.get("health", {}).get("checks", {})
+
+    def get_mgrmap(self) -> MGRMap:
+        """Get mgrmap from status"""
+        return MGRMap.from_dict(self.status_dict["mgrmap"])
 
 
 class CephOSDNodeController:
@@ -534,6 +558,27 @@ class CephClusterController(CommandRunnerMixin):
         raise CephTimeout(
             f"Waited {timeout_seconds} for the cluster to finish in-progress events, but it never did, current state:\n"
             f"\n{json.dumps(cluster_status.get_in_progress(), indent=4)}"
+        )
+
+    def wait_for_one_manager_standby(
+        self,
+        timeout_seconds: int = 600,
+    ) -> None:
+        """Wait until there's at least one mgr in standby."""
+        check_interval_seconds = 10
+        start_time = time.time()
+        cur_time = start_time
+        while cur_time - start_time < timeout_seconds:
+            if self.get_cluster_status().get_mgrmap().num_standbys:
+                return
+
+            time.sleep(check_interval_seconds)
+            cur_time = time.time()
+
+        cluster_status = self.get_cluster_status()
+        raise CephClusterUnhealthy(
+            f"Waited {timeout_seconds} for any manager to become standby, but it never did, current state:\n"
+            f"\n{json.dumps(cluster_status.status_dict['health'], indent=4)}"
         )
 
     def wait_for_cluster_healthy(

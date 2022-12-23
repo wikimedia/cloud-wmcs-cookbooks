@@ -109,7 +109,9 @@ class RollRebootMonsRunner(WMCSCookbookRunnerBase):
                 len(mon_nodes) - index - 1,
             )
             self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)
-            LOGGER.info("Cluster stable, continuing")
+            # ceph considers a cluster healthy even if there's no mgr daemons on standby
+            self.controller.wait_for_one_manager_standby()
+            LOGGER.info("Cluster is healthy, and there's at least one other mrg in standby, continuing...")
 
         self.controller.unset_maintenance(silences=silences)
 
