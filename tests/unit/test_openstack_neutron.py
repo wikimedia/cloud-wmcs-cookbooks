@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import cumin
 import pytest
 
-from wmcs_libs.common import TestUtils
+from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 from wmcs_libs.openstack.neutron import (
@@ -67,7 +67,7 @@ def get_stub_router(
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "No agents": {
                 # neutron expects a first spurious line
@@ -226,7 +226,7 @@ def get_stub_router(
     )
 )
 def test_NeutronController_agent_list_works(neutron_output: str, expected_agents: List[NeutronAgent]):
-    fake_remote = TestUtils.get_fake_remote(responses=[neutron_output])
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
     fake_run_sync = fake_remote.query.return_value.run_sync
@@ -243,7 +243,7 @@ def test_NeutronController_agent_list_works(neutron_output: str, expected_agents
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "No routers": {
                 # neutron expects a first line that will be discarded
@@ -339,7 +339,7 @@ def test_NeutronController_agent_list_works(neutron_output: str, expected_agents
     )
 )
 def test_NeutronController_router_list_works(neutron_output: str, expected_routers: List[NeutronAgent]):
-    fake_remote = TestUtils.get_fake_remote(responses=[neutron_output])
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
     fake_run_sync = fake_remote.query.return_value.run_sync
@@ -359,7 +359,7 @@ def test_NeutronController_router_list_works(neutron_output: str, expected_route
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "No nodes": {
                 # neutron expects a first spurious line
@@ -431,7 +431,7 @@ def test_NeutronController_router_list_works(neutron_output: str, expected_route
     )
 )
 def test_NeutronController_list_agents_hosting_router_works(neutron_output: str, expected_agents: List[Dict[str, Any]]):
-    fake_remote = TestUtils.get_fake_remote(responses=[neutron_output])
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
     fake_run_sync = fake_remote.query.return_value.run_sync
@@ -451,7 +451,7 @@ def test_NeutronController_list_agents_hosting_router_works(neutron_output: str,
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "No nodes": {
                 # neutron expects a first spurious line
@@ -559,7 +559,7 @@ def test_NeutronController_list_agents_hosting_router_works(neutron_output: str,
     )
 )
 def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expected_routers: List[Dict[str, Any]]):
-    fake_remote = TestUtils.get_fake_remote(responses=[neutron_output])
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
     fake_run_sync = fake_remote.query.return_value.run_sync
@@ -579,7 +579,7 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "No cloudnets": {
                 # neutron expects a first spurious line
@@ -697,7 +697,7 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
     )
 )
 def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_cloudnets: List[str]):
-    fake_remote = TestUtils.get_fake_remote(responses=[neutron_output])
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
     fake_run_sync = fake_remote.query.return_value.run_sync
@@ -717,7 +717,7 @@ def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_clo
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "No agents and no routers": {
                 "agents": [],
@@ -740,7 +740,7 @@ def test_NeutronController_check_if_network_is_alive_does_not_raise(
     agents: List[NeutronAgent], routers: List[NeutronRouter]
 ):
     # just in case a call gets through
-    fake_remote = TestUtils.get_fake_remote(responses=[])
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
     partial_routers = [partial_router_from_full_router(router) for router in routers]
@@ -748,13 +748,12 @@ def test_NeutronController_check_if_network_is_alive_does_not_raise(
     with patch.object(my_controller, "agent_list", MagicMock(return_value=agents)), patch.object(
         my_controller, "router_list", MagicMock(return_value=partial_routers)
     ), patch.object(my_controller, "router_show", MagicMock(side_effect=routers)):
-
         # assert it does not raise
         my_controller.check_if_network_is_alive()
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "One agent dead, routers ok": {
                 "agents": [
@@ -801,7 +800,7 @@ def test_NeutronController_check_if_network_is_alive_does_not_raise(
 )
 def test_NeutronController_check_if_network_is_alive_raises(agents: List[NeutronAgent], routers: List[NeutronRouter]):
     # just in case a call gets through
-    fake_remote = TestUtils.get_fake_remote(responses=[])
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
     partial_routers = [partial_router_from_full_router(router) for router in routers]
@@ -809,6 +808,5 @@ def test_NeutronController_check_if_network_is_alive_raises(agents: List[Neutron
     with patch.object(my_controller, "agent_list", MagicMock(return_value=agents)), patch.object(
         my_controller, "router_list", MagicMock(return_value=partial_routers)
     ), patch.object(my_controller, "router_show", MagicMock(side_effect=routers)):
-
         with pytest.raises(NetworkUnhealthy):
             my_controller.check_if_network_is_alive()

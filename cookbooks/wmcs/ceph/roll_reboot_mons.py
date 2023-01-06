@@ -5,6 +5,8 @@ Usage example:
         --cluster-name eqiad1
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

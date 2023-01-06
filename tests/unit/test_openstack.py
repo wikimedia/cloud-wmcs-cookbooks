@@ -3,13 +3,13 @@ from unittest import mock
 import cumin
 import pytest
 
-from wmcs_libs.common import TestUtils
+from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackBadQuota, OpenstackQuotaEntry, OpenstackQuotaName, Unit
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "G to M": {
                 "from_unit": Unit.GIGA,
@@ -38,7 +38,7 @@ def test_Unit_next_unit_raises_when_last_unit():
 
 # Test only a couple very used ones
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "Gigabytes": {
                 "quota_name": OpenstackQuotaName.GIGABYTES,
@@ -64,7 +64,7 @@ def test_OpenstackQuotaEntry_name_to_cli_works(quota_name: OpenstackQuotaName, v
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "Gigabytes passing 10G": {
                 "human_str": "10G",
@@ -105,7 +105,7 @@ def test_OpenstackQuotaEntry___init__works(human_str: str, quota_name: Openstack
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "Gigabytes passing 10K": {
                 "human_str": "10K",
@@ -128,7 +128,7 @@ def test_OpenstackQuotaEntry___init__raises(human_str: str, quota_name: Openstac
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "10G RAM + 200M RAM": {
                 "quota_name": OpenstackQuotaName.RAM,
@@ -172,7 +172,7 @@ def test_summing_up_two_quota_entries(
 
 
 def test_OpenstackAPI_quota_show_happy_path():
-    fake_remote = TestUtils.get_fake_remote(
+    fake_remote = UtilsForTesting.get_fake_remote(
         # openstack quota show -f json admin-monitoring
         responses=[
             """{
@@ -238,7 +238,7 @@ def test_OpenstackAPI_quota_show_happy_path():
 
 
 def test_OpenstackAPI_quota_set_happy_path():
-    fake_remote = TestUtils.get_fake_remote(responses=[""])
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[""])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.CODFW1DEV)
     my_api.quota_set(
         OpenstackQuotaEntry(name=OpenstackQuotaName.CORES, value=10),
@@ -254,7 +254,7 @@ def test_OpenstackAPI_quota_set_happy_path():
 
 
 def test_OpenstackAPI_quota_increase_happy_path():
-    fake_remote = TestUtils.get_fake_remote(
+    fake_remote = UtilsForTesting.get_fake_remote(
         # openstack quota show -f json admin-monitoring
         responses=[
             """{

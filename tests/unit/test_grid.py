@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from wmcs_libs.common import TestUtils
+from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.grid import GridQueueInfo
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "simple case": {
                 "messages": [

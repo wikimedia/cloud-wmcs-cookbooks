@@ -13,7 +13,7 @@ from spicerack.remote import RemoteExecutionError
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.alerts import SilenceID, downtime_alert, uptime_alert
-from wmcs_libs.common import ArgparsableEnum, CommandRunnerMixin, TestUtils, run_one_formatted, run_one_raw
+from wmcs_libs.common import ArgparsableEnum, CommandRunnerMixin, UtilsForTesting, run_one_formatted, run_one_raw
 from wmcs_libs.inventory import (
     CephClusterName,
     CephNodeRoleName,
@@ -624,7 +624,6 @@ class CephClusterController(CommandRunnerMixin):
         def _get_expanded_node(
             plain_node: Dict[str, Any], all_nodes: Dict[int, Dict[str, Any]]
         ) -> Union[Dict[str, Any], OSDTreeEntry]:
-
             # We expect the "osd" nodes to always be leaf nodes of the tree
             if plain_node.get("type") == "osd":
                 return OSDTreeEntry.from_json_data(plain_node)
@@ -760,7 +759,7 @@ class CephClusterController(CommandRunnerMixin):
 
 # Poor man's namespace to compensate for the restriction to not create modules
 @dataclass(frozen=True)
-class CephTestUtils(TestUtils):
+class CephTestUtils(UtilsForTesting):
     """Utils to test ceph related code."""
 
     @staticmethod

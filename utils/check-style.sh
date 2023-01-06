@@ -12,7 +12,7 @@ black \
     --diff \
     cookbooks/wmcs \
     wmcs_libs \
-    tests/unit/wmcs \
+    tests \
 || fail
 
 isort \
@@ -20,5 +20,5 @@ isort \
     --diff \
     cookbooks/wmcs \
     wmcs_libs \
-    tests/unit/wmcs \
+    tests \
 || fail

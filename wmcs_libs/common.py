@@ -27,6 +27,7 @@ from spicerack.cookbook import CookbookRunnerBase
 from spicerack.remote import Remote, RemoteHosts
 
 from wmcs_libs.proxy import with_proxy
+from wmcs_libs.test_helpers import WMCSCookbookRecorder
 
 LOGGER = logging.getLogger(__name__)
 PHABRICATOR_BOT_CONFIG_FILE = "/etc/phabricator_ops-monitoring-bot.conf"
@@ -408,7 +409,7 @@ class KubeadmController:
             control_kubeadm.delete_token(token=new_token)
 
 
-def run_one_raw(
+def run_one_raw_needed_to_be_able_to_mock(
     command: Union[List[str], Command],
     node: RemoteHosts,
     capture_errors: bool = False,
@@ -416,11 +417,10 @@ def run_one_raw(
     skip_first_line: bool = False,
     **kwargs,
 ) -> str:
-    """Run a command on a node.
+    """Only exists to be able to mock in one single place the run_one_raw function.
 
-    Returns the the raw output.
-
-    Any extra kwargs will be passed to the RemoteHosts.run_sync function.
+    Useful when testing and/or recording test cases. Don't use unless you know what you are sure, use run_one_raw
+    instead for most cases.
     """
     if not isinstance(command, Command):
         command = Command(command=" ".join(command), ok_codes=[0, 1, 2] if capture_errors else [0])
@@ -439,6 +439,30 @@ def run_one_raw(
         raw_result = raw_result.splitlines()[-1]
 
     return raw_result
+
+
+def run_one_raw(
+    command: Union[List[str], Command],
+    node: RemoteHosts,
+    capture_errors: bool = False,
+    last_line_only: bool = False,
+    skip_first_line: bool = False,
+    **kwargs,
+) -> str:
+    """Run a command on a node.
+
+    Returns the the raw output.
+
+    Any extra kwargs will be passed to the RemoteHosts.run_sync function.
+    """
+    return run_one_raw_needed_to_be_able_to_mock(
+        command=command,
+        node=node,
+        capture_errors=capture_errors,
+        last_line_only=last_line_only,
+        skip_first_line=skip_first_line,
+        **kwargs,
+    )
 
 
 def run_one_formatted_as_list(
@@ -633,7 +657,7 @@ class SALLogger:
 
 # Poor man's namespace to compensate for the restriction to not create modules
 @dataclass(frozen=True)
-class TestUtils:
+class UtilsForTesting:
     """Generic testing utilities."""
 
     @staticmethod
@@ -897,9 +921,36 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
       Define the `run_with_proxy` method instead of the `run` method when writing your cookbook.
     """
 
+    recorder: Optional[WMCSCookbookRecorder] = None
+
     def __init__(self, spicerack: Spicerack):
         """Init"""
         self.spicerack = spicerack
+        self.nested = bool(WMCSCookbookRunnerBase.recorder)
+        LOGGER.debug("Starting %s recorder", "nested" if self.nested else "not nested")
+        if not self.nested:
+            WMCSCookbookRunnerBase.recorder = WMCSCookbookRecorder()
+
+    def __getattribute__(self, __name: str) -> Any:
+        """Needed to be able to save the recordings if needed as the run function might get overwritten."""
+        if __name == "run":
+
+            def _wrapped_run(*args, **kwargs):
+                try:
+                    return object.__getattribute__(self, __name)(*args, **kwargs)
+                finally:
+                    if not self.nested:
+                        LOGGER.debug("Cleaning up recorder.")
+                        recorder = WMCSCookbookRunnerBase.recorder
+                        # cleanup the old recorder even if save or check_missed_record_entries raises
+                        # otherwise consecutive runs on pytest will start with the old recorder
+                        WMCSCookbookRunnerBase.recorder = None
+                        recorder.save()
+                        recorder.check_missed_record_entries()
+
+            return _wrapped_run
+
+        return super().__getattribute__(__name)
 
     def run(self) -> int | None:
         """Main entry point"""
@@ -908,3 +959,4 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
 
     def run_with_proxy(self) -> int | None:
         """Main entry point, use in place of `run` to execute it's code with a socks proxy running."""
+        return 0

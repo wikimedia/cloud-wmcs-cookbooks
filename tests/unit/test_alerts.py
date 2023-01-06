@@ -5,7 +5,7 @@ import cumin
 import pytest
 
 from wmcs_libs.alerts import AlertManager
-from wmcs_libs.common import TestUtils
+from wmcs_libs.common import UtilsForTesting
 
 
 def get_stub_silence(silence_id: str):
@@ -22,7 +22,7 @@ def get_stub_silence(silence_id: str):
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         {
             "One element query": {
                 "query": "alertname='My alert'",
@@ -62,7 +62,7 @@ def get_stub_silence(silence_id: str):
 def test_AlertManager_get_silences_happy_path(
     query: str, expected_command: str, commands_outputs: List[str], expected_silences: List[str]
 ):
-    fake_remote = TestUtils.get_fake_remote(responses=commands_outputs)
+    fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
 
     gotten_silences = my_alertmanager.get_silences(query=query)
@@ -72,7 +72,7 @@ def test_AlertManager_get_silences_happy_path(
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         {
             "Just alert_name and comment": {
                 "params": {
@@ -124,7 +124,7 @@ def test_AlertManager_get_silences_happy_path(
 def test_AlertManager_downtime_alert_happy_path(
     params: Dict[str, Any], expected_command: str, commands_outputs: List[str], expected_silence: str
 ):
-    fake_remote = TestUtils.get_fake_remote(responses=commands_outputs)
+    fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
 
     gotten_silence = my_alertmanager.downtime_alert(**params)
@@ -134,7 +134,7 @@ def test_AlertManager_downtime_alert_happy_path(
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         {
             "If there's no existing silences, does nothing": {
                 "params": {
@@ -169,7 +169,7 @@ def test_AlertManager_downtime_alert_happy_path(
 def test_AlertManager_uptime_alert_happy_path(
     params: Dict[str, Any], expected_command: Optional[str], commands_outputs: List[str]
 ):
-    fake_remote = TestUtils.get_fake_remote(responses=commands_outputs)
+    fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
 
     my_alertmanager.uptime_alert(**params)
@@ -183,7 +183,7 @@ def test_AlertManager_uptime_alert_happy_path(
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         {
             "ValueError If there's no alert_name or extra_queries": {
                 "params": {},
@@ -196,7 +196,7 @@ def test_AlertManager_uptime_alert_raises(
     params: Dict[str, Any],
     expected_exception: Type[Exception],
 ):
-    fake_remote = TestUtils.get_fake_remote()
+    fake_remote = UtilsForTesting.get_fake_remote()
     my_alertmanager = AlertManager.from_remote(fake_remote)
 
     with pytest.raises(expected_exception):
@@ -204,7 +204,7 @@ def test_AlertManager_uptime_alert_raises(
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         {
             "Only host_name and comment": {
                 "params": {
@@ -237,7 +237,7 @@ def test_AlertManager_uptime_alert_raises(
 def test_AlertManager_downtime_host_happy_path(
     params: Dict[str, Any], expected_command: str, commands_outputs: List[str], expected_silence_id: str
 ):
-    fake_remote = TestUtils.get_fake_remote(responses=commands_outputs)
+    fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
 
     gotten_silence_id = my_alertmanager.downtime_host(**params)
@@ -247,7 +247,7 @@ def test_AlertManager_downtime_host_happy_path(
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         {
             "If there are no matches does nothing": {
                 "params": {
@@ -280,7 +280,7 @@ def test_AlertManager_downtime_host_happy_path(
 def test_AlertManager_uptime_host_happy_path(
     params: Dict[str, Any], expected_command: str, commands_outputs: List[str]
 ):
-    fake_remote = TestUtils.get_fake_remote(responses=commands_outputs)
+    fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
 
     my_alertmanager.uptime_host(**params)

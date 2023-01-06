@@ -1,0 +1,856 @@
+# recorded with: COOKBOOK_RECORDING_ENABLED=yes cookbook wmcs.ceph.roll_reboot_mons --cluster-name codfw1 --no-dologmsg
+output: '{"mon":{"cloudcephmon2004-dev":["cloudcephmon2004-dev"],"cloudcephmon2005-dev":["cloudcephmon2005-dev"],"cloudcephmon2006-dev":["cloudcephmon2006-dev"]},"osd":{"cloudcephosd2001-dev":[0,1],"cloudcephosd2002-dev":[2,3],"cloudcephosd2003-dev":[4,5]},"mgr":{"cloudcephmon2004-dev":["cloudcephmon2004-dev"],"cloudcephmon2005-dev":["cloudcephmon2005-dev"],"cloudcephmon2006-dev":["cloudcephmon2006-dev"]}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - node
+      - ls
+      - -f
+      - json
+    is_safe: false
+    last_line_only: true
+    node: non-serializable
+    skip_first_line: false
+---
+output: 89eb678f-c0b2-423c-94cc-23cd351b4194
+params:
+  args: []
+  kwargs:
+    command:
+      - amtool
+      - --output=json
+      - silence
+      - add
+      - --duration="4h"
+      - --comment='Downtiming alert from cookbook - Roll rebooting mons- from
+        cookbook ran by dcaro@vulcanus'
+      - " 'service=~.*ceph.*'"
+    node: non-serializable
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_OK","checks":{},"mutes":[]},"election_epoch":678,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":159384,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109799,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120504,"data_bytes":734734416927,"bytes_used":2197846933504,"bytes_avail":3561704210432,"bytes_total":5759551143936,"read_bytes_sec":19233,"write_bytes_sec":997589,"read_op_per_sec":31,"write_op_per_sec":114},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566665,"modified":"2023-01-06T11:00:36.515458+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566663,"start_stamp":"2023-01-06T10:55:44.228731+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: noout is set
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - osd
+      - set
+      - noout
+    is_safe: false
+    node: non-serializable
+---
+output: norebalance is set
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - osd
+      - set
+      - norebalance
+    is_safe: false
+    node: non-serializable
+---
+output: '{"mon":{"cloudcephmon2004-dev":["cloudcephmon2004-dev"],"cloudcephmon2005-dev":["cloudcephmon2005-dev"],"cloudcephmon2006-dev":["cloudcephmon2006-dev"]},"osd":{"cloudcephosd2001-dev":[0,1],"cloudcephosd2002-dev":[2,3],"cloudcephosd2003-dev":[4,5]},"mgr":{"cloudcephmon2004-dev":["cloudcephmon2004-dev"],"cloudcephmon2005-dev":["cloudcephmon2005-dev"],"cloudcephmon2006-dev":["cloudcephmon2006-dev"]}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - node
+      - ls
+      - -f
+      - json
+    is_safe: false
+    last_line_only: true
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":678,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":159399,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109801,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120505,"data_bytes":734751976479,"bytes_used":2197894856704,"bytes_avail":3561656287232,"bytes_total":5759551143936,"read_bytes_sec":1210063,"write_bytes_sec":2366812,"read_op_per_sec":56,"write_op_per_sec":84},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566665,"modified":"2023-01-06T11:00:36.515458+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566663,"start_stamp":"2023-01-06T10:55:44.228731+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: a107fda8-5101-4d02-bcb9-f9b392340a8a
+params:
+  args: []
+  kwargs:
+    command:
+      - amtool
+      - --output=json
+      - silence
+      - add
+      - --duration="1h"
+      - --comment='Rebooting with wmcs.ceph.reboot_node- from cookbook ran by
+        dcaro@vulcanus'
+      - instance=~'cloudcephmon2004-dev(:[0-9]+)?'
+    node: non-serializable
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"MON_CLOCK_SKEW":{"severity":"HEALTH_WARN","summary":{"message":"clock
+  skew detected on mon.cloudcephmon2006-dev,
+  mon.cloudcephmon2005-dev","count":2},"muted":false},"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":684,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":12,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109807,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120391,"data_bytes":733943806315,"bytes_used":2195395084288,"bytes_avail":3564156059648,"bytes_total":5759551143936},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566667,"modified":"2023-01-06T11:04:02.209670+0000","services":{"mgr":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"mon":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"osd":{"daemons":{"summary":"","0":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"1":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"2":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"3":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"4":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"5":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566667,"start_stamp":"2023-01-06T11:04:02.203361+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"MON_CLOCK_SKEW":{"severity":"HEALTH_WARN","summary":{"message":"clock
+  skew detected on mon.cloudcephmon2006-dev,
+  mon.cloudcephmon2005-dev","count":2},"muted":false},"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":684,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":25,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109807,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120391,"data_bytes":733944469867,"bytes_used":2195398311936,"bytes_avail":3564152832000,"bytes_total":5759551143936,"read_bytes_sec":11939,"write_bytes_sec":8754819,"read_op_per_sec":41,"write_op_per_sec":219},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566667,"modified":"2023-01-06T11:04:02.209670+0000","services":{"mgr":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"mon":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"osd":{"daemons":{"summary":"","0":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"1":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"2":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"3":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"4":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"5":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566667,"start_stamp":"2023-01-06T11:04:02.203361+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":684,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":39,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109807,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120391,"data_bytes":733944519019,"bytes_used":2195397853184,"bytes_avail":3564153290752,"bytes_total":5759551143936,"read_bytes_sec":6138,"write_bytes_sec":8495244,"read_op_per_sec":33,"write_op_per_sec":124},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566667,"modified":"2023-01-06T11:04:02.209670+0000","services":{"mgr":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"mon":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"osd":{"daemons":{"summary":"","0":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"1":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"2":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"3":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"4":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"5":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566667,"start_stamp":"2023-01-06T11:04:02.203361+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: ""
+params:
+  args: []
+  kwargs:
+    command:
+      - amtool
+      - --output=json
+      - silence
+      - expire
+      - a107fda8-5101-4d02-bcb9-f9b392340a8a
+    node: non-serializable
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":684,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":49,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109807,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120391,"data_bytes":733944654187,"bytes_used":2195411845120,"bytes_avail":3564139298816,"bytes_total":5759551143936,"read_bytes_sec":106405,"write_bytes_sec":974356,"read_op_per_sec":23,"write_op_per_sec":84},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566667,"modified":"2023-01-06T11:04:02.209670+0000","services":{"mgr":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"mon":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"osd":{"daemons":{"summary":"","0":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"1":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"2":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"3":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"4":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"5":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566667,"start_stamp":"2023-01-06T11:04:02.203361+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":684,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":52,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109807,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120392,"data_bytes":733945076075,"bytes_used":2195426279424,"bytes_avail":3564124864512,"bytes_total":5759551143936,"read_bytes_sec":511,"write_bytes_sec":815273,"read_op_per_sec":9,"write_op_per_sec":94},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566667,"modified":"2023-01-06T11:04:02.209670+0000","services":{"mgr":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"mon":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"osd":{"daemons":{"summary":"","0":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"1":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"2":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"3":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"4":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"5":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566667,"start_stamp":"2023-01-06T11:04:02.203361+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '{"mon":{"cloudcephmon2004-dev":["cloudcephmon2004-dev"],"cloudcephmon2005-dev":["cloudcephmon2005-dev"],"cloudcephmon2006-dev":["cloudcephmon2006-dev"]},"osd":{"cloudcephosd2001-dev":[0,1],"cloudcephosd2002-dev":[2,3],"cloudcephosd2003-dev":[4,5]},"mgr":{"cloudcephmon2004-dev":["cloudcephmon2004-dev"],"cloudcephmon2005-dev":["cloudcephmon2005-dev"],"cloudcephmon2006-dev":["cloudcephmon2006-dev"]}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - node
+      - ls
+      - -f
+      - json
+    is_safe: false
+    last_line_only: true
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":684,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":60,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109807,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120396,"data_bytes":733978536299,"bytes_used":2195604029440,"bytes_avail":3563947114496,"bytes_total":5759551143936,"read_bytes_sec":54657,"write_bytes_sec":30684841,"read_op_per_sec":49,"write_op_per_sec":242},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566667,"modified":"2023-01-06T11:04:02.209670+0000","services":{"mgr":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"mon":{"daemons":{"summary":"","cloudcephmon2004-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2005-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"osd":{"daemons":{"summary":"","0":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"1":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"2":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"3":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"4":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}},"5":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566667,"start_stamp":"2023-01-06T11:04:02.203361+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: 7e9d5b9f-2b64-40de-8eaf-8075bd8e9744
+params:
+  args: []
+  kwargs:
+    command:
+      - amtool
+      - --output=json
+      - silence
+      - add
+      - --duration="1h"
+      - --comment='Rebooting with wmcs.ceph.reboot_node- from cookbook ran by
+        dcaro@vulcanus'
+      - instance=~'cloudcephmon2005-dev(:[0-9]+)?'
+    node: non-serializable
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"MON_CLOCK_SKEW":{"severity":"HEALTH_WARN","summary":{"message":"clock
+  skew detected on
+  mon.cloudcephmon2005-dev","count":1},"muted":false},"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":690,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":20,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109809,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120421,"data_bytes":734186772843,"bytes_used":2196162723840,"bytes_avail":3563388420096,"bytes_total":5759551143936,"read_bytes_sec":2216,"write_bytes_sec":6977565,"read_op_per_sec":37,"write_op_per_sec":153},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566670,"modified":"2023-01-06T11:07:16.728561+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566669,"start_stamp":"2023-01-06T11:06:15.735834+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":690,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":34,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109809,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120421,"data_bytes":734187067755,"bytes_used":2196163674112,"bytes_avail":3563387469824,"bytes_total":5759551143936,"read_bytes_sec":0,"write_bytes_sec":1220693,"read_op_per_sec":32,"write_op_per_sec":149},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566670,"modified":"2023-01-06T11:07:16.728561+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566669,"start_stamp":"2023-01-06T11:06:15.735834+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: ""
+params:
+  args: []
+  kwargs:
+    command:
+      - amtool
+      - --output=json
+      - silence
+      - expire
+      - 7e9d5b9f-2b64-40de-8eaf-8075bd8e9744
+    node: non-serializable
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":690,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":44,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109809,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120421,"data_bytes":734187633003,"bytes_used":2196165640192,"bytes_avail":3563385503744,"bytes_total":5759551143936,"read_bytes_sec":0,"write_bytes_sec":1333056,"read_op_per_sec":45,"write_op_per_sec":212},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566670,"modified":"2023-01-06T11:07:16.728561+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566669,"start_stamp":"2023-01-06T11:06:15.735834+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":690,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":47,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109809,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120421,"data_bytes":734187641195,"bytes_used":2196165574656,"bytes_avail":3563385569280,"bytes_total":5759551143936,"read_bytes_sec":12279,"write_bytes_sec":1489787,"read_op_per_sec":51,"write_op_per_sec":242},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566670,"modified":"2023-01-06T11:07:16.728561+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566669,"start_stamp":"2023-01-06T11:06:15.735834+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":690,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":50,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109809,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120421,"data_bytes":734187641195,"bytes_used":2196165574656,"bytes_avail":3563385569280,"bytes_total":5759551143936,"read_bytes_sec":12279,"write_bytes_sec":905502,"read_op_per_sec":29,"write_op_per_sec":149},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566670,"modified":"2023-01-06T11:07:16.728561+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566669,"start_stamp":"2023-01-06T11:06:15.735834+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: eb3b7f2a-5a8e-4980-b14c-d879fa50f96d
+params:
+  args: []
+  kwargs:
+    command:
+      - amtool
+      - --output=json
+      - silence
+      - add
+      - --duration="1h"
+      - --comment='Rebooting with wmcs.ceph.reboot_node- from cookbook ran by
+        dcaro@vulcanus'
+      - instance=~'cloudcephmon2006-dev(:[0-9]+)?'
+    node: non-serializable
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"MON_CLOCK_SKEW":{"severity":"HEALTH_WARN","summary":{"message":"clock
+  skew detected on
+  mon.cloudcephmon2006-dev","count":1},"muted":false},"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":696,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":21,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109813,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120574,"data_bytes":735345757215,"bytes_used":2199713972224,"bytes_avail":3559837171712,"bytes_total":5759551143936,"read_bytes_sec":108446,"write_bytes_sec":6007779,"read_op_per_sec":16,"write_op_per_sec":120},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566675,"modified":"2023-01-06T11:10:56.969253+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566674,"start_stamp":"2023-01-06T11:09:55.973616+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"MON_CLOCK_SKEW":{"severity":"HEALTH_WARN","summary":{"message":"clock
+  skew detected on
+  mon.cloudcephmon2006-dev","count":1},"muted":false},"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":696,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":34,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109813,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120576,"data_bytes":735368092703,"bytes_used":2199749115904,"bytes_avail":3559802028032,"bytes_total":5759551143936,"read_bytes_sec":96996,"write_bytes_sec":2678750,"read_op_per_sec":43,"write_op_per_sec":110},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566675,"modified":"2023-01-06T11:10:56.969253+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566674,"start_stamp":"2023-01-06T11:09:55.973616+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":696,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":48,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109813,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120583,"data_bytes":735429184543,"bytes_used":2199955193856,"bytes_avail":3559595950080,"bytes_total":5759551143936,"read_bytes_sec":1696941,"write_bytes_sec":5930175,"read_op_per_sec":52,"write_op_per_sec":107},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566675,"modified":"2023-01-06T11:10:56.969253+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566674,"start_stamp":"2023-01-06T11:09:55.973616+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: ""
+params:
+  args: []
+  kwargs:
+    command:
+      - amtool
+      - --output=json
+      - silence
+      - expire
+      - eb3b7f2a-5a8e-4980-b14c-d879fa50f96d
+    node: non-serializable
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":696,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":58,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109813,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120587,"data_bytes":735457115167,"bytes_used":2200002871296,"bytes_avail":3559548272640,"bytes_total":5759551143936,"read_bytes_sec":110128,"write_bytes_sec":3314161,"read_op_per_sec":57,"write_op_per_sec":149},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566675,"modified":"2023-01-06T11:10:56.969253+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566674,"start_stamp":"2023-01-06T11:09:55.973616+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":696,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":61,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109813,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120587,"data_bytes":735457115167,"bytes_used":2200002871296,"bytes_avail":3559548272640,"bytes_total":5759551143936,"read_bytes_sec":110153,"write_bytes_sec":3314918,"read_op_per_sec":57,"write_op_per_sec":149},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566675,"modified":"2023-01-06T11:10:56.969253+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566674,"start_stamp":"2023-01-06T11:09:55.973616+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: '
+
+  {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_WARN","checks":{"OSDMAP_FLAGS":{"severity":"HEALTH_WARN","summary":{"message":"noout,norebalance
+  flag(s)
+  set","count":17},"muted":false}},"mutes":[]},"election_epoch":696,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":64,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109813,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120593,"data_bytes":735496813599,"bytes_used":2200068800512,"bytes_avail":3559482343424,"bytes_total":5759551143936,"read_bytes_sec":114159,"write_bytes_sec":7998531,"read_op_per_sec":106,"write_op_per_sec":266},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566676,"modified":"2023-01-06T11:12:27.058420+0000","services":{"mgr":{"daemons":{"summary":"","cloudcephmon2006-dev":{"start_epoch":0,"start_stamp":"0.000000","gid":0,"addr":"(unrecognized
+  address family
+  0)/0","metadata":{},"task_status":{}}}},"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566674,"start_stamp":"2023-01-06T11:09:55.973616+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
+  version 15.2.16 (d46a73d6d0a67a79558054a3a5a72cb561724974) octopus
+  (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
+  CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
+  (bullseye)","distro_version":"11","frontend_config#0":"civetweb
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  SMP Debian 5.10.158-2
+  (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - status
+      - -f
+      - json
+    is_safe: false
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+---
+output: noout is unset
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - osd
+      - unset
+      - noout
+    is_safe: false
+    node: non-serializable
+---
+output: norebalance is unset
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+      - ceph
+      - osd
+      - unset
+      - norebalance
+    is_safe: false
+    node: non-serializable
+---
+output: ""
+params:
+  args: []
+  kwargs:
+    command:
+      - amtool
+      - --output=json
+      - silence
+      - expire
+      - 89eb678f-c0b2-423c-94cc-23cd351b4194
+    node: non-serializable

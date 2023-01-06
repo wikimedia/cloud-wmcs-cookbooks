@@ -96,6 +96,12 @@ def with_proxy(spicerack: Spicerack):
 
     Used to be able to access internal apis when running from your laptop/remotely.
     """
+    proxy_config_path = spicerack.config_dir / "wmcs.yaml"
+    if not proxy_config_path.exists():
+        LOGGER.debug("Skipping proxy start, no config found on %s.", str(proxy_config_path))
+        yield
+        return
+
     config = load_yaml_config(config_file=spicerack.config_dir / "wmcs.yaml", raises=False)
     LOGGER.info("Loading socks proxy config from %s", spicerack.config_dir / "wmcs.yaml")
     socks_proxy_port = int(config.get("socks_proxy_port", "54123"))

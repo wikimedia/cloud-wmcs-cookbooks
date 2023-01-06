@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from wmcs_libs.common import TestUtils
+from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.inventory import (
     CephNodeRoleName,
     Cluster,
@@ -49,7 +49,7 @@ def get_dummy_inventory(
 
 
 @pytest.mark.parametrize(
-    **TestUtils.to_parametrize(
+    **UtilsForTesting.to_parametrize(
         test_cases={
             "Node in inventory matches inventory site": {
                 "node_fqdn": "something.some.where",

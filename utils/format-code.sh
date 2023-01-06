@@ -2,9 +2,9 @@
 black \
     cookbooks/wmcs \
     wmcs_libs \
-    tests/unit/wmcs
+    tests
 
 isort \
     cookbooks/wmcs \
     wmcs_libs \
-    tests/unit/wmcs
+    tests

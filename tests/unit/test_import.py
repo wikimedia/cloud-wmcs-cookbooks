@@ -1,12 +1,11 @@
 """Test the import of all the cookbooks."""
 import importlib
-import pathlib
 import os
-
+import pathlib
 from pkgutil import iter_modules
-from setuptools import find_packages
 
 import pytest
+from setuptools import find_packages
 
 
 def get_modules():
@@ -24,7 +23,7 @@ def get_modules():
     return modules
 
 
-@pytest.mark.parametrize('module_name', get_modules())
+@pytest.mark.parametrize("module_name", get_modules())
 def test_import(module_name):
     """It should successfully import all defined cookbooks and their packages."""
     importlib.import_module(module_name)  # Will raise on failure

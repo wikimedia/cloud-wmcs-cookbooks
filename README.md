@@ -99,3 +99,68 @@ wmcs.toolforge.grid.lib.add                   <-- WRONG: add what?
 wmcs.toolforge.grid.lib.configuration         <-- WRONG: configure what?
 wmcs.toolforge.grid.node.lib.create_exec_node <-- WRONG: this should probably be an entry-level cookbook (i.e.
                                                          wmcs.toolforge.create_exec_node)
+
+## Recorded test cases/functional tests
+
+### Recording a run
+**NOTE**: Currently it will only record calls to `wmcs_libs.common.run_*` functions, not spicerack/http requests/etc., so for now **avoid using those directly in your cookbooks!**
+
+To record a run, you can just set the environment variable `COOKBOOK_RECORDING_ENABLED` to `true` and specify an output file with `COOKBOOK_RECORDING_FILE=/path/to/my/file.yaml` when running your cookbook, for example:
+
+```
+COOKBOOK_RECORDING_FILE=record.yaml COOKBOOK_RECORDING_ENABLED=true cookbook wmcs.ceph.osd.show_info --cluster-name codfw1
+```
+
+That will create a file under `./record.yaml` with the recorded contents of the run:
+```
+dcaro@vulcanus$ file record.yaml 
+record.yaml: ASCII text, with very long lines (1538)
+```
+
+**NOTE**: When recording, the cookook **does run as usual** so it will actually make changes, take down nodes and any other action the cookbook would normally do.
+
+### Manually replaying a run
+
+You would not usually want to reply a run outside of a test file, but you can, you can set the env var `COOKBOOK_REPLAYING_ENABLED=true` and point `COOKBOOK_RECORDING_FILE=/path/to/my/recording.yaml`:
+
+```
+COOKBOOK_RECORDING_FILE=record.yaml COOKBOOK_REPLAYING_ENABLED=true cookbook wmcs.ceph.osd.show_info --cluster-name codfw1
+```
+
+**NOTE**: This will not actually run any commands on the remote hosts, instead will return the recorded response.
+
+
+### Manually changing the recording
+Sometimes it might be too difficult to record all the edge cases for a cookbook run, as a fallback you can manually edit the recording to match the test case you want to check.
+
+The recording file is just a yaml with one hash per recorded call, these calls will be returned one after the other starting from the first of the file.
+
+These are some of the interesting keys in each call recording:
+#### output
+This stores the string with the output from running the command, you can change this to match your need though it's highly recommended to use real outputs.
+
+#### repeat_num
+This is the number of times this recorded call will be returned before continuing to the next. By default is 1, but you can use a different number to reproduce scenarios where the state does not change, or you need to test retries.
+
+A custom value of `-1` will make the replay return this call forever and never get to the next.
+
+
+### params
+This is the list of captured args and kwargs passed to the mocked function (currently `run_one_raw`), not yet used for anything but to inform you about the command that was being executed.
+
+## Using the replays in a test case
+Once you have a recording, you can put it at a folder called `recordings` at the same level as your test file (under any subdirectory in `tests/functional`), and use the `run_cookbook_with_recording` fixture to load it at test time and run a cookbook (no need to import it):
+
+```
+def test_everything_goes_as_planned(run_cookbook_with_recording):
+    result = run_cookbook_with_recording(
+        record_file_name="my_recording.yaml",
+        argv=["my.cookbook", "--param-1=value1", ...],
+    )
+
+    assert result.return_code == 0
+    assert "Got an error" not in result.stderr
+    assert "This happened" in result.stdout
+```
+
+More details in the fixture docs (under `tests/functional/conftest.py`).
