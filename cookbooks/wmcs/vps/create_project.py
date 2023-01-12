@@ -89,5 +89,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
         """Main entry point"""
         self.openstack_api.project_create(project=self.common_opts.project, description=self.description)
-        sallogger = SALLogger(project="admin", task_id=self.common_opts.task_id, dry_run=self.common_opts.no_dologmsg)
-        sallogger.log(f"Created project {self.common_opts.project} with default quotas.")
+        sallogger = SALLogger(
+            project=self.common_opts.project, task_id=self.common_opts.task_id, dry_run=self.common_opts.no_dologmsg
+        )
+        sallogger.log("created project with default quotas")
