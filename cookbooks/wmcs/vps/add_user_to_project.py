@@ -85,6 +85,13 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
         )
 
         self.user = user
+        if " " in self.user:
+            message = ""
+            message += "No spaces allowed in the user name. You likely need to "
+            message += "translate the Wiki account name to the Unix account name via "
+            message += "`user@cloudcontrol1005:~$ sudo wmcs-openstack user list | grep -i username`"
+            raise ValueError(message)
+
         self.role_name = "projectadmin" if as_projectadmin else "user"
         super().__init__(spicerack=spicerack)
         self.sallogger = SALLogger(
