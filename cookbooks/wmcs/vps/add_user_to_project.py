@@ -101,4 +101,4 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
         """Main entry point"""
         self.openstack_api.role_add(role_name=self.role_name, user_name=self.user)
-        self.sallogger.log(f"Added user {self.user} to the project as {self.role_name}")
+        self.sallogger.log(f"added user {self.user} to the project as {self.role_name}")
