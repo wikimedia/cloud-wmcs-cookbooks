@@ -114,6 +114,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         """
         cloudcontrol_service_list = {
             "glance": ["glance-api"],
+            "nova": ["nova-api", "nova-api-metadata"],
             "keystone": ["keystone", "keystone-admin"],
             "trove": ["trove-api", "trove-conductor", "trove-taskmanager"],
             "heat": ["heat-api", "heat-api-cfn", "heat-engine"],
@@ -154,6 +155,8 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         restart_list = []
         if vars(self.args)["nova"] or self.args.all:
             restart_list.extend(self.get_nova_service_list())
+            # Nova service discovery doesn't find the api services
+            restart_list.extend(self.get_misc_service_list("nova"))
         if vars(self.args)["cinder"] or self.args.all:
             restart_list.extend(self.get_cinder_service_list())
         if vars(self.args)["neutron"] or self.args.all:
