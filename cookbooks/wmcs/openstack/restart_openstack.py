@@ -144,10 +144,10 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         for host in restart_dict:
             # We still need to do a lookup because we didn't get fqdns from
             #  openstack.
+            self.sallogger.log("Restarting openstack services on %s: %s" % (host, restart_dict[host]))
             query = "P{%s*}" % host
             nodes = self.spicerack.remote().query(query, use_sudo=True)
             command = ["systemctl", "restart"] + restart_dict[host]
-            print("Running %s on %s" % (command, nodes))
             run_one_raw(node=nodes, command=command)
 
     def run_with_proxy(self) -> None:
