@@ -101,4 +101,10 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
         """Main entry point"""
         self.openstack_api.role_add(role_name=self.role_name, user_name=self.user)
+
+        if self.role_name == "projectadmin":
+            # if we leave only the projectadmin role, users wont be able to SSH. Add 'user' too.
+            self.openstack_api.role_add(role_name="user", user_name=self.user)
+            self.sallogger.log(f"added user {self.user} to the project as user")
+
         self.sallogger.log(f"added user {self.user} to the project as {self.role_name}")
