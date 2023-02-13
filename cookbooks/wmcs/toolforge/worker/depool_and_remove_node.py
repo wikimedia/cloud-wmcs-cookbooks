@@ -88,7 +88,6 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
     ):
         """Init"""
         self.common_opts = common_opts
-        self.k8s_worker_prefix = k8s_worker_prefix
         self.fqdn_to_remove = fqdn_to_remove
         self.control_node_fqdn = control_node_fqdn
         super().__init__(spicerack=spicerack)
@@ -99,6 +98,14 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
         )
+
+        if k8s_worker_prefix:
+            self.k8s_worker_prefix = k8s_worker_prefix
+        else:
+            if self.common_opts.project == "toolsbeta":
+                self.k8s_worker_prefix = f"{self.common_opts.project}-test-k8s-worker"
+            else:
+                self.k8s_worker_prefix = f"{self.common_opts.project}-k8s-worker"
 
     def _get_oldest_worker(self, k8s_worker_prefix: str) -> str:
         if not self._all_project_servers:
@@ -153,18 +160,16 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             message=f"Depooling and removing worker {self.fqdn_to_remove or ', will pick the oldest'}",
         )
         remote = self.spicerack.remote()
-        k8s_worker_prefix = (
-            self.k8s_worker_prefix if self.k8s_worker_prefix is not None else f"{self.common_opts.project}-k8s-etcd"
-        )
+
         if not self.fqdn_to_remove:
-            fqdn_to_remove = self._get_oldest_worker(k8s_worker_prefix=k8s_worker_prefix)
+            fqdn_to_remove = self._get_oldest_worker(k8s_worker_prefix=self.k8s_worker_prefix)
             LOGGER.info("Picked node %s to remove.", fqdn_to_remove)
 
         else:
             fqdn_to_remove = self.fqdn_to_remove
 
         if not self.control_node_fqdn:
-            control_node_fqdn = self._pick_a_control_node(k8s_worker_prefix=k8s_worker_prefix)
+            control_node_fqdn = self._pick_a_control_node(k8s_worker_prefix=self.k8s_worker_prefix)
         else:
             control_node_fqdn = self.control_node_fqdn
 
