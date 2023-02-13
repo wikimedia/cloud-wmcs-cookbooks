@@ -156,9 +156,6 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
 
     def run(self) -> None:
         """Main entry point"""
-        self.sallogger.log(
-            message=f"Depooling and removing worker {self.fqdn_to_remove or ', will pick the oldest'}",
-        )
         remote = self.spicerack.remote()
 
         if not self.fqdn_to_remove:
@@ -168,6 +165,8 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         else:
             fqdn_to_remove = self.fqdn_to_remove
 
+        hostname_to_remove = fqdn_to_remove.split(".", 1)[0]
+
         if not self.control_node_fqdn:
             control_node_fqdn = self._pick_a_control_node(k8s_worker_prefix=self.k8s_worker_prefix)
         else:
@@ -176,9 +175,10 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         drain_cookbook = Drain(spicerack=self.spicerack)
         drain_args = [
             "--hostname-to-drain",
-            fqdn_to_remove.split(".", 1)[0],
+            hostname_to_remove,
             "--control-node-fqdn",
             control_node_fqdn,
+            "--no-dologmsg",  # not interested in the inner SAL entries
         ] + self.common_opts.to_cli_args()
 
         drain_cookbook.get_runner(args=drain_cookbook.argument_parser().parse_args(args=drain_args)).run()
@@ -192,11 +192,11 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             args=remove_instance_cookbook.argument_parser().parse_args(
                 [
                     "--server-name",
-                    fqdn_to_remove.split(".", 1)[0],
+                    hostname_to_remove,
                     "--no-dologmsg",  # not interested in the inner SAL entry
                 ]
                 + self.common_opts.to_cli_args(),
             ),
         ).run()
 
-        self.sallogger.log(message=f"Depooled and removed worker {fqdn_to_remove}")
+        self.sallogger.log(message=f"drained, depooled and removed worker {hostname_to_remove}")
