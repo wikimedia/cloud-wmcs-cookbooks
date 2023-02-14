@@ -141,7 +141,15 @@ class ToolforgeComponentBuildRunner(WMCSCookbookRunnerBase):
             LOGGER.info("INFO: guessed git tree name as %s", self.git_name)
 
         if not self.docker_image_name:
-            self.docker_image_name = f"toolforge-{self.git_name}"
+            # some special cases for docker image names :(
+            if self.git_name == "maintain-kubeusers":
+                self.docker_image_name = self.git_name
+            elif self.git_name == "ingress-admission-controller":
+                self.docker_image_name = "ingress-admission"
+            elif self.git_name == "registry-admission-webhook":
+                self.docker_image_name = "registry-admission"
+            else:
+                self.docker_image_name = f"toolforge-{self.git_name}"
             LOGGER.info("INFO: guessed docker image name as %s", self.docker_image_name)
 
     def run(self) -> None:
