@@ -16,6 +16,9 @@ from wmcs_libs.inventory import (
     OpenstackNodeRoleName,
     Site,
     SiteName,
+    ToolforgeKubernetesCluster,
+    ToolforgeKubernetesClusterName,
+    ToolforgeKubernetesNodeRoleName,
     get_node_inventory_info,
 )
 
@@ -27,7 +30,7 @@ def get_dummy_inventory(
     cluster_name: ClusterName = OpenstackClusterName.CODFW1DEV,
     cluster_class: Type[Cluster] = OpenstackCluster,
     role_name: NodeRoleName = OpenstackNodeRoleName.CONTROL,
-    internal_network_name: str = "lan-flat-instances-whatever",
+    cluster_extra_args: Dict = {"internal_network_name": "lan-flat-instances-whatever"},
 ) -> Dict[SiteName, Site]:
     return {
         site_name: Site(
@@ -37,7 +40,7 @@ def get_dummy_inventory(
                     cluster_name: cluster_class(
                         name=cluster_name,
                         nodes_by_role={role_name: [node_fqdn]},
-                        internal_network_name=internal_network_name,
+                        **cluster_extra_args,
                     )
                 }
             },
@@ -134,6 +137,43 @@ def get_dummy_inventory(
                     cluster_type=ClusterType.CEPH,
                     cluster_name=OpenstackClusterName.CODFW1DEV,
                     role_name=CephNodeRoleName.OSD,
+                ),
+            },
+            "Node not in inventory, matches OpenStack deployment host name and k8s role": {
+                "node_fqdn": "toolsbeta-test-k8s-control-1.toolsbeta.eqiad1.wikimedia.cloud",
+                "expected_node_inventory_info": NodeInventoryInfo(
+                    site_name=SiteName.EQIAD,
+                    openstack_project="toolsbeta",
+                    cluster_type=ClusterType.TOOLFORGE_KUBERNETES,
+                    cluster_name=ToolforgeKubernetesClusterName.TOOLSBETA,
+                    role_name=ToolforgeKubernetesNodeRoleName.CONTROL,
+                ),
+                "inventory": get_dummy_inventory(
+                    site_name=SiteName.EQIAD,
+                    cluster_type=ClusterType.TOOLFORGE_KUBERNETES,
+                    cluster_name=ToolforgeKubernetesClusterName.TOOLSBETA,
+                    role_name=ToolforgeKubernetesNodeRoleName.CONTROL,
+                    cluster_class=ToolforgeKubernetesCluster,
+                    cluster_extra_args={"instance_prefix": "toolsbeta-test"},
+                ),
+            },
+            "Toolforge Kubernetes node in inventory": {
+                "node_fqdn": "tools-k8s-control-1.tools.eqiad1.wikimedia.cloud",
+                "expected_node_inventory_info": NodeInventoryInfo(
+                    site_name=SiteName.EQIAD,
+                    openstack_project="tools",
+                    cluster_type=ClusterType.TOOLFORGE_KUBERNETES,
+                    cluster_name=ToolforgeKubernetesClusterName.TOOLS,
+                    role_name=ToolforgeKubernetesNodeRoleName.CONTROL,
+                ),
+                "inventory": get_dummy_inventory(
+                    node_fqdn="tools-k8s-control-1.tools.eqiad1.wikimedia.cloud",
+                    site_name=SiteName.EQIAD,
+                    cluster_type=ClusterType.TOOLFORGE_KUBERNETES,
+                    cluster_name=ToolforgeKubernetesClusterName.TOOLS,
+                    role_name=ToolforgeKubernetesNodeRoleName.CONTROL,
+                    cluster_class=ToolforgeKubernetesCluster,
+                    cluster_extra_args={"instance_prefix": "tools"},
                 ),
             },
         }

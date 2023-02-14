@@ -27,6 +27,7 @@ class ClusterType(Enum):
 
     OPENSTACK = auto()
     CEPH = auto()
+    TOOLFORGE_KUBERNETES = auto()
 
 
 class ClusterName(ArgparsableEnum):
@@ -38,6 +39,22 @@ class ClusterName(ArgparsableEnum):
 
     def get_type(self) -> ClusterType:
         """Get the cluster type from the name"""
+        raise NotImplementedError()
+
+
+class OpenStackProjectSpecificClusterName(ClusterName):
+    """A cluster name which is specific to an OpenStack project."""
+
+    def get_openstack_cluster_name(self) -> "OpenstackClusterName":
+        """Get the OpenStack cluster/deployment where a cluster is deployed in by the name."""
+        raise NotImplementedError()
+
+    def get_site(self) -> SiteName:
+        """Get the site a cluster is deployed in by the name."""
+        return self.get_openstack_cluster_name().get_site()
+
+    def get_project(self) -> str:
+        """Get the OpenStack cluster project where a cluster is deployed in by the name."""
         raise NotImplementedError()
 
 
@@ -100,11 +117,41 @@ class CephNodeRoleName(NodeRoleName):
     MON = auto()
 
 
+class ToolforgeKubernetesClusterName(OpenStackProjectSpecificClusterName):
+    """Every Toolforge-like Kubernetes cluster we have."""
+
+    TOOLS = "tools"
+    TOOLSBETA = "toolsbeta"
+
+    def get_type(self) -> ClusterType:
+        """Get the cluster type from the name"""
+        return ClusterType.TOOLFORGE_KUBERNETES
+
+    def get_openstack_cluster_name(self) -> OpenstackClusterName:
+        """Get the OpenStack cluster/deployment where a cluster is deployed in by the name."""
+        return OpenstackClusterName.EQIAD1
+
+    def get_project(self) -> str:
+        """Get the OpenStack cluster project where a cluster is deployed in by the name."""
+        if self == ToolforgeKubernetesClusterName.TOOLS:
+            return "tools"
+        if self == ToolforgeKubernetesClusterName.TOOLSBETA:
+            return "toolsbeta"
+
+        raise InventoryError(f"I don't know which project the cluster {self} is in.")
+
+
+class ToolforgeKubernetesNodeRoleName(NodeRoleName):
+    """Toolforge Kubernetes node roles."""
+
+    CONTROL = "control"
+
+
 @dataclass(frozen=True)
 class Cluster:
     """Base cluster, to be used as parent."""
 
-    name: Union[OpenstackClusterName, CephClusterName]
+    name: Union[OpenstackClusterName, CephClusterName, ToolforgeKubernetesClusterName]
     # Enum as dict key does not match correctly to an Enum superclass (ex. CephNodeRoleName), so use Any
     nodes_by_role: Dict[Any, List[str]]
 
@@ -125,6 +172,15 @@ class OpenstackCluster(Cluster):
     name: OpenstackClusterName
     nodes_by_role: Dict[OpenstackNodeRoleName, List[str]]
     internal_network_name: str
+
+
+@dataclass(frozen=True)
+class ToolforgeKubernetesCluster(Cluster):
+    """Toolforge Kubernetes cluster definition."""
+
+    name: ToolforgeKubernetesClusterName
+    instance_prefix: str
+    nodes_by_role: Dict[ToolforgeKubernetesNodeRoleName, List[str]]
 
 
 @dataclass(frozen=True)
@@ -172,6 +228,30 @@ _INVENTORY = {
                         ],
                     },
                     internal_network_name="lan-flat-cloudinstances2b",
+                ),
+            },
+            ClusterType.TOOLFORGE_KUBERNETES: {
+                ToolforgeKubernetesClusterName.TOOLS: ToolforgeKubernetesCluster(
+                    name=ToolforgeKubernetesClusterName.TOOLS,
+                    instance_prefix="tools",
+                    nodes_by_role={
+                        ToolforgeKubernetesNodeRoleName.CONTROL: [
+                            "tools-k8s-control-1.tools.eqiad1.wikimedia.cloud",
+                            "tools-k8s-control-2.tools.eqiad1.wikimedia.cloud",
+                            "tools-k8s-control-3.tools.eqiad1.wikimedia.cloud",
+                        ],
+                    },
+                ),
+                ToolforgeKubernetesClusterName.TOOLSBETA: ToolforgeKubernetesCluster(
+                    name=ToolforgeKubernetesClusterName.TOOLSBETA,
+                    instance_prefix="toolsbeta-test",
+                    nodes_by_role={
+                        ToolforgeKubernetesNodeRoleName.CONTROL: [
+                            "toolsbeta-test-k8s-control-4.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-test-k8s-control-5.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-test-k8s-control-6.toolsbeta.eqiad1.wikimedia.cloud",
+                        ],
+                    },
                 ),
             },
         },
@@ -225,6 +305,7 @@ class NodeInventoryInfo:
     """An info package with some node information with regards to the inventory."""
 
     site_name: SiteName
+    openstack_project: Optional[str] = None
     cluster_type: Optional[ClusterType] = None
     cluster_name: Optional[ClusterName] = None
     role_name: Optional[NodeRoleName] = None
@@ -233,10 +314,16 @@ class NodeInventoryInfo:
 def _guess_node_site(node: str) -> Optional[SiteName]:
     """Try to guess the site a node is from.
 
-    * Check the hosts domain name (<site>.wmnet)
+    * Check the hosts domain name (<site>.wmnet, <deployment>.wikimedia.cloud)
     * Check the host name (<name>YXXX.<domain>, where Y symbolizes the site)
     """
-    if node.count(".") >= 2:
+    if node.endswith(".wikimedia.cloud"):
+        cluster_name = node.rsplit(".", 3)[1]
+        for cluster in OpenstackClusterName:
+            if cluster.value == cluster_name:
+                return cluster.get_site()
+
+    elif node.count(".") >= 2:
         domain = node.rsplit(".", 2)[1]
         for site_name in SiteName:
             if site_name.value.startswith(domain):
@@ -265,10 +352,21 @@ def _guess_cluster_type(node: str) -> Optional[ClusterType]:
     ):
         return ClusterType.OPENSTACK
 
+    if "-k8s-" in node:
+        return ClusterType.TOOLFORGE_KUBERNETES
+
     return None
 
 
-def _guess_cluster_name(site_name: SiteName, cluster_type: Optional[ClusterType]) -> Optional[ClusterName]:
+def _guess_openstack_project(node: str) -> Optional[str]:
+    if not node.endswith(".wikimedia.cloud"):
+        return None
+    return node.split(".")[1]
+
+
+def _guess_cluster_name(
+    site_name: SiteName, cluster_type: Optional[ClusterType], openstack_project: Optional[str]
+) -> Optional[ClusterName]:
     if not cluster_type:
         return None
 
@@ -283,13 +381,28 @@ def _guess_cluster_name(site_name: SiteName, cluster_type: Optional[ClusterType]
         )
 
     clusters = inventory[site_name].clusters_by_type[cluster_type]
+
+    if isinstance(next(iter(clusters.values())).name, OpenStackProjectSpecificClusterName):
+        if not openstack_project:
+            raise InventoryError(
+                f"Unable to detect OpenStack project, but cluster type {cluster_type} is project specific"
+            )
+
+        for cluster in clusters:
+            if cluster.get_project() == openstack_project:
+                return cluster
+
+            raise InventoryError(f"No clusters with type {cluster_type} found in project {openstack_project}")
+
     if len(clusters) == 1:
         return next(iter(clusters.values())).name
 
     raise InventoryError(f"More than one cluster of type {cluster_type} on site {site_name}: {clusters}")
 
 
-def _guess_role_name(node: str) -> Optional[Union[OpenstackNodeRoleName, CephNodeRoleName]]:
+def _guess_role_name(
+    node: str,
+) -> Optional[Union[OpenstackNodeRoleName, CephNodeRoleName, ToolforgeKubernetesNodeRoleName]]:
     if node.startswith("cloudcephosd"):
         return CephNodeRoleName.OSD
     if node.startswith("cloudcephmon"):
@@ -299,6 +412,9 @@ def _guess_role_name(node: str) -> Optional[Union[OpenstackNodeRoleName, CephNod
         return OpenstackNodeRoleName.CONTROL
     if node.startswith("cloudgw"):
         return OpenstackNodeRoleName.GATEWAY
+
+    if "-k8s-control-" in node:
+        return ToolforgeKubernetesNodeRoleName.CONTROL
 
     return None
 
@@ -322,6 +438,11 @@ def get_node_inventory_info(node: str) -> NodeInventoryInfo:
                             cluster_type=cluster_type,
                             cluster_name=cluster_name,
                             role_name=node_role_name,
+                            openstack_project=(
+                                cluster_name.get_project()
+                                if isinstance(cluster_name, OpenStackProjectSpecificClusterName)
+                                else None
+                            ),
                         )
 
     node_site = _guess_node_site(node=node)
@@ -333,10 +454,14 @@ def get_node_inventory_info(node: str) -> NodeInventoryInfo:
         )
 
     guessed_cluster_type = _guess_cluster_type(node=node)
-    guessed_cluster_name = _guess_cluster_name(site_name=node_site, cluster_type=guessed_cluster_type)
+    guessed_openstack_project = _guess_openstack_project(node=node)
+    guessed_cluster_name = _guess_cluster_name(
+        site_name=node_site, cluster_type=guessed_cluster_type, openstack_project=guessed_openstack_project
+    )
     guessed_role_name = _guess_role_name(node=node)
     return NodeInventoryInfo(
         site_name=node_site,
+        openstack_project=guessed_openstack_project,
         cluster_type=guessed_cluster_type,
         cluster_name=guessed_cluster_name,
         role_name=guessed_role_name,
