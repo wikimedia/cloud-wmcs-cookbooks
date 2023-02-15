@@ -13,13 +13,12 @@ from typing import List
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import (
-    CommonOpts,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    run_one_raw,
-    with_common_opts,
+from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, run_one_raw
+from wmcs_libs.inventory import ToolforgeKubernetesClusterName
+from wmcs_libs.kubernetes import (
+    add_toolforge_kubernetes_cluster_opts,
+    get_control_nodes,
+    with_toolforge_kubernetes_cluster_opts,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -37,13 +36,8 @@ class ToolforgeComponentDeploy(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        add_common_opts(parser, project_default="toolsbeta")
-        parser.add_argument(
-            "--deploy-node-hostname",
-            required=False,
-            default="toolsbeta-test-k8s-control-4",
-            help="k8s control node hostname",
-        )
+        add_common_opts(parser, project_default=None)
+        add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--git-url",
             required=True,
@@ -70,8 +64,7 @@ class ToolforgeComponentDeploy(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, ToolforgeComponentDeployRunner,)(
-            deploy_node_hostname=args.deploy_node_hostname,
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeComponentDeployRunner,)(
             git_url=args.git_url,
             git_name=args.git_name,
             git_branch=args.git_branch,
@@ -95,7 +88,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        deploy_node_hostname: str,
+        cluster_name: ToolforgeKubernetesClusterName,
         git_url: str,
         git_name: str,
         git_branch: str,
@@ -104,7 +97,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
     ):  # pylint: disable=too-many-arguments
         """Init"""
         self.common_opts = common_opts
-        self.deploy_node_hostname = deploy_node_hostname
+        self.cluster_name = cluster_name
         self.git_url = git_url
         self.git_name = git_name
         self.git_branch = git_branch
@@ -127,7 +120,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
         """Main entry point"""
         remote = self.spicerack.remote()
-        deploy_node_fqdn = f"{self.deploy_node_hostname}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
+        deploy_node_fqdn = get_control_nodes(self.cluster_name)[0]
         deploy_node = remote.query(f"D{{{deploy_node_fqdn}}}", use_sudo=True)
         LOGGER.info("INFO: using deploy node %s", deploy_node_fqdn)
 

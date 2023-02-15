@@ -116,15 +116,18 @@ class CommonOpts:
         return args
 
 
-def add_common_opts(parser: argparse.ArgumentParser, project_default: str = "admin") -> argparse.ArgumentParser:
+def add_common_opts(
+    parser: argparse.ArgumentParser, project_default: Optional[str] = "admin"
+) -> argparse.ArgumentParser:
     """Adds the common WMCS options to a cookbook parser."""
-    parser.add_argument(
-        "--project",
-        default=project_default,
-        help="Relevant Cloud VPS openstack project (for operations, dologmsg, etc). "
-        "If this cookbook is for hardware, this only affects dologmsg calls. "
-        "Default is '%(default)s'.",
-    )
+    if project_default:
+        parser.add_argument(
+            "--project",
+            default=project_default,
+            help="Relevant Cloud VPS openstack project (for operations, dologmsg, etc). "
+            "If this cookbook is for hardware, this only affects dologmsg calls. "
+            "Default is '%(default)s'.",
+        )
     parser.add_argument(
         "--task-id",
         required=False,
