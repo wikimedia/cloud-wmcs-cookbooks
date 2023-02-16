@@ -360,6 +360,21 @@ class CephOSDNodeController:
 
         return True
 
+    def stop_osd(self, osd_id: int) -> str:
+        """Stops an osd daemon."""
+        return run_one_raw(
+            ["systemctl", "stop", f"ceph-osd@{osd_id}"],
+            node=self._node,
+            print_output=False,
+            print_progress_bars=False,
+            is_safe=False,
+        )
+
+    def stop_osds(self, osd_ids: List[int]) -> None:
+        """Stops all the given OSD daemons from the OSD host."""
+        for osd_id in osd_ids:
+            self.stop_osd(osd_id=osd_id)
+
 
 class CephClusterController(CommandRunnerMixin):
     """Controller for a CEPH cluster."""
@@ -369,6 +384,7 @@ class CephClusterController(CommandRunnerMixin):
     def __init__(self, remote: Remote, cluster_name: CephClusterName, spicerack: Spicerack):
         """Init."""
         self._remote = remote
+        self.cluster_name = cluster_name
         self.controlling_node_fqdn = get_mon_nodes(cluster_name)[0]
         self._controlling_node = self._remote.query(f"D{{{self.controlling_node_fqdn}}}", use_sudo=True)
         self.expected_osd_drives_per_host = get_osd_drives_count(cluster_name)
@@ -410,8 +426,14 @@ class CephClusterController(CommandRunnerMixin):
 
     def get_cluster_status(self) -> CephClusterStatus:
         """Get the current cluster status."""
-        cluster_status_output = self.run_formatted_as_dict("status")
+        cluster_status_output = self.run_formatted_as_dict(
+            "status", is_safe=True, print_output=False, print_progress_bars=False
+        )
         return CephClusterStatus(status_dict=cluster_status_output)
+
+    def is_osdmap_flag_set(self, flag: CephOSDFlag) -> bool:
+        """Check if a given flag is set."""
+        return flag in self.get_cluster_status().get_osdmap_set_flags()
 
     def set_osdmap_flag(self, flag: CephOSDFlag) -> None:
         """Set one of the osdmap flags."""
@@ -643,7 +665,9 @@ class CephClusterController(CommandRunnerMixin):
             root_node = next(node for node in nodes_list if node["type"] == "root")
             return _get_expanded_node(plain_node=root_node, all_nodes=id_to_nodes)
 
-        flat_nodes = self.run_formatted_as_dict("osd", "tree")
+        flat_nodes = self.run_formatted_as_dict(
+            "osd", "tree", print_output=False, print_progress_bars=False, is_safe=True
+        )
         return {
             "nodes": _get_nested_nodes_tree(nodes_list=flat_nodes["nodes"]),
             # TODO: update the following to a useful structure if it's ever needed
@@ -669,6 +693,136 @@ class CephClusterController(CommandRunnerMixin):
             all_osd_ips.add(cluster_addr)
 
         return all_osd_ips
+
+    def reweight_osd(self, osd_id: int, new_weight: float) -> None:
+        """Re-weights an OSD daemon."""
+        response = self.run_raw(
+            "osd",
+            "reweight",
+            str(osd_id),
+            str(new_weight),
+            print_output=False,
+            print_progress_bars=False,
+            is_safe=False,
+        )
+        if f"reweighted osd.{osd_id} " in response:
+            return
+
+        raise CephException(f"Unexpected response when reweighting osd {osd_id} to {new_weight}: {response}")
+
+    def depool_osd(self, osd_id: int, be_unsafe: bool = False) -> None:
+        """Depools an OSD daemon setting it's weight to 0 and forcing ceph to rebalance it's data somewhere else."""
+        if not be_unsafe:
+            # last check just to make sure
+            failures = self.check_osds_ok_to_stop(osd_ids=[osd_id])
+            if failures:
+                raise CephException(
+                    f"Destroying the osd {osd_id} will put the cluster in an unstable state, if you are sure call "
+                    "this function again with `be_unsafe=True`: "
+                    "\n".join(failures)
+                )
+
+        self.reweight_osd(osd_id=osd_id, new_weight=0.0)
+
+    def remove_crush_bucket(self, bucket_name: str) -> None:
+        """Remove a CRUSH bucket (host/rack/...).
+
+        Note that it will fail if it's not empty already, see destroy_osd for osd entries instead.
+        """
+        response = self.run_raw(
+            "osd", "crush", "remove", bucket_name, is_safe=False, print_output=False, print_progress_bars=False
+        )
+
+        if "removed item" not in response:
+            raise CephException(f"Got unexpected output while remove crush bucket {bucket_name}: {response}")
+
+    def destroy_osd(self, osd_id: int, be_unsafe: bool = False) -> None:
+        """Destroys an OSD daemon
+
+        Does it by removing it from the crush table, does not zap the device on the OSD host (that is done when
+        re-adding/bootstrapping).
+        """
+        if not be_unsafe:
+            # last check just to make sure
+            failures = self.check_osds_safe_to_destroy(osd_ids=[osd_id])
+            if failures:
+                raise CephException(
+                    f"Destroying the osd {osd_id} will put the cluster in an unstable state, if you are sure call "
+                    "this function again with `be_unsafe=True`: "
+                    "\n".join(failures)
+                )
+
+        response = self.run_raw(
+            "osd",
+            "purge",
+            str(osd_id),
+            "--yes-i-really-mean-it",
+            is_safe=False,
+            print_output=False,
+            print_progress_bars=False,
+        )
+
+        if f"purged osd.{osd_id}" not in response:
+            raise CephException(f"Got unexpected output while purging osd {osd_id}: {response}")
+
+    def get_host_osds(self, osd_host: str) -> List[int]:
+        """Retrieve the list of osd ids that are there in a host (from the ceph cluster rbdmap)."""
+        osd_tree = self.get_osd_tree()
+        # Here we are assuming that the tree has root -> osd_hosts -> osds, that might change if we change the crush
+        # table
+        for osd_host_entry in osd_tree["nodes"]["children"]:
+            if not osd_host_entry["type"] == "host":
+                raise CephException("I was expecting a host in the osd tree, maybe the crush table has changed?")
+
+            if osd_host_entry["name"] == osd_host:
+                return [cast(OSDTreeEntry, osd_entry).osd_id for osd_entry in osd_host_entry["children"]]
+
+        raise CephException(f"Unable to find osd host {osd_host} on osd tree: {osd_tree}")
+
+    def check_osds_ok_to_stop(self, osd_ids: List[int]) -> List[str]:
+        """Check if the given OSD daemons can be stopped without affecting the cluster.
+
+        Returns a list of failures/reasons if they are not. An empty list otherwise.
+        """
+        if not osd_ids:
+            return ["No osd_ids passed"]
+
+        result = self.run_raw(
+            "osd",
+            "ok-to-stop",
+            *[str(osd_id) for osd_id in osd_ids],
+            print_output=False,
+            print_progress_bars=False,
+            is_safe=True,
+        )
+        if "are ok to stop without reducing availability or risking data" in result:
+            return []
+
+        return [result]
+
+    def check_osds_safe_to_destroy(self, osd_ids: List[int]) -> List[str]:
+        """Check if the given OSD daemons can be destroyed without affecting the cluster.
+
+        Returns a list of failures/reasons if they are not. An empty list otherwise.
+        """
+        result = self.run_formatted_as_dict(
+            "osd",
+            "safe-to-destroy",
+            *[str(osd_id) for osd_id in osd_ids],
+            print_output=False,
+            print_progress_bars=False,
+            is_safe=True,
+        )
+        # if there has been enough time between the osds being down they will go to missing_stats
+        if set(result["safe_to_destroy"]).union(set(result["missing_stats"])) == set(osd_ids):
+            return []
+
+        return [
+            (
+                "Some osds are not safe to destroy, you can retry with the ones that are safe only or make sure to "
+                f"depool/stop the ones that are active: {result}"
+            ),
+        ]
 
     def check_if_osd_ready_for_bootstrap(self, osd_controller: CephOSDNodeController) -> List[str]:
         """Check if a node is ready to be added as osd to the cluster.

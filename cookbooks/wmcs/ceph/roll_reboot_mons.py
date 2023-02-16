@@ -52,7 +52,7 @@ class RollRebootMons(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, RollRebootMonsRunner,)(
+        return with_common_opts(self.spicerack, args, RollRebootMonsRunner)(
             cluster_name=args.cluster_name,
             force=args.force,
             spicerack=self.spicerack,
