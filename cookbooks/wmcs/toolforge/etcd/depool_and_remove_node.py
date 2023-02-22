@@ -7,11 +7,12 @@ Usage example:
         --etcd-prefix toolsbeta-test-etcd
 
 """
+from __future__ import annotations
+
 import argparse
 import base64
 import logging
 import time
-from typing import List
 
 import yaml
 from spicerack import Spicerack
@@ -82,7 +83,7 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
         )
 
 
-def _fix_apiserver_yaml(node: RemoteHosts, etcd_members: List[str]):
+def _fix_apiserver_yaml(node: RemoteHosts, etcd_members: list[str]):
     members_urls = [f"https://{fqdn}:2379" for fqdn in etcd_members]
     new_etcd_members_arg = "--etcd-servers=" + ",".join(sorted(members_urls, key=natural_sort_key))
     apiserver_config_file = "/etc/kubernetes/manifests/kube-apiserver.yaml"
@@ -149,9 +150,9 @@ def _remove_node_from_kubeadm_configmap(k8s_control_node: RemoteHosts, etcd_fqdn
 
 def _fix_kubeadm(
     remote: Remote,
-    k8s_control_members: List[str],
+    k8s_control_members: list[str],
     etcd_fqdn_to_remove: str,
-    etcd_members: List[str],
+    etcd_members: list[str],
 ):
     for k8s_control_node_fqdn in k8s_control_members:
         _fix_apiserver_yaml(
@@ -258,7 +259,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             ),
         ).run()
 
-    def _refresh_etcd_certs(self, etcd_members: List[str]) -> None:
+    def _refresh_etcd_certs(self, etcd_members: list[str]) -> None:
         # refresh the puppet certs with the new alt-name, we use puppet certs
         # for etcd too.
         # TODO: might be interesting to have this as it's own cookbook

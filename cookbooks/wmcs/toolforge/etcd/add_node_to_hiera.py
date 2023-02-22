@@ -13,10 +13,12 @@ Usage examples:
         --fqdn-to-add toolsbeta-test-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
 
 """
+from __future__ import annotations
+
 import argparse
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 from spicerack import Spicerack
@@ -80,7 +82,7 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
         """Main entry point"""
         self.add_node_to_hiera()
 
-    def add_node_to_hiera(self) -> Dict[str, Any]:
+    def add_node_to_hiera(self) -> dict[str, Any]:
         """Needed to be able to change the return type."""
         control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
 

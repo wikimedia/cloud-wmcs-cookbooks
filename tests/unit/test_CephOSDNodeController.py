@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import json
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -7,7 +9,7 @@ import pytest
 from wmcs_libs.ceph import CephMalformedInfo, CephOSDNodeController, CephTestUtils
 
 
-def parametrize(params: Dict[str, Any]):
+def parametrize(params: dict[str, Any]):
     def decorator(decorated):
         return pytest.mark.parametrize(**CephTestUtils.to_parametrize(params))(decorated)
 
@@ -45,7 +47,7 @@ FORMATTED_DEVICE_JSON = json.dumps(CephTestUtils.get_available_device(children=[
         },
     },
 )
-def test_get_available_devices_happy_path(expected_devices: List[str], lsblk_command_output: str):
+def test_get_available_devices_happy_path(expected_devices: list[str], lsblk_command_output: str):
     my_controller = CephOSDNodeController(
         remote=CephTestUtils.get_fake_remote(responses=[lsblk_command_output]),
         node_fqdn="my-osd-fq.dn",

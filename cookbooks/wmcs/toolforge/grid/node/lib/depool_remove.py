@@ -7,6 +7,8 @@ Usage example:
         --project toolsbeta \
         --node-hostname toolsbeta-sgewebgen-09-2
 """
+from __future__ import annotations
+
 import argparse
 import logging
 import time

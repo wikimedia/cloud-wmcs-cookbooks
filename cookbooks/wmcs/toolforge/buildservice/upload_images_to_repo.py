@@ -8,9 +8,10 @@ Usage example:
 
 """
 # pylint: disable=too-many-arguments
+from __future__ import annotations
+
 import argparse
 import re
-from typing import Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -111,9 +112,9 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         image_repo_url: str,
         uploader_node: str,
-        tekton_version: Optional[str],
-        lifecycle_version: Optional[str],
-        bash_version: Optional[str],
+        tekton_version: str | None,
+        lifecycle_version: str | None,
+        bash_version: str | None,
         spicerack: Spicerack,
     ):
         """Init"""

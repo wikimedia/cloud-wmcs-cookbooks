@@ -1,4 +1,6 @@
 """Test the import of all the cookbooks."""
+from __future__ import annotations
+
 import importlib
 import os
 import pathlib

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from spicerack.remote import Remote
 
@@ -92,7 +92,7 @@ class KubernetesController:
         )
         return KubernetesClusterInfo.form_cluster_info_output(raw_output=raw_output)
 
-    def get_nodes(self, selector: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_nodes(self, selector: str | None = None) -> list[dict[str, Any]]:
         """Get the nodes currently in the cluster."""
         if selector:
             selector_cli = f"--selector='{selector}'"
@@ -104,11 +104,11 @@ class KubernetesController:
         )
         return output["items"]
 
-    def get_node(self, node_hostname: str) -> List[Dict[str, Any]]:
+    def get_node(self, node_hostname: str) -> list[dict[str, Any]]:
         """Get only info for the the given node."""
         return self.get_nodes(selector=f"kubernetes.io/hostname={node_hostname}")
 
-    def get_pods(self, field_selector: Optional[str] = None) -> Dict[str, Any]:
+    def get_pods(self, field_selector: str | None = None) -> dict[str, Any]:
         """Get pods."""
         if field_selector:
             field_selector_cli = f"--field-selector='{field_selector}'"
@@ -120,7 +120,7 @@ class KubernetesController:
         )
         return output["items"]
 
-    def get_pods_for_node(self, node_hostname: str) -> Dict[str, Any]:
+    def get_pods_for_node(self, node_hostname: str) -> dict[str, Any]:
         """Get pods for node."""
         return self.get_pods(field_selector=f"spec.nodeName={node_hostname}")
 

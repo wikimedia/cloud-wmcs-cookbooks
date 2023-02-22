@@ -5,6 +5,8 @@ Usage example:
     --fqdn-to-reboot cloudnet1004.eqiad.wmnet
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 from datetime import datetime

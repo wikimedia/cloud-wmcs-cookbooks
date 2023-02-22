@@ -5,6 +5,8 @@ Usage example:
         --fqdn-to-reboot cloudcephosd2001-dev.codfw.wmnet
 
 """
+from __future__ import annotations
+
 import argparse
 import datetime
 import logging

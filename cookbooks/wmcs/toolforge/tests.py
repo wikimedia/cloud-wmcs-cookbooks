@@ -5,9 +5,10 @@ Usage example:
         --project toolsbeta \
         --bastion-hostname toolsbeta-sgebastion-05
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
@@ -69,7 +70,7 @@ class ToolforgeTestsRunner(WMCSCookbookRunnerBase):
         self.bastion_hostname = bastion_hostname
         super().__init__(spicerack=spicerack)
 
-    def run(self) -> Optional[int]:
+    def run(self) -> int | None:
         """Main entry point"""
         fqdn = f"{self.bastion_hostname}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
         bastion = self.spicerack.remote().query(f"D{{{fqdn}}}", use_sudo=True)

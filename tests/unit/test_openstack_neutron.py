@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Optional
+from __future__ import annotations
+
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import cumin
@@ -22,10 +24,10 @@ from wmcs_libs.openstack.neutron import (
 def get_stub_agent(
     agent_id: str = "dummyagentid",
     agent_type: NeutronAgentType = NeutronAgentType.L3_AGENT,
-    ha_state: Optional[NeutronAgentHAState] = None,
+    ha_state: NeutronAgentHAState | None = None,
     host: str = "dummyhost",
-    availability_zone: Optional[str] = "dummyavailabilityzone",
-    binary: Optional[str] = "dummybinary",
+    availability_zone: str | None = "dummyavailabilityzone",
+    binary: str | None = "dummybinary",
     admin_state_up: bool = True,
     alive: bool = True,
 ) -> NeutronAgent:
@@ -225,7 +227,7 @@ def get_stub_router(
         }
     )
 )
-def test_NeutronController_agent_list_works(neutron_output: str, expected_agents: List[NeutronAgent]):
+def test_NeutronController_agent_list_works(neutron_output: str, expected_agents: list[NeutronAgent]):
     fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
@@ -341,7 +343,7 @@ def test_NeutronController_agent_list_works(neutron_output: str, expected_agents
         }
     )
 )
-def test_NeutronController_router_list_works(neutron_output: str, expected_routers: List[NeutronAgent]):
+def test_NeutronController_router_list_works(neutron_output: str, expected_routers: list[NeutronAgent]):
     fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
@@ -436,7 +438,7 @@ def test_NeutronController_router_list_works(neutron_output: str, expected_route
         }
     )
 )
-def test_NeutronController_list_agents_hosting_router_works(neutron_output: str, expected_agents: List[Dict[str, Any]]):
+def test_NeutronController_list_agents_hosting_router_works(neutron_output: str, expected_agents: list[dict[str, Any]]):
     fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
@@ -567,7 +569,7 @@ def test_NeutronController_list_agents_hosting_router_works(neutron_output: str,
         }
     )
 )
-def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expected_routers: List[Dict[str, Any]]):
+def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expected_routers: list[dict[str, Any]]):
     fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
@@ -708,7 +710,7 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
         }
     )
 )
-def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_cloudnets: List[str]):
+def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_cloudnets: list[str]):
     fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
@@ -752,7 +754,7 @@ def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_clo
     )
 )
 def test_NeutronController_check_if_network_is_alive_does_not_raise(
-    agents: List[NeutronAgent], routers: List[NeutronRouter]
+    agents: list[NeutronAgent], routers: list[NeutronRouter]
 ):
     # just in case a call gets through
     fake_remote = UtilsForTesting.get_fake_remote(responses=[])
@@ -813,7 +815,7 @@ def test_NeutronController_check_if_network_is_alive_does_not_raise(
         }
     )
 )
-def test_NeutronController_check_if_network_is_alive_raises(agents: List[NeutronAgent], routers: List[NeutronRouter]):
+def test_NeutronController_check_if_network_is_alive_raises(agents: list[NeutronAgent], routers: list[NeutronRouter]):
     # just in case a call gets through
     fake_remote = UtilsForTesting.get_fake_remote(responses=[])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)

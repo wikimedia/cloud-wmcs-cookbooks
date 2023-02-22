@@ -5,10 +5,12 @@ This cookbook makes sure a canary VM exists in each of the specified cloudvirts.
 Usage example: wmcs.openstack.cloudvirt.lib.ensure_canary \
     --hostname-list cloudvirt1013 cloudvirt1040
 """
+from __future__ import annotations
+
 import argparse
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -58,7 +60,7 @@ class EnsureCanaryVM(CookbookBase):
             required=False,
             nargs="+",
             type=parser_type_list_hostnames,
-            help="List of cloudvirt hostnames to operate on. If not present, operate on all of them",
+            help="list of cloudvirt hostnames to operate on. If not present, operate on all of them",
         )
         parser.add_argument(
             "--recreate",
@@ -84,12 +86,12 @@ class HostChanges:
 
     hostname: str
     vm_prefix: str
-    to_delete: List[OpenstackName]
-    to_force_reboot: Optional[OpenstackName]
+    to_delete: list[OpenstackName]
+    to_force_reboot: OpenstackName | None
     needs_create: bool
 
     @classmethod
-    def from_canary_vms(cls, hostname: str, host_canary_vms: List[Dict[str, Any]], recreate: bool) -> "HostChanges":
+    def from_canary_vms(cls, hostname: str, host_canary_vms: list[dict[str, Any]], recreate: bool) -> "HostChanges":
         """Create a HostChanges instance."""
         cloudvirt_number = hostname.split("cloudvirt")[1]
         vm_prefix = f"canary{cloudvirt_number}"
@@ -198,10 +200,10 @@ class HostChanges:
 
 
 def calculate_changelist(
-    hypervisors: List[str], existing_canary_vms: List[Dict[str, Any]], recreate: bool
-) -> List[HostChanges]:
+    hypervisors: list[str], existing_canary_vms: list[dict[str, Any]], recreate: bool
+) -> list[HostChanges]:
     """Helper to calculate a list of changes via HostChanges()."""
-    host_to_canary_vms: Dict[str, List[Dict[str, Any]]] = {}
+    host_to_canary_vms: dict[str, list[dict[str, Any]]] = {}
     for canary_vm in existing_canary_vms:
         host = canary_vm["Host"]
         host_to_canary_vms[host] = host_to_canary_vms.get(host, []) + [canary_vm]
@@ -227,7 +229,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        hostname_list: List[str],
+        hostname_list: list[str],
         deployment: OpenstackClusterName,
         recreate: bool,
         spicerack: Spicerack,
@@ -239,7 +241,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
         self.recreate = recreate
         self.control_node_fqdn = get_control_nodes(cluster_name=self.deployment)[0]
         self.disable_sal_log = False
-        self.existing_canary_vms: List[Dict[str, Any]] = []
+        self.existing_canary_vms: list[dict[str, Any]] = []
         super().__init__(spicerack=spicerack)
 
         if deployment == OpenstackClusterName.CODFW1DEV:

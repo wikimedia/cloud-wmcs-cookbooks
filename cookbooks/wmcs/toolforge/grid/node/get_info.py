@@ -5,9 +5,10 @@ Usage example:
         --project toolsbeta \
         --master-node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
@@ -71,7 +72,7 @@ class ToolforgeGridNodeGetInfoRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack)
         self.node_hostname = node_hostname
 
-    def run(self) -> Optional[int]:
+    def run(self) -> int | None:
         """Main entry point"""
         grid_controller = GridController(remote=self.spicerack.remote(), master_node_fqdn=self.master_node_fqdn)
         try:

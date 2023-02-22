@@ -4,11 +4,12 @@ Usage example:
     cookbook wmcs.toolforge.k8s.component/build \
         --git-url https://gerrit.wikimedia.org/r/cloud/toolforge/jobs-framework-api
 """
+from __future__ import annotations
+
 import argparse
 import logging
 import random
 import string
-from typing import List, Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -98,7 +99,7 @@ def _randomword(length):
     return "".join(random.choice(letters) for i in range(length))  # nosec
 
 
-def _sh_wrap(cmd: str) -> List[str]:
+def _sh_wrap(cmd: str) -> list[str]:
     return ["/bin/sh", "-c", "--", f"'{cmd}'"]
 
 
@@ -113,7 +114,7 @@ class ToolforgeComponentBuildRunner(WMCSCookbookRunnerBase):
         git_name: str,
         git_url: str,
         git_branch: str,
-        docker_image_tag: Optional[str],
+        docker_image_tag: str | None,
         docker_image_name: str,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments

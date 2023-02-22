@@ -6,6 +6,8 @@ Usage example:
         --interactive
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

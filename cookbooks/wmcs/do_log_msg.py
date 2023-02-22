@@ -5,6 +5,8 @@ Usage example: wmcs.do_log_msg \
     --task-id T424242
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

@@ -7,10 +7,11 @@ Usage example:
 
 """
 # pylint: disable=too-many-arguments
+from __future__ import annotations
+
 import argparse
 import logging
 import time
-from typing import List
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -106,7 +107,7 @@ class BootstrapAndAdd(CookbookBase):
         )
 
 
-def _wait_for_osds_to_show_up(cluster_controller: CephClusterController, ceph_hostname: str) -> List[OSDTreeEntry]:
+def _wait_for_osds_to_show_up(cluster_controller: CephClusterController, ceph_hostname: str) -> list[OSDTreeEntry]:
     osd_tree = cluster_controller.get_osd_tree()
     retries = 0
     while not cluster_controller.is_osd_host_valid(osd_tree=osd_tree, hostname=ceph_hostname):
@@ -127,7 +128,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        new_osd_fqdns: List[str],
+        new_osd_fqdns: list[str],
         force: bool,
         yes_i_know: bool,
         skip_reboot: bool,

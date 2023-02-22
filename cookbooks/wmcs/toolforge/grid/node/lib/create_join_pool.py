@@ -6,6 +6,8 @@ Usage example:
         --nodetype exec
 """
 # pylint: disable=too-many-arguments
+from __future__ import annotations
+
 import argparse
 import datetime
 import logging

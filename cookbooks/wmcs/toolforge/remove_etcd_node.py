@@ -7,6 +7,8 @@ Usage example:
         --etcd-prefix toolsbeta-test-etcd
 
 """
+from __future__ import annotations
+
 import logging
 
 from cookbooks.wmcs.toolforge.etcd.depool_and_remove_node import ToolforgeDepoolAndRemoveNode

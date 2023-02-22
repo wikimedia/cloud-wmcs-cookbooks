@@ -7,6 +7,8 @@ Usage example:
         --k8s-worker-prefix toolsbeta-test-k8s-worker
 
 """
+from __future__ import annotations
+
 import logging
 
 from cookbooks.wmcs.toolforge.worker.depool_and_remove_node import ToolforgeDepoolAndRemoveNode

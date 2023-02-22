@@ -6,6 +6,8 @@ Usage example:
         --master-node-fqdn toolsbeta-sgegrid-master.toolsbeta.eqiad1.wikimedia.cloud \
         --no-dologmsg
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

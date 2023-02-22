@@ -7,6 +7,8 @@ Usage example:
         --project toolsbeta \
         --job-id 12345
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

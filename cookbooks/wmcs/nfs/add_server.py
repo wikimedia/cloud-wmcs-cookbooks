@@ -9,6 +9,8 @@ Usage example:
 
 """
 # pylint: disable=too-many-locals,too-many-arguments
+from __future__ import annotations
+
 import argparse
 import json
 import logging
@@ -24,7 +26,7 @@ from cookbooks.wmcs.vps.create_instance_with_prefix import (
 )
 from wmcs_libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
 from wmcs_libs.inventory import OpenstackClusterName
-from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.common import OpenstackAPI, OpenstackID
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,7 +124,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
         )
 
         if self.create_storage_volume_size > 0:
-            new_volume = openstack_api.volume_create(self.prefix, self.create_storage_volume_size)
+            new_volume = openstack_api.volume_create(OpenstackID(self.prefix), self.create_storage_volume_size)
 
             openstack_api.volume_attach(new_server.server_id, new_volume)
 

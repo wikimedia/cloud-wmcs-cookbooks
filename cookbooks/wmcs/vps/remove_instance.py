@@ -6,6 +6,8 @@ Usage example:
         --server-name toolsbeta-k8s-test-etcd-08
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

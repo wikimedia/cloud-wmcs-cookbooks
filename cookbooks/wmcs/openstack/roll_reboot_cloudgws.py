@@ -4,6 +4,8 @@ Usage example:
     cookbook wmcs.openstack.roll_reboot_cloudgws --cluster_name eqiad1
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

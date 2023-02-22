@@ -7,9 +7,11 @@ Usage example:
         --hostname-to-drain toolsbeta-test-worker-4
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -94,7 +96,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.common_opts.project
         )
-        self._all_project_servers: Optional[List[Dict[str, Any]]] = None
+        self._all_project_servers: list[dict[str, Any]] | None = None
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
         )

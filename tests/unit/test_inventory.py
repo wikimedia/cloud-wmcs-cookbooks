@@ -1,4 +1,6 @@
-from typing import Dict, Type
+from __future__ import annotations
+
+from typing import Type
 from unittest import mock
 
 import pytest
@@ -30,8 +32,8 @@ def get_dummy_inventory(
     cluster_name: ClusterName = OpenstackClusterName.CODFW1DEV,
     cluster_class: Type[Cluster] = OpenstackCluster,
     role_name: NodeRoleName = OpenstackNodeRoleName.CONTROL,
-    cluster_extra_args: Dict = {"internal_network_name": "lan-flat-instances-whatever"},
-) -> Dict[SiteName, Site]:
+    cluster_extra_args: dict = {"internal_network_name": "lan-flat-instances-whatever"},
+) -> dict[SiteName, Site]:
     return {
         site_name: Site(
             name=site_name,
@@ -180,7 +182,7 @@ def get_dummy_inventory(
     )
 )
 def test_get_node_inventory_info(
-    node_fqdn: str, expected_node_inventory_info: NodeInventoryInfo, inventory: Dict[SiteName, Site]
+    node_fqdn: str, expected_node_inventory_info: NodeInventoryInfo, inventory: dict[SiteName, Site]
 ):
     with mock.patch("wmcs_libs.inventory.get_inventory", return_value=inventory):
         gotten_inventory_info = get_node_inventory_info(node=node_fqdn)

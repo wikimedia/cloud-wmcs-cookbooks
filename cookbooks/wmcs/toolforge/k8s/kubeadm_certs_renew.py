@@ -9,10 +9,11 @@ See Also:
     https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/#manual-certificate-renewal
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 import time
-from typing import List
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -55,7 +56,7 @@ class ToolforgeK8sKubeadmCertRenew(CookbookBase):
             required=True,
             nargs="+",
             type=parser_type_list_hostnames,
-            help="List of k8s control nodes to operate on",
+            help="list of k8s control nodes to operate on",
         )
         return parser
 
@@ -177,7 +178,7 @@ class ToolforgeK8sKubeadmCertRenewRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        control_hostname_list: List[str],
+        control_hostname_list: list[str],
         spicerack: Spicerack,
     ):
         """Init"""

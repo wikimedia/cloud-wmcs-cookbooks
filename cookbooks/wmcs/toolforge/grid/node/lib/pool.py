@@ -5,9 +5,10 @@ Usage example:
         --project toolsbeta \
         --nodes-query toolsbeta-sgewebgen-09-[2-4],toolsbeta-sgeexec-10-[10,20]
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import Optional
 
 from ClusterShell.NodeSet import NodeSetParseError
 from cumin.backends import InvalidQueryError
@@ -87,7 +88,7 @@ class ToolforgeGridNodePoolRunner(WMCSCookbookRunnerBase):
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
         )
 
-    def run(self) -> Optional[int]:
+    def run(self) -> int | None:
         """Main entry point"""
         try:
             remote_hosts = self.spicerack.remote().query(f"D{{{self.nodes_query}}}")

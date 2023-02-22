@@ -4,10 +4,11 @@ Usage example: wmcs.openstack.cloudvirt.upgrade_openstack_node \
     --fqdn-to-upgrade cloudvirt1013.eqiad.wmnet
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 from datetime import datetime
-from typing import Optional
 
 from cumin.transports import Command
 from spicerack import RemoteHosts, Spicerack
@@ -112,7 +113,7 @@ class UpgradeRunner(CookbookRunnerBase):
             # Back things up before upgrading. If we're upgrading a cloudcontrol, the
             #  backups are stored on the host to be upgraded. Otherwise, they're stored
             #  on a hardcoded but deployment-appropriate cloudcontrol.
-            backupnode: Optional[RemoteHosts]
+            backupnode: RemoteHosts | None
             backupnode = node_to_upgrade
             backuppath = "/root/openstack-db-backups/%s" % datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 

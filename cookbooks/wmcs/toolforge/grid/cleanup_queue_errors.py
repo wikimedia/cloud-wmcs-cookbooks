@@ -5,6 +5,8 @@ Usage example:
         --project toolsbeta \
         --master-hostname toolsbeta-sgegrid-master
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

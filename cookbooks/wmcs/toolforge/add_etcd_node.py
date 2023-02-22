@@ -7,9 +7,10 @@ Usage example:
 
 """
 # pylint: disable=too-many-arguments
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -94,8 +95,8 @@ class ToolforgeAddEtcdNodeRunner(WMCSCookbookRunnerBase):
         skip_puppet_bootstrap: bool,
         project: str,
         spicerack: Spicerack,
-        image: Optional[str] = None,
-        flavor: Optional[str] = None,
+        image: str | None = None,
+        flavor: str | None = None,
     ):
         """Init"""
         self.etcd_prefix = etcd_prefix

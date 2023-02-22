@@ -5,9 +5,10 @@ Usage example:
         --cluster-name eqiad1
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import List, Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -78,7 +79,7 @@ class UnSetClusterInMaintenanceRunner(WMCSCookbookRunnerBase):
         force: bool,
         spicerack: Spicerack,
         common_opts: CommonOpts,
-        silence_ids: Optional[List[SilenceID]],
+        silence_ids: list[SilenceID] | None,
     ):
         """Init"""
         self.force = force

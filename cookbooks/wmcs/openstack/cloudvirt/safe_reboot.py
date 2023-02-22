@@ -6,6 +6,8 @@ Usage example: wmcs.openstack.cloudvirt.safe_reboot \
     --fqdn cloudvirt1013.eqiad.wmnet
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 from datetime import datetime

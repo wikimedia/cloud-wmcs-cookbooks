@@ -9,9 +9,10 @@ Usage example: wmcs.openstack.quota_increase \
     --instances 5
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import List
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -74,7 +75,7 @@ class QuotaIncreaseRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        increases: List[OpenstackQuotaEntry],
+        increases: list[OpenstackQuotaEntry],
         cluster_name: OpenstackClusterName,
         spicerack: Spicerack,
     ):

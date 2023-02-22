@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from wmcs_libs.common import (
     CUMIN_SAFE_WITH_OUTPUT,
@@ -44,7 +44,7 @@ class NetworkUnhealthy(NeutronError):
 
 
 class NeutronAgentType(Enum):
-    """List of neutron agent types and their 'agent type' string.
+    """list of neutron agent types and their 'agent type' string.
 
     Extracted from 'neutron agent-list --format json' on a full installation. Note that they are case sensitive.
     """
@@ -56,7 +56,7 @@ class NeutronAgentType(Enum):
 
 
 class NeutronAlerts(Enum):
-    """List of neutron alerts and their names."""
+    """list of neutron alerts and their names."""
 
     NEUTRON_AGENT_DOWN = "NeutronAgentDown"
 
@@ -92,7 +92,7 @@ class NeutronPartialRouter:
     has_ha: bool
 
     @classmethod
-    def from_data(cls, data: Dict[str, Any]) -> "NeutronPartialRouter":
+    def from_data(cls, data: dict[str, Any]) -> "NeutronPartialRouter":
         """Creates a NeutronPartialRouter from the json output of neutron router-list.
 
         Note that we only get the fields we use/find useful, add new whenever needed.
@@ -146,7 +146,7 @@ class NeutronRouter(NeutronPartialRouter):
         return bool(self.status == NeutronRouterStatus.ACTIVE and self.has_ha and self.admin_state_up)
 
     @classmethod
-    def from_data(cls, data: Dict[str, Any]) -> "NeutronRouter":
+    def from_data(cls, data: dict[str, Any]) -> "NeutronRouter":
         """Create
 
         Example of show_data:
@@ -201,12 +201,12 @@ class NeutronAgent:
     host: str
     alive: bool
     admin_state_up: bool
-    availability_zone: Optional[str] = None
-    binary: Optional[str] = None
-    ha_state: Optional[NeutronAgentHAState] = None
+    availability_zone: str | None = None
+    binary: str | None = None
+    ha_state: NeutronAgentHAState | None = None
 
     @classmethod
-    def from_agent_data(cls, agent_data: Dict[str, Any]) -> "NeutronAgent":
+    def from_agent_data(cls, agent_data: dict[str, Any]) -> "NeutronAgent":
         """Get a NetworkAgent passing the agent_data as returned by the neutron cli."""
         return cls(
             host=agent_data["host"],
@@ -260,7 +260,7 @@ class NeutronController(CommandRunnerMixin):
         project_as_arg: bool = False,
         skip_first_line: bool = True,
         cumin_params: CuminParams | None = None,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Run a neutron command on a control node forcing json output."""
         # neutron command return a first line in the output that is a warning, not part of the json
         return super().run_formatted_as_list(
@@ -280,7 +280,7 @@ class NeutronController(CommandRunnerMixin):
         cumin_params: CuminParams | None = None,
         try_format: OutputFormat = OutputFormat.JSON,
         last_line_only: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a neutron command on a control node forcing json output."""
         return super().run_formatted_as_dict(
             *command,
@@ -296,7 +296,7 @@ class NeutronController(CommandRunnerMixin):
         """Run a neutron command on a control node returning the raw string."""
         return super().run_raw(*command, json_output=json_output, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
-    def agent_list(self) -> List[NeutronAgent]:
+    def agent_list(self) -> list[NeutronAgent]:
         """Get the list of neutron agents."""
         return [
             NeutronAgent.from_agent_data(agent_data=agent_data)
@@ -359,7 +359,7 @@ class NeutronController(CommandRunnerMixin):
             condition_failed_msg_fn=lambda: "Some cloudnet agents did not turn admin up.",
         )
 
-    def router_list(self) -> List[NeutronPartialRouter]:
+    def router_list(self) -> list[NeutronPartialRouter]:
         """Get the list of neutron routers."""
         return [
             NeutronPartialRouter.from_data(data=list_data)
@@ -372,7 +372,7 @@ class NeutronController(CommandRunnerMixin):
             data=self.run_formatted_as_dict("router-show", router, cumin_params=CUMIN_SAFE_WITH_OUTPUT)
         )
 
-    def list_agents_hosting_router(self, router: OpenstackIdentifier) -> List[NeutronAgent]:
+    def list_agents_hosting_router(self, router: OpenstackIdentifier) -> list[NeutronAgent]:
         """Get the list of nodes hosting a given router routers."""
         return [
             NeutronAgent.from_agent_data(agent_data={**agent_data, "agent_type": NeutronAgentType.L3_AGENT.value})
@@ -381,14 +381,14 @@ class NeutronController(CommandRunnerMixin):
             )
         ]
 
-    def get_cloudnets(self) -> List[str]:
+    def get_cloudnets(self) -> list[str]:
         """Retrieves the known cloudnets.
 
         Currently does that by checking the neutron agents running on those.
         """
         return [agent.host for agent in self.agent_list() if agent.agent_type == NeutronAgentType.L3_AGENT]
 
-    def list_routers_on_agent(self, agent_id: OpenstackID) -> List[Dict[str, Any]]:
+    def list_routers_on_agent(self, agent_id: OpenstackID) -> list[dict[str, Any]]:
         """Get the list of routers hosted a given agent."""
         return self.run_formatted_as_list("router-list-on-l3-agent", agent_id, cumin_params=CUMIN_SAFE_WITH_OUTPUT)
 

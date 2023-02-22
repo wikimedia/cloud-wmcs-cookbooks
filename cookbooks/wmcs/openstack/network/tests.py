@@ -8,9 +8,10 @@ Documentation:
   https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Network/Tests
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -61,7 +62,7 @@ class NetworkTestRunner(WMCSCookbookRunnerBase):
         self.cluster_name: OpenstackClusterName = cluster_name
         super().__init__(spicerack=spicerack)
 
-    def run(self) -> Optional[int]:
+    def run(self) -> int | None:
         """Main entry point"""
         control_node = get_control_nodes(self.cluster_name)[0]
         query = f"D{{{control_node}}}"

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Alert and downtime related library functions and classes."""
+from __future__ import annotations
+
 import getpass
 import logging
 import socket
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from spicerack import Spicerack
 from spicerack.remote import Remote, RemoteHosts
@@ -29,7 +31,7 @@ class AlertManager:
         node = remote.query(f"D{{{ALERTMANAGER_HOST}}}")
         return cls(node=node)
 
-    def get_silences(self, query: str) -> List[Dict[str, Any]]:
+    def get_silences(self, query: str) -> list[dict[str, Any]]:
         """Get all silences enabled filtering with query.
 
         Some examples of 'query':
@@ -40,7 +42,7 @@ class AlertManager:
         return run_one_formatted_as_list(node=self.node, command=["amtool", "--output=json", "silence", "query", query])
 
     def downtime_alert(
-        self, alert_name: str, comment: str, duration: str = "1h", extra_queries: Optional[List[str]] = None
+        self, alert_name: str, comment: str, duration: str = "1h", extra_queries: list[str] | None = None
     ) -> SilenceID:
         """Add a silence for an alert.
 
@@ -74,7 +76,7 @@ class AlertManager:
         ]
         return run_one_raw(node=self.node, command=command)
 
-    def uptime_alert(self, alert_name: Optional[str] = None, extra_queries: Optional[List[str]] = None) -> None:
+    def uptime_alert(self, alert_name: str | None = None, extra_queries: list[str] | None = None) -> None:
         """Remove a silence for an alert.
 
         extra_queries is a list of label/match pairs, for example:
@@ -110,7 +112,7 @@ class AlertManager:
         ] + to_expire
         run_one_raw(node=self.node, command=command)
 
-    def downtime_host(self, host_name: str, comment: str, duration: Optional[str] = None) -> SilenceID:
+    def downtime_host(self, host_name: str, comment: str, duration: str | None = None) -> SilenceID:
         """Add a silence for a host.
 
         Examples of 'host_name':
@@ -164,9 +166,9 @@ class AlertManager:
 def downtime_host(
     spicerack: Spicerack,
     host_name: str,
-    duration: Optional[str] = None,
-    comment: Optional[str] = None,
-    task_id: Optional[str] = None,
+    duration: str | None = None,
+    comment: str | None = None,
+    task_id: str | None = None,
 ) -> SilenceID:
     """Do whatever it takes to downtime a host.
 
@@ -195,7 +197,7 @@ def downtime_host(
     return silence_id
 
 
-def uptime_host(spicerack: Spicerack, host_name: str, silence_id: Optional[SilenceID] = None) -> None:
+def uptime_host(spicerack: Spicerack, host_name: str, silence_id: SilenceID | None = None) -> None:
     """Do whatever it takes to uptime a host, if silence_id passed, only that silence will be expired.
 
     Examples of 'host_name':
@@ -216,9 +218,9 @@ def downtime_alert(
     spicerack: Spicerack,
     alert_name: str = "",
     duration: str = "1h",
-    comment: Optional[str] = None,
-    task_id: Optional[str] = None,
-    extra_queries: Optional[List[str]] = None,
+    comment: str | None = None,
+    task_id: str | None = None,
+    extra_queries: list[str] | None = None,
 ) -> SilenceID:
     """Do whatever it takes to downtime a host.
 
@@ -245,9 +247,9 @@ def downtime_alert(
 
 def uptime_alert(
     spicerack: Spicerack,
-    alert_name: Optional[str] = None,
-    silence_id: Optional[SilenceID] = None,
-    extra_queries: Optional[List[str]] = None,
+    alert_name: str | None = None,
+    silence_id: SilenceID | None = None,
+    extra_queries: list[str] | None = None,
 ) -> None:
     """Do whatever it takes to uptime an alert, if silence_id passed, only that silence will be expired.
 

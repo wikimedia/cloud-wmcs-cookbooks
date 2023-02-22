@@ -5,11 +5,12 @@ Usage example: wmcs.openstack.cloudvirt.vm_console \
     --project admin-monitoring
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 import subprocess
 import sys
-from typing import List
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -63,7 +64,7 @@ class VMConsole(CookbookBase):
         )
 
 
-def _run_ssh(full_hostname: str, args: List[str]) -> int:
+def _run_ssh(full_hostname: str, args: list[str]) -> int:
     cmd = ["ssh", "-t", full_hostname, *args]
     with subprocess.Popen(
         args=cmd, bufsize=0, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr, shell=False

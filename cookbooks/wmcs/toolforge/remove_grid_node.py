@@ -6,9 +6,10 @@ Usage example:
         --master-node-fqdn toolsbeta-sgegrid-master.toolsbeta.eqiad1.wikimedia.cloud \
         --node-hostnames toolsbeta-sgeexec-0901
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import List, Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
@@ -77,7 +78,7 @@ class ToolforgeRemoveGridNodeRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        node_hostnames: List[str],
+        node_hostnames: list[str],
         master_node_fqdn: str,
         spicerack: Spicerack,
     ):
@@ -92,7 +93,7 @@ class ToolforgeRemoveGridNodeRunner(WMCSCookbookRunnerBase):
             dry_run=common_opts.no_dologmsg,
         )
 
-    def run(self) -> Optional[int]:
+    def run(self) -> int | None:
         """Main entry point"""
         openstack_api = OpenstackAPI(
             remote=self.spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.common_opts.project

@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Optional
+from __future__ import annotations
+
+from typing import Any
 
 import pytest
 
@@ -50,7 +52,7 @@ from wmcs_libs.ceph import CephClusterStatus, CephClusterUnhealthy, CephOSDFlag,
         }
     )
 )
-def test_check_healthy_happy_path(status_dict: Dict[str, Any], consider_maintenance_healthy: Optional[bool]):
+def test_check_healthy_happy_path(status_dict: dict[str, Any], consider_maintenance_healthy: bool | None):
     my_status = CephClusterStatus(status_dict=status_dict)
     if consider_maintenance_healthy is not None:
         my_status.check_healthy(consider_maintenance_healthy=consider_maintenance_healthy)
@@ -117,7 +119,7 @@ def test_check_healthy_happy_path(status_dict: Dict[str, Any], consider_maintena
         }
     )
 )
-def test_check_healthy_unhappy_path(status_dict: Dict[str, Any], consider_maintenance_healthy: Optional[bool]):
+def test_check_healthy_unhappy_path(status_dict: dict[str, Any], consider_maintenance_healthy: bool | None):
     my_status = CephClusterStatus(status_dict=status_dict)
 
     with pytest.raises(CephClusterUnhealthy):
@@ -163,7 +165,7 @@ def test_check_healthy_unhappy_path(status_dict: Dict[str, Any], consider_mainte
         }
     )
 )
-def test_get_osndmap_set_flags_happy_path(status_dict: Dict[str, Any], expected_flags: List[CephOSDFlag]):
+def test_get_osndmap_set_flags_happy_path(status_dict: dict[str, Any], expected_flags: list[CephOSDFlag]):
     my_status = CephClusterStatus(status_dict=status_dict)
 
     gotten_flags = my_status.get_osdmap_set_flags()
@@ -192,7 +194,7 @@ def test_get_osndmap_set_flags_happy_path(status_dict: Dict[str, Any], expected_
         }
     )
 )
-def test_in_progress_happy_path(status_dict: Dict[str, Any], expected_in_progress: Dict[str, Any]):
+def test_in_progress_happy_path(status_dict: dict[str, Any], expected_in_progress: dict[str, Any]):
     my_status = CephClusterStatus(status_dict=status_dict)
 
     gotten_in_progress = my_status.get_in_progress()
@@ -296,7 +298,7 @@ def test_in_progress_happy_path(status_dict: Dict[str, Any], expected_in_progres
         }
     )
 )
-def test_is_cluster_in_maintenance_happy_path(status_dict: Dict[str, Any], expected_return: bool):
+def test_is_cluster_in_maintenance_happy_path(status_dict: dict[str, Any], expected_return: bool):
     my_status = CephClusterStatus(status_dict=status_dict)
 
     gotten_return = my_status.is_cluster_in_maintenance()

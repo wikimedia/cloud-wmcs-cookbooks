@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import json
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Type
 from unittest import mock
 
 import pytest
@@ -21,7 +23,7 @@ from wmcs_libs.ceph import (
 from wmcs_libs.inventory import CephClusterName
 
 
-def parametrize(params: Dict[str, Any]):
+def parametrize(params: dict[str, Any]):
     def decorator(decorated):
         return pytest.mark.parametrize(**CephTestUtils.to_parametrize(params))(decorated)
 
@@ -63,7 +65,7 @@ def parametrize(params: Dict[str, Any]):
         },
     }
 )
-def test_get_nodes_happy_path(expected_nodes: List[str], nodes_command_output: str):
+def test_get_nodes_happy_path(expected_nodes: list[str], nodes_command_output: str):
     fake_remote = CephTestUtils.get_fake_remote(responses=[nodes_command_output])
     my_controller = CephClusterController(
         remote=fake_remote,
@@ -124,7 +126,7 @@ def test_change_controlling_node_raising(nodes_command_output: str):
         },
     },
 )
-def test_get_cluster_status_happy_path(status_command_output: str, expected_status_dict: Dict[str, Any]):
+def test_get_cluster_status_happy_path(status_command_output: str, expected_status_dict: dict[str, Any]):
     fake_remote = CephTestUtils.get_fake_remote(responses=[status_command_output])
     my_controller = CephClusterController(
         remote=fake_remote,
@@ -259,7 +261,7 @@ def test_unset_osdmap_flag_raising(unset_flag_command_output: str):
         },
     },
 )
-def test_set_maintenance_happy_path(commands_output: List[str], force: Optional[bool]):
+def test_set_maintenance_happy_path(commands_output: list[str], force: bool | None):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=commands_output),
         cluster_name=CephClusterName.EQIAD1,
@@ -298,7 +300,7 @@ def test_set_maintenance_happy_path(commands_output: List[str], force: Optional[
         },
     },
 )
-def test_set_maintenance_raising(commands_output: List[str], exception: Type[Exception], force: Optional[bool]):
+def test_set_maintenance_raising(commands_output: list[str], exception: Type[Exception], force: bool | None):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=commands_output),
         cluster_name=CephClusterName.EQIAD1,
@@ -330,7 +332,7 @@ def test_set_maintenance_raising(commands_output: List[str], exception: Type[Exc
         },
     },
 )
-def test_unset_maintenance_happy_path(commands_output: List[str], force: Optional[bool]):
+def test_unset_maintenance_happy_path(commands_output: list[str], force: bool | None):
     fake_remote = CephTestUtils.get_fake_remote(responses=commands_output)
     my_controller = CephClusterController(
         remote=fake_remote,
@@ -366,7 +368,7 @@ def test_unset_maintenance_happy_path(commands_output: List[str], force: Optiona
         },
     },
 )
-def test_unset_maintenance_raising(commands_output: List[str], exception: Type[Exception], force: Optional[bool]):
+def test_unset_maintenance_raising(commands_output: list[str], exception: Type[Exception], force: bool | None):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=commands_output),
         cluster_name=CephClusterName.EQIAD1,
@@ -394,9 +396,9 @@ def test_unset_maintenance_raising(commands_output: List[str], exception: Type[E
     }
 )
 def test_wait_for_progress_events_happy_path(
-    commands_output: List[str],
-    time_ticks: List[int],
-    timeout_seconds: Optional[int],
+    commands_output: list[str],
+    time_ticks: list[int],
+    timeout_seconds: int | None,
 ):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=commands_output),
@@ -424,8 +426,8 @@ def test_wait_for_progress_events_happy_path(
     }
 )
 def test_wait_for_progress_events_raises(
-    commands_output: List[str],
-    time_ticks: List[int],
+    commands_output: list[str],
+    time_ticks: list[int],
     timeout_seconds: int,
 ):
     my_controller = CephClusterController(
@@ -462,10 +464,10 @@ def test_wait_for_progress_events_raises(
     }
 )
 def test_wait_for_cluster_health_happy_path(
-    commands_output: List[str],
-    time_ticks: List[int],
-    timeout_seconds: Optional[int],
-    consider_maintenance_healthy: Optional[bool],
+    commands_output: list[str],
+    time_ticks: list[int],
+    timeout_seconds: int | None,
+    consider_maintenance_healthy: bool | None,
 ):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=commands_output),
@@ -473,7 +475,7 @@ def test_wait_for_cluster_health_happy_path(
         spicerack=mock.MagicMock(spec=Spicerack),
     )
 
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     if consider_maintenance_healthy is not None:
         params["consider_maintenance_healthy"] = consider_maintenance_healthy
     if timeout_seconds is not None:
@@ -505,10 +507,10 @@ def test_wait_for_cluster_health_happy_path(
     }
 )
 def test_wait_for_cluster_health_raises(
-    commands_output: List[str],
-    time_ticks: List[int],
+    commands_output: list[str],
+    time_ticks: list[int],
     timeout_seconds: int,
-    consider_maintenance_healthy: Optional[bool],
+    consider_maintenance_healthy: bool | None,
 ):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=commands_output),
@@ -516,7 +518,7 @@ def test_wait_for_cluster_health_raises(
         spicerack=mock.MagicMock(spec=Spicerack),
     )
 
-    params: Dict[str, Any] = {"timeout_seconds": timeout_seconds}
+    params: dict[str, Any] = {"timeout_seconds": timeout_seconds}
     if consider_maintenance_healthy is not None:
         params["consider_maintenance_healthy"] = consider_maintenance_healthy
 
@@ -568,7 +570,7 @@ def test_wait_for_cluster_health_raises(
         },
     }
 )
-def test_get_osd_tree(expected_tree: List[str], osd_tree_command_output: str):
+def test_get_osd_tree(expected_tree: list[str], osd_tree_command_output: str):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=[osd_tree_command_output]),
         cluster_name=CephClusterName.EQIAD1,
@@ -660,7 +662,7 @@ def test_get_osd_tree(expected_tree: List[str], osd_tree_command_output: str):
         }
     }
 )
-def test_is_osd_host_valid_success(osd_tree: Dict[str, Any]):
+def test_is_osd_host_valid_success(osd_tree: dict[str, Any]):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(),
         cluster_name=CephClusterName.EQIAD1,
@@ -721,7 +723,7 @@ def test_is_osd_host_valid_success(osd_tree: Dict[str, Any]):
         },
     }
 )
-def test_is_osd_host_valid_failure(osd_tree: Dict[str, Any]):
+def test_is_osd_host_valid_failure(osd_tree: dict[str, Any]):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(),
         cluster_name=CephClusterName.EQIAD1,

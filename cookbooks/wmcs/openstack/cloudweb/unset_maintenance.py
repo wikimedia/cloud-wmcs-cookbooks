@@ -4,6 +4,8 @@ Usage example: wmcs.openstack.cloudweb.unset_maintenance \
     --deployment eqiad1
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

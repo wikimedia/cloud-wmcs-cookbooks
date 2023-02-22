@@ -5,9 +5,10 @@ Usage example:
         --project toolsbeta \
         --node-hostnames toolsbeta-sgewebgen-09-2 toolsbeta-sgeexec-10-1
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import List, Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
@@ -71,7 +72,7 @@ class ToolforgeGridNodeDepoolRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        node_hostnames: List[str],
+        node_hostnames: list[str],
         grid_master_fqdn: str,
         spicerack: Spicerack,
     ):
@@ -84,7 +85,7 @@ class ToolforgeGridNodeDepoolRunner(WMCSCookbookRunnerBase):
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
         )
 
-    def run(self) -> Optional[int]:
+    def run(self) -> int | None:
         """Main entry point"""
         openstack_api = OpenstackAPI(
             remote=self.spicerack.remote(),

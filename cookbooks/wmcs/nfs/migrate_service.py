@@ -10,6 +10,8 @@ Usage example:
 the old and new hosts must already have been created using similar add_server
 calls such that they have the same puppet/hiera config.
 """
+from __future__ import annotations
+
 import argparse
 import json
 import logging
@@ -28,6 +30,7 @@ LOGGER = logging.getLogger(__name__)
 
 OpenstackID = str
 OpenstackName = str
+# For some reason python 3.9 does not like using `|` for aliases
 OpenstackIdentifier = Union[OpenstackID, OpenstackName]
 
 

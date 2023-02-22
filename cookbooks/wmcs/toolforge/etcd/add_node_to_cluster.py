@@ -9,11 +9,12 @@ Usage example:
         --fqdn-to-add toolsbeta-k8s-
 
 """
+from __future__ import annotations
+
 import argparse
 import base64
 import logging
 import time
-from typing import List
 
 import yaml
 from spicerack import Spicerack
@@ -81,7 +82,7 @@ class AddNodeToCluster(CookbookBase):
         )
 
 
-def _fix_apiserver_yaml(node: RemoteHosts, etcd_members: List[str]):
+def _fix_apiserver_yaml(node: RemoteHosts, etcd_members: list[str]):
     members_urls = [f"https://{fqdn}:2379" for fqdn in etcd_members]
     new_etcd_members_arg = "--etcd-servers=" + ",".join(sorted(members_urls, key=natural_sort_key))
     apiserver_config_file = "/etc/kubernetes/manifests/kube-apiserver.yaml"
@@ -153,9 +154,9 @@ def _add_node_to_kubeadm_configmap(k8s_control_node: RemoteHosts, new_etcd_membe
 
 def _fix_kubeadm(
     remote: Remote,
-    k8s_control_members: List[str],
+    k8s_control_members: list[str],
     new_etcd_member_fqdn: str,
-    existing_etcd_members: List[str],
+    existing_etcd_members: list[str],
 ):
     for k8s_control_node_fqdn in k8s_control_members:
         _fix_apiserver_yaml(
@@ -259,7 +260,7 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
             existing_etcd_members=etcd_members,
         )
 
-    def _do_puppet_bootstrap(self, new_etcd_member_fqdn: str, etcd_members: List[str]) -> None:
+    def _do_puppet_bootstrap(self, new_etcd_member_fqdn: str, etcd_members: list[str]) -> None:
         # done one by one to avoid taking the cluster down
         for etcd_member in etcd_members:
             if etcd_member == new_etcd_member_fqdn:

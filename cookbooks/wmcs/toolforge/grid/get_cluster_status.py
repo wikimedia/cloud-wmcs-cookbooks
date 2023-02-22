@@ -5,6 +5,8 @@ Usage example:
         --project toolsbeta \
         --master-node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import time
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Type, Union, cast
+from typing import Any, Callable, NamedTuple, Type, Union, cast
 
 import yaml
 from cumin.transports import Command
@@ -37,20 +37,21 @@ SECONDS_IN_MINUTE = 60
 
 OpenstackID = str
 OpenstackName = str
+# For some reason python 3.9 does not like using `|` for aliases
 OpenstackIdentifier = Union[OpenstackID, OpenstackName]
 
 
-def get_control_nodes(cluster_name: OpenstackClusterName) -> List[str]:
+def get_control_nodes(cluster_name: OpenstackClusterName) -> list[str]:
     """Get all the FQDNs of the control nodes (in the future with netbox or similar)."""
     return get_nodes_by_role(cluster_name, role_name=OpenstackNodeRoleName.CONTROL)
 
 
-def get_control_nodes_from_node(node: str) -> List[str]:
+def get_control_nodes_from_node(node: str) -> list[str]:
     """Get all the FQDNs of the control nodes from the cluster a given a node is part of."""
     return get_control_nodes(cluster_name=get_node_cluster_name(node))
 
 
-def get_gateway_nodes(cluster_name: OpenstackClusterName) -> List[str]:
+def get_gateway_nodes(cluster_name: OpenstackClusterName) -> list[str]:
     """Get all the FQDNs of the gateway nodes (in the future with netbox or similar)."""
     return get_nodes_by_role(cluster_name, role_name=OpenstackNodeRoleName.GATEWAY)
 
@@ -275,7 +276,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
         return ["env", f"OS_PROJECT_ID={self.project}", "wmcs-openstack", *command, *format_args]
 
-    def hypervisor_list(self, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
+    def hypervisor_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Returns a list of hypervisors."""
         return self.run_formatted_as_list(
             "hypervisor",
@@ -293,7 +294,7 @@ class OpenstackAPI(CommandRunnerMixin):
         info = get_node_inventory_info(node=self.control_node_fqdn)
         return f"{info.site_name.value}.wmnet"
 
-    def create_service_ip(self, ip_name: OpenstackName, network: OpenstackIdentifier) -> Dict[str, Any]:
+    def create_service_ip(self, ip_name: OpenstackName, network: OpenstackIdentifier) -> dict[str, Any]:
         """Create a service IP with a specified name"""
         return self.run_formatted_as_dict("port", "create", "--network", _quote(network), _quote(ip_name))
 
@@ -319,47 +320,47 @@ class OpenstackAPI(CommandRunnerMixin):
             json_output=False,
         )
 
-    def get_nova_services(self) -> List[Dict[str, Any]]:
+    def get_nova_services(self) -> list[dict[str, Any]]:
         """Return nova's list of registered services"""
         return self.run_formatted_as_list("compute", "service", "list")
 
-    def get_designate_services(self) -> List[Dict[str, Any]]:
+    def get_designate_services(self) -> list[dict[str, Any]]:
         """Return designate's list of registered services"""
         return self.run_formatted_as_list("dns", "service", "list")
 
-    def get_neutron_services(self) -> List[Dict[str, Any]]:
+    def get_neutron_services(self) -> list[dict[str, Any]]:
         """Return neutron's list of registered services"""
         return self.run_formatted_as_list("network", "agent", "list")
 
-    def get_cinder_services(self) -> List[Dict[str, Any]]:
+    def get_cinder_services(self) -> list[dict[str, Any]]:
         """Return cinder's list of registered services"""
         return self.run_formatted_as_list("volume", "service", "list")
 
-    def port_get(self, ip_address) -> List[Dict[str, Any]]:
+    def port_get(self, ip_address) -> list[dict[str, Any]]:
         """Get port for specified IP address"""
         ip_filter = f'--fixed-ip="ip-address={ip_address}"'
         return self.run_formatted_as_list("port", "list", ip_filter)
 
-    def zone_get(self, name) -> List[Dict[str, Any]]:
+    def zone_get(self, name) -> list[dict[str, Any]]:
         """Get zone record for specified dns zone"""
         return self.run_formatted_as_list("zone", "list", "--name", name)
 
-    def recordset_create(self, zone_id, record_type, name, record) -> Dict[str, Any]:
+    def recordset_create(self, zone_id, record_type, name, record) -> dict[str, Any]:
         """Get zone record for specified dns zone"""
         return self.run_formatted_as_dict(
             "recordset", "create", "--type", record_type, "--record", record, zone_id, name
         )
 
-    def server_show(self, vm_name: OpenstackIdentifier) -> Dict[str, Any]:
+    def server_show(self, vm_name: OpenstackIdentifier) -> dict[str, Any]:
         """Get the information for a VM."""
         return self.run_formatted_as_dict("server", "show", vm_name, cumin_params=CuminParams(is_safe=True))
 
-    def server_list(self, long: bool = False, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
+    def server_list(self, long: bool = False, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Retrieve the list of servers for the project."""
         _long = "--long" if long else ""
         return self.run_formatted_as_list("server", "list", _long, cumin_params=CuminParams.as_safe(cumin_params))
 
-    def server_list_filter_exists(self, hostnames: List[str], cumin_params: CuminParams | None = None) -> List[str]:
+    def server_list_filter_exists(self, hostnames: list[str], cumin_params: CuminParams | None = None) -> list[str]:
         """Verify if all servers in the list exists.
 
         Returns the input list filtered with those hostnames that do exists.
@@ -415,11 +416,11 @@ class OpenstackAPI(CommandRunnerMixin):
         """Attach a volume to a server"""
         self.run_raw("server", "remove", "volume", server_id, volume_id, json_output=False)
 
-    def server_from_id(self, server_id: OpenstackIdentifier) -> Dict[str, Any]:
+    def server_from_id(self, server_id: OpenstackIdentifier) -> dict[str, Any]:
         """Given the ID of a server, return the server details"""
         return self.run_formatted_as_dict("server", "show", server_id)
 
-    def volume_from_id(self, volume_id: OpenstackIdentifier) -> Dict[str, Any]:
+    def volume_from_id(self, volume_id: OpenstackIdentifier) -> dict[str, Any]:
         """Given the ID of a volume, return the volume details"""
         return self.run_formatted_as_dict("volume", "show", volume_id)
 
@@ -429,10 +430,10 @@ class OpenstackAPI(CommandRunnerMixin):
         flavor: OpenstackIdentifier,
         image: OpenstackIdentifier,
         network: OpenstackIdentifier,
-        server_group_id: Optional[OpenstackID] = None,
-        security_group_ids: Optional[List[OpenstackID]] = None,
-        properties: Optional[Dict[str, str]] = None,
-        availability_zone: Optional[str] = None,
+        server_group_id: OpenstackID | None = None,
+        security_group_ids: list[OpenstackID] | None = None,
+        properties: dict[str, str] | None = None,
+        availability_zone: str | None = None,
     ) -> OpenstackIdentifier:
         """Create a server and return the ID of the created server.
 
@@ -474,13 +475,13 @@ class OpenstackAPI(CommandRunnerMixin):
         )
         return out["id"]
 
-    def server_get_aggregates(self, name: OpenstackName) -> List[Dict[str, Any]]:
+    def server_get_aggregates(self, name: OpenstackName) -> list[dict[str, Any]]:
         """Get all the aggregates for the given server."""
         # NOTE: this currently does a bunch of requests making it slow, can be simplified
         # once the following gets released:
         #  https://review.opendev.org/c/openstack/python-openstackclient/+/794237
         current_aggregates = self.aggregate_list(cumin_params=CuminParams(print_output=False))
-        server_aggregates: List[Dict[str, Any]] = []
+        server_aggregates: list[dict[str, Any]] = []
         for aggregate in current_aggregates:
             aggregate_details = self.aggregate_show(
                 aggregate=aggregate["Name"], cumin_params=CuminParams(print_output=False, print_progress_bars=False)
@@ -490,7 +491,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
         return server_aggregates
 
-    def security_group_list(self, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
+    def security_group_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Retrieve the list of security groups."""
         return self.run_formatted_as_list("security", "group", "list", cumin_params=CuminParams.as_safe(cumin_params))
 
@@ -535,7 +536,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def security_group_by_name(
         self, name: OpenstackName, cumin_params: CuminParams | None = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Retrieve the security group info given a name.
 
         Raises OpenstackNotFound if there's no security group found for the given name in the current project.
@@ -548,7 +549,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
         raise OpenstackNotFound(f"Unable to find a security group with name {name}")
 
-    def server_group_list(self, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
+    def server_group_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Get the list of server groups.
 
         Note:  it seems that on cli the project flag shows nothing :/ so we get the list all of them.
@@ -579,7 +580,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def server_group_by_name(
         self, name: OpenstackName, cumin_params: CuminParams | None = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Retrieve the server group info given a name.
 
         Raises OpenstackNotFound if there's no server group found with the given name.
@@ -591,11 +592,11 @@ class OpenstackAPI(CommandRunnerMixin):
 
         raise OpenstackNotFound(f"Unable to find a server group with name {name}")
 
-    def aggregate_list(self, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
+    def aggregate_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Get the simplified list of aggregates."""
         return self.run_formatted_as_list("aggregate", "list", "--long", cumin_params=CuminParams.as_safe(cumin_params))
 
-    def aggregate_show(self, aggregate: OpenstackIdentifier, cumin_params: CuminParams | None) -> Dict[str, Any]:
+    def aggregate_show(self, aggregate: OpenstackIdentifier, cumin_params: CuminParams | None) -> dict[str, Any]:
         """Get the details of a given aggregate."""
         return self.run_formatted_as_dict(
             "aggregate", "show", aggregate, cumin_params=CuminParams.as_safe(cumin_params)
@@ -639,7 +640,7 @@ class OpenstackAPI(CommandRunnerMixin):
         )
 
     @staticmethod
-    def aggregate_load_from_host(host: RemoteHosts) -> List[Dict[str, Any]]:
+    def aggregate_load_from_host(host: RemoteHosts) -> list[dict[str, Any]]:
         """Load the persisted list of aggregates from the host."""
         try:
             result = run_one_formatted(
@@ -652,7 +653,7 @@ class OpenstackAPI(CommandRunnerMixin):
         except Exception as error:
             raise OpenstackNotFound(f"Unable to cat the file {AGGREGATES_FILE_PATH} on host {host}") from error
 
-        if isinstance(result, List):
+        if isinstance(result, list):
             return result
 
         raise TypeError(f"Expected a list, got {result}")
@@ -671,7 +672,7 @@ class OpenstackAPI(CommandRunnerMixin):
                 "least."
             )
 
-    def quota_show(self) -> Dict[Union[str, OpenstackQuotaName], Any]:
+    def quota_show(self) -> dict[str | OpenstackQuotaName, Any]:
         """Get the quotas for a project.
 
         Note that it will cast any known quota names to OpenstackQuotaName enums.
@@ -679,7 +680,7 @@ class OpenstackAPI(CommandRunnerMixin):
         # OS_PROJECT_ID=PROJECT wmcs-openstack quota show displays the admin project!
         # This must be run as wmcs-openstack quota show PROJECT
         raw_quotas = self.run_formatted_as_dict("quota", "show", project_as_arg=True)
-        final_quotas: Dict[Union[str, OpenstackQuotaName], Any] = {}
+        final_quotas: dict[str | OpenstackQuotaName, Any] = {}
         for quota_name, quota_value in raw_quotas.items():
             try:
                 quota_entry = OpenstackQuotaEntry(name=OpenstackQuotaName(quota_name), value=quota_value)
@@ -706,7 +707,7 @@ class OpenstackAPI(CommandRunnerMixin):
         """
         current_quotas = self.quota_show()
 
-        increased_quotas: List[OpenstackQuotaEntry] = []
+        increased_quotas: list[OpenstackQuotaEntry] = []
 
         for new_quota in quota_increases:
             if new_quota.name not in current_quotas:
@@ -737,7 +738,7 @@ class OpenstackAPI(CommandRunnerMixin):
         disk_write_iops_sec: int,
         disk_total_bytes_sec: int,
         generation: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new flavor."""
         name = f"g{generation}.cores{vcpus}.ram{ram_gb}.disk{disk_gb}"
 
@@ -769,7 +770,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
         return self.run_formatted_as_dict(*command)
 
-    def role_list_assignments(self, user_name: OpenstackName) -> List[Dict[str, Any]]:
+    def role_list_assignments(self, user_name: OpenstackName) -> list[dict[str, Any]]:
         """List the assignments for a user in the project."""
         return self.run_formatted_as_list(
             "role", "assignment", "list", f"--project={self.project}", f"--user={user_name}"

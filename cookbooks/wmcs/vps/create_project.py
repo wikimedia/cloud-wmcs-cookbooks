@@ -6,6 +6,8 @@ Usage example:
         --project my_fancy_new_project
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

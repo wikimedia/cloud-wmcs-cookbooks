@@ -5,6 +5,8 @@ Usage example:
     --fqdn-to-reboot cloudcontrol1005.wikimedia.org
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 from datetime import datetime

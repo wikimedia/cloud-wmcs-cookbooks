@@ -1,4 +1,6 @@
 """Grid related classes and functions."""
+from __future__ import annotations
+
 __title__ = __doc__
 import logging
 import re
@@ -6,7 +8,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Iterator
 
 import yaml
 from cumin.transports import Command
@@ -50,10 +52,10 @@ class GridQueueType(Enum):
 class GridQueueTypesSet:
     """Class representing a grid queue types set."""
 
-    types: List[GridQueueType]
+    types: list[GridQueueType]
 
     @classmethod
-    def from_types_string(cls, types_string: Optional[str]) -> "GridQueueTypesSet":
+    def from_types_string(cls, types_string: str | None) -> "GridQueueTypesSet":
         """Create a GridQueueStatesSet from qhost queue types string."""
         if not types_string:
             return cls(types=[])
@@ -94,10 +96,10 @@ class GridQueueState(Enum):
 class GridQueueStatesSet:
     """Class that contains all the data associated to a grid queue status set."""
 
-    states: List[GridQueueState]
+    states: list[GridQueueState]
 
     @classmethod
-    def from_state_string(cls, state_string: Optional[str]) -> "GridQueueStatesSet":
+    def from_state_string(cls, state_string: str | None) -> "GridQueueStatesSet":
         """Create a GridQueueStatesSet from qhost queue state string."""
         if not state_string:
             # if the XML contains no state info, use this virtual state to indicate is OK
@@ -124,15 +126,15 @@ class GridQueueInfo:
     """Class that contains all the data associated to a grid queue."""
 
     name: str
-    types: Optional[str] = None
-    slots: Optional[int] = None
-    slots_used: Optional[int] = None
-    slots_resv: Optional[int] = None
-    slots_total: Optional[int] = None
-    states: Optional[GridQueueStatesSet] = None
-    messages: Optional[List[str]] = None
-    load_avg: Optional[float] = None
-    arch: Optional[str] = None
+    types: str | None = None
+    slots: int | None = None
+    slots_used: int | None = None
+    slots_resv: int | None = None
+    slots_total: int | None = None
+    states: GridQueueStatesSet | None = None
+    messages: list[str] | None = None
+    load_avg: float | None = None
+    arch: str | None = None
 
     @classmethod
     def from_node_info_xml(cls, xml_obj: ElementTree) -> "GridQueueInfo":
@@ -151,8 +153,8 @@ class GridQueueInfo:
 
     @classmethod
     def from_queue_info_xml(cls, xml_obj: ElementTree) -> "GridQueueInfo":
-        """Create a GridQueueInfo from qstat -E explain Queue-List entry."""
-        info_params: Dict[str, Any] = {}
+        """Create a GridQueueInfo from qstat -E explain Queue-list entry."""
+        info_params: dict[str, Any] = {}
         for list_entry_xml in xml_obj:
             value_type = list_entry_xml.tag
             if value_type == "state":
@@ -174,9 +176,9 @@ class GridQueueInfo:
         # when loading the data from qstat, the states is empty unless in error
         return self.states.is_ok() if self.states is not None else True
 
-    def get_failed_jobs_from_message(self) -> List[int]:
+    def get_failed_jobs_from_message(self) -> list[int]:
         """Get the failed job ids for this queue info if any."""
-        job_ids: List[int] = []
+        job_ids: list[int] = []
         # TODO: extend this if/when finding new error messages
         job_regex = re.compile(r"job (?P<job_id>[0-9]+)'s failure")
         for message in self.messages or []:
@@ -195,17 +197,17 @@ class GridNodeInfo:
     """Class that contains all the data associated to a grid node."""
 
     name: str
-    queues_info: Dict[str, GridQueueInfo]
-    arch_string: Optional[str] = None
-    num_proc: Optional[int] = None
-    m_socket: Optional[int] = None
-    m_core: Optional[int] = None
-    m_thread: Optional[int] = None
-    load_avg: Optional[float] = None
-    mem_total: Optional[float] = None
-    mem_used: Optional[float] = None
-    swap_total: Optional[float] = None
-    swap_used: Optional[float] = None
+    queues_info: dict[str, GridQueueInfo]
+    arch_string: str | None = None
+    num_proc: int | None = None
+    m_socket: int | None = None
+    m_core: int | None = None
+    m_thread: int | None = None
+    load_avg: float | None = None
+    mem_total: float | None = None
+    mem_used: float | None = None
+    swap_total: float | None = None
+    swap_used: float | None = None
 
     @classmethod
     def from_xml(cls, xml_obj: ElementTree) -> "GridNodeInfo":
@@ -325,9 +327,9 @@ class GridController:
                 "'--force' to try again, but might require manual intervention."
             ) from error
 
-    def get_nodes_info(self) -> Dict[str, GridNodeInfo]:
+    def get_nodes_info(self) -> dict[str, GridNodeInfo]:
         """Retrieve node and queue information from the nodes currently in the cluster."""
-        nodes_info: Dict[str, GridNodeInfo] = {}
+        nodes_info: dict[str, GridNodeInfo] = {}
 
         xml_output = run_one_raw(
             node=self._master_node, command=["qhost", "-q", "-xml"], cumin_params=CuminParams(print_output=False)
@@ -367,7 +369,7 @@ class GridController:
 
         raise GridNodeNotFound(f"Unable to find node {host_fqdn}, output:\n{raw_output}")
 
-    def get_queues_info(self) -> List[GridQueueInfo]:
+    def get_queues_info(self) -> list[GridQueueInfo]:
         """Retrieve the extended queues info, including messages."""
         raw_output = run_one_raw(
             node=self._master_node,
@@ -376,7 +378,7 @@ class GridController:
             cumin_params=CuminParams(print_output=False, print_progress_bars=False, is_safe=True),
         )
         parsed_xml = ElementTree.fromstring(raw_output)
-        queues_info: List[GridQueueInfo] = []
+        queues_info: list[GridQueueInfo] = []
         for queue_list_xml in parsed_xml[0]:
             queues_info.append(GridQueueInfo.from_queue_info_xml(xml_obj=queue_list_xml))
 

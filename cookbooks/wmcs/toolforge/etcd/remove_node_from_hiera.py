@@ -13,10 +13,12 @@ Usage examples:
         --fqdn-to-remove toolsbeta-test-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
 
 """
+from __future__ import annotations
+
 import argparse
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 from spicerack import Spicerack
@@ -80,7 +82,7 @@ class RemoveNodeFromHieraRunner(WMCSCookbookRunnerBase):
         """Main entry point"""
         self.remove_node_from_hiera()
 
-    def remove_node_from_hiera(self) -> Dict[str, Any]:
+    def remove_node_from_hiera(self) -> dict[str, Any]:
         """Needed as we can't change the return type for the inherited run method."""
         control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
 

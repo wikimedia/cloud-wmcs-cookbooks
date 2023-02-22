@@ -5,6 +5,8 @@ Usage example:
         --control-node-fqdn toolsbeta-test-control-5.toolsbeta.eqiad1.wikimedia.cloud \
         --hostname-to-drain toolsbeta-test-worker-4
 """
+from __future__ import annotations
+
 import argparse
 import json
 import logging

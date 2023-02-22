@@ -7,10 +7,11 @@ Usage example:
 
 """
 # pylint: disable=too-many-arguments
+from __future__ import annotations
+
 import argparse
 import datetime
 import logging
-from typing import Optional
 
 from cumin.transports import Command
 from spicerack import Spicerack
@@ -97,11 +98,11 @@ class ToolforgeAddK8sWorkerNodeRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        k8s_worker_prefix: Optional[str],
-        k8s_control_prefix: Optional[str],
+        k8s_worker_prefix: str | None,
+        k8s_control_prefix: str | None,
         spicerack: Spicerack,
-        image: Optional[str] = None,
-        flavor: Optional[str] = None,
+        image: str | None = None,
+        flavor: str | None = None,
     ):
         """Init"""
         self.common_opts = common_opts

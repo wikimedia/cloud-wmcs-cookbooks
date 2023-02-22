@@ -5,9 +5,10 @@ Usage example:
         --cluster-name eqiad1
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import List, Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -78,7 +79,7 @@ class UpgradeOsdsRunner(WMCSCookbookRunnerBase):
         force: bool,
         common_opts: CommonOpts,
         spicerack: Spicerack,
-        osd_nodes: Optional[List[str]],
+        osd_nodes: list[str] | None,
     ):
         """Init"""
         self.force = force

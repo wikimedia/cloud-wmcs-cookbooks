@@ -5,7 +5,6 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 from unittest.mock import patch
 
 import pytest
@@ -90,7 +89,7 @@ def run_cookbook_with_recording(request, capsys, spicerack_config):
     >   assert "An error happened" not in res.stderr
     """
 
-    def _inner_run_with_recordings(record_file_name: str, argv: List[str]) -> RunResult:
+    def _inner_run_with_recordings(record_file_name: str, argv: list[str]) -> RunResult:
         record_file_path = Path(request.module.__file__).parent / "recordings" / record_file_name
         with patch.dict(
             os.environ,

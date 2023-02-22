@@ -4,6 +4,8 @@ Usage example:
     cookbook wmcs.toolforge.scale_grid_webgen \
         --project toolsbeta
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

@@ -1,5 +1,7 @@
 """WMCS openstack - restart openstack services"""
 
+from __future__ import annotations
+
 import argparse
 import logging
 

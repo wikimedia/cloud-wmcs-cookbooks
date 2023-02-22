@@ -5,9 +5,11 @@ Usage example:
         --cluster-name eqiad1
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -48,7 +50,7 @@ class ShowInfo(CookbookBase):
         )
 
 
-def _print_nodes(nodes_tree: Dict[str, Any]) -> None:
+def _print_nodes(nodes_tree: dict[str, Any]) -> None:
     # we expect a tree with one single root node from ceph
     print("root:")
     for node in sorted(nodes_tree["children"], key=lambda x: x["name"]):
@@ -57,7 +59,7 @@ def _print_nodes(nodes_tree: Dict[str, Any]) -> None:
             print(f"    {osd.name}(class:{osd.device_class}) {osd.status} weight:{osd.crush_weight}")
 
 
-def _print_stray(stray_nodes: List[Dict[str, Any]]) -> None:
+def _print_stray(stray_nodes: list[dict[str, Any]]) -> None:
     # TODO: improve once we have an example
     print(f"stray: {stray_nodes}")
 

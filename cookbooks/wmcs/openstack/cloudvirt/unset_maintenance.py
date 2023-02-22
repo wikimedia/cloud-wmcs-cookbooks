@@ -4,9 +4,10 @@ Usage example: wmcs.openstack.cloudvirt.unset_maintenance \
     --fqdn cloudvirt1013.eqiad.wmnet
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
-from typing import Optional
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -72,8 +73,8 @@ class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         fqdn: str,
         spicerack: Spicerack,
-        downtime_id: Optional[str] = None,
-        aggregates: Optional[str] = None,
+        downtime_id: str | None = None,
+        aggregates: str | None = None,
     ):
         """Init."""
         self.fqdn = fqdn

@@ -4,6 +4,8 @@ Usage example: wmcs.openstack.cloudvirt.set_maintenance \
     --fqdn cloudvirt1013.eqiad.wmnet
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

@@ -1,8 +1,10 @@
 """Module that holds knowledge of what hosts exist in our deployments."""
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, cast
 
 from wmcs_libs.common import ArgparsableEnum
 
@@ -153,7 +155,7 @@ class Cluster:
 
     name: ClusterName
     # Enum as dict key does not match correctly to an Enum superclass (ex. CephNodeRoleName), so use Any
-    nodes_by_role: Dict[Any, List[str]]
+    nodes_by_role: dict[Any, list[str]]
 
 
 @dataclass(frozen=True)
@@ -161,7 +163,7 @@ class CephCluster(Cluster):
     """Ceph cluster definition."""
 
     name: CephClusterName
-    nodes_by_role: Dict[CephNodeRoleName, List[str]]
+    nodes_by_role: dict[CephNodeRoleName, list[str]]
     osd_drives_count: int
 
 
@@ -170,7 +172,7 @@ class OpenstackCluster(Cluster):
     """Openstack cluster definition."""
 
     name: OpenstackClusterName
-    nodes_by_role: Dict[OpenstackNodeRoleName, List[str]]
+    nodes_by_role: dict[OpenstackNodeRoleName, list[str]]
     internal_network_name: str
 
 
@@ -180,7 +182,7 @@ class ToolforgeKubernetesCluster(Cluster):
 
     name: ToolforgeKubernetesClusterName
     instance_prefix: str
-    nodes_by_role: Dict[ToolforgeKubernetesNodeRoleName, List[str]]
+    nodes_by_role: dict[ToolforgeKubernetesNodeRoleName, list[str]]
 
 
 @dataclass(frozen=True)
@@ -188,7 +190,7 @@ class Site:
     """A whole site representation, with support for multi-clusters."""
 
     name: SiteName
-    clusters_by_type: Dict[ClusterType, Dict[Any, Cluster]]
+    clusters_by_type: dict[ClusterType, dict[Any, Cluster]]
 
 
 # TODO: replace this with different sources (dynamic or not) for hosts, ex. netbox, openstack cluster, ceph cluster,
@@ -295,7 +297,7 @@ _INVENTORY = {
 }
 
 
-def get_inventory() -> Dict[SiteName, Site]:
+def get_inventory() -> dict[SiteName, Site]:
     """Retrieve the known inventory for WMCS infra."""
     return _INVENTORY
 
@@ -305,13 +307,13 @@ class NodeInventoryInfo:
     """An info package with some node information with regards to the inventory."""
 
     site_name: SiteName
-    openstack_project: Optional[str] = None
-    cluster_type: Optional[ClusterType] = None
-    cluster_name: Optional[ClusterName] = None
-    role_name: Optional[NodeRoleName] = None
+    openstack_project: str | None = None
+    cluster_type: ClusterType | None = None
+    cluster_name: ClusterName | None = None
+    role_name: NodeRoleName | None = None
 
 
-def _guess_node_site(node: str) -> Optional[SiteName]:
+def _guess_node_site(node: str) -> SiteName | None:
     """Try to guess the site a node is from.
 
     * Check the hosts domain name (<site>.wmnet, <deployment>.wikimedia.cloud)
@@ -339,7 +341,7 @@ def _guess_node_site(node: str) -> Optional[SiteName]:
     return None
 
 
-def _guess_cluster_type(node: str) -> Optional[ClusterType]:
+def _guess_cluster_type(node: str) -> ClusterType | None:
     if node.startswith("cloudceph"):
         return ClusterType.CEPH
 
@@ -358,15 +360,15 @@ def _guess_cluster_type(node: str) -> Optional[ClusterType]:
     return None
 
 
-def _guess_openstack_project(node: str) -> Optional[str]:
+def _guess_openstack_project(node: str) -> str | None:
     if not node.endswith(".wikimedia.cloud"):
         return None
     return node.split(".")[1]
 
 
 def _guess_cluster_name(
-    site_name: SiteName, cluster_type: Optional[ClusterType], openstack_project: Optional[str]
-) -> Optional[ClusterName]:
+    site_name: SiteName, cluster_type: ClusterType | None, openstack_project: str | None
+) -> ClusterName | None:
     if not cluster_type:
         return None
 
@@ -400,9 +402,7 @@ def _guess_cluster_name(
     raise InventoryError(f"More than one cluster of type {cluster_type} on site {site_name}: {clusters}")
 
 
-def _guess_role_name(
-    node: str,
-) -> Optional[Union[OpenstackNodeRoleName, CephNodeRoleName, ToolforgeKubernetesNodeRoleName]]:
+def _guess_role_name(node: str) -> OpenstackNodeRoleName | CephNodeRoleName | ToolforgeKubernetesNodeRoleName | None:
     if node.startswith("cloudcephosd"):
         return CephNodeRoleName.OSD
     if node.startswith("cloudcephmon"):
@@ -481,7 +481,7 @@ def generic_get_node_cluster_name(node: str) -> ClusterName:
     return cast(ClusterName, inventory_info.cluster_name)
 
 
-def get_nodes_by_role(cluster_name: ClusterName, role_name: Enum) -> List[str]:
+def get_nodes_by_role(cluster_name: ClusterName, role_name: Enum) -> list[str]:
     """Retrieve the nodes of a given role for a given cluster."""
     site = cluster_name.get_site()
     inventory = get_inventory()

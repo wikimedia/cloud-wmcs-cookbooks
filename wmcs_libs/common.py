@@ -16,7 +16,7 @@ from dataclasses import replace as replace_in_dataclass
 from enum import Enum, auto
 from functools import partial
 from itertools import chain
-from typing import Any, Callable, Dict, List, Optional, Pattern, Union
+from typing import Any, Callable, Pattern
 from unittest import mock
 
 import yaml
@@ -35,7 +35,7 @@ K8S_SYSTEM_NAMESPACES = ["kube-system", "metrics"]
 DIGIT_RE = re.compile("([0-9]+)")
 
 
-def parser_type_list_hostnames(valuelist: List[str]):
+def parser_type_list_hostnames(valuelist: list[str]):
     """Validates a datatype in argparser to be a list of hostnames."""
     for value in valuelist:
         parser_type_str_hostname(value)
@@ -139,10 +139,10 @@ class CommonOpts:
     """Common WMCS cookbook options."""
 
     project: str = "admin"
-    task_id: Optional[str] = None
+    task_id: str | None = None
     no_dologmsg: bool = False
 
-    def to_cli_args(self) -> List[str]:
+    def to_cli_args(self) -> list[str]:
         """Helper to unwrap the options for use with argument parsers."""
         args = []
         args.extend(["--project", self.project])
@@ -155,9 +155,7 @@ class CommonOpts:
         return args
 
 
-def add_common_opts(
-    parser: argparse.ArgumentParser, project_default: Optional[str] = "admin"
-) -> argparse.ArgumentParser:
+def add_common_opts(parser: argparse.ArgumentParser, project_default: str | None = "admin") -> argparse.ArgumentParser:
     """Adds the common WMCS options to a cookbook parser."""
     if project_default:
         parser.add_argument(
@@ -193,7 +191,7 @@ def with_common_opts(spicerack: Spicerack, args: argparse.Namespace, runner: Cal
 
 
 def run_one_raw_needed_to_be_able_to_mock(
-    command: Union[List[str], Command],
+    command: list[str] | Command,
     node: RemoteHosts,
     capture_errors: bool = False,
     last_line_only: bool = False,
@@ -227,7 +225,7 @@ def run_one_raw_needed_to_be_able_to_mock(
 
 
 def run_one_raw(
-    command: Union[List[str], Command],
+    command: list[str] | Command,
     node: RemoteHosts,
     capture_errors: bool = False,
     last_line_only: bool = False,
@@ -249,14 +247,14 @@ def run_one_raw(
 
 
 def run_one_formatted_as_list(
-    command: Union[List[str], Command],
+    command: list[str] | Command,
     node: RemoteHosts,
     capture_errors: bool = False,
     last_line_only: bool = False,
     skip_first_line: bool = False,
     try_format: OutputFormat = OutputFormat.JSON,
     cumin_params: CuminParams | None = None,
-) -> List[Any]:
+) -> list[Any]:
     """Run one command and return a list of elements."""
     result = run_one_formatted(
         command=command,
@@ -274,14 +272,14 @@ def run_one_formatted_as_list(
 
 
 def run_one_as_dict(
-    command: Union[List[str], Command],
+    command: list[str] | Command,
     node: RemoteHosts,
     capture_errors: bool = False,
     last_line_only: bool = False,
     skip_first_line: bool = False,
     try_format: OutputFormat = OutputFormat.JSON,
     cumin_params: CuminParams | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run a command and return a dict."""
     result = run_one_formatted(
         command=command,
@@ -299,15 +297,15 @@ def run_one_as_dict(
 
 
 def run_one_formatted(
-    command: Union[List[str], Command],
+    command: list[str] | Command,
     node: RemoteHosts,
     capture_errors: bool = False,
     last_line_only: bool = False,
     skip_first_line: bool = False,
-    ignore_lines: Optional[List[Pattern[str]]] = None,
+    ignore_lines: list[Pattern[str]] | None = None,
     try_format: OutputFormat = OutputFormat.JSON,
     cumin_params: CuminParams | None = None,
-) -> Union[List[Any], Dict[str, Any]]:
+) -> list[Any] | dict[str, Any]:
     """Run a command on a node.
 
     Returns the loaded json/yaml.
@@ -352,7 +350,7 @@ def simple_create_file(dst_node: RemoteHosts, contents: str, remote_path: str, u
     run_one_raw(node=dst_node, command=full_command)
 
 
-def natural_sort_key(element: str) -> List[Union[str, int]]:
+def natural_sort_key(element: str) -> list[str | int]:
     """Changes "name-12.something.com" into ["name-", 12, ".something.com"]."""
     return [int(mychunk) if mychunk.isdigit() else mychunk for mychunk in DIGIT_RE.split(element)]
 
@@ -391,7 +389,7 @@ class SALLogger:
     """Class to log messages to sal."""
 
     project: str
-    task_id: Optional[str] = None
+    task_id: str | None = None
     channel: str = "#wikimedia-cloud-feed"
     host: str = "wm-bot.wm-bot.wmcloud.org"
     port: int = 64835
@@ -444,7 +442,7 @@ class UtilsForTesting:
     """Generic testing utilities."""
 
     @staticmethod
-    def to_parametrize(test_cases: Dict[str, Dict[str, Any]]) -> Dict[str, Union[str, List[Any]]]:
+    def to_parametrize(test_cases: dict[str, dict[str, Any]]) -> dict[str, str | list[Any]]:
         """Helper for parametrized tests.
 
         Use like:
@@ -479,9 +477,7 @@ class UtilsForTesting:
         return {"argnames": ",".join(_param_names), "argvalues": argvalues, "ids": list(test_cases.keys())}
 
     @staticmethod
-    def get_fake_remote(
-        responses: Optional[List[str]] = None, side_effect: Optional[List[Any]] = None
-    ) -> mock.MagicMock:
+    def get_fake_remote(responses: list[str] | None = None, side_effect: list[Any] | None = None) -> mock.MagicMock:
         """Create a fake remote.
 
         It will return a RemoteHosts that will return the given responses when run_sync is called in them.
@@ -521,7 +517,7 @@ class CmdChecklistParsingError(Exception):
 
 
 @dataclass(frozen=True)
-class CmdCheckListResults:
+class CmdChecklistResults:
     """CmdChecklistResults to host the results of running cmd-checklist-runner."""
 
     passed: int
@@ -538,7 +534,7 @@ class CmdChecklist:
         self.remote_hosts = remote_hosts
         self.config_file = config_file
 
-    def _parse_output(self, output_lines: List[str]) -> CmdCheckListResults:
+    def _parse_output(self, output_lines: list[str]) -> CmdChecklistResults:
         """Parse output from cmd-checklist-runner."""
         passed = failed = total = -1
 
@@ -558,9 +554,9 @@ class CmdChecklist:
         if passed < 0 or failed < 0 or total < 0:
             raise CmdChecklistParsingError(f"{self.name}: unable to parse the output from cmd-checklist-runner")
 
-        return CmdCheckListResults(passed=passed, failed=failed, total=total)
+        return CmdChecklistResults(passed=passed, failed=failed, total=total)
 
-    def run(self, cumin_params: CuminParams | None = None) -> CmdCheckListResults:
+    def run(self, cumin_params: CuminParams | None = None) -> CmdChecklistResults:
         """Run the cmd-checklist-runner testsuite."""
         # Not sure if this is what we want, it's what was there
         final_cumin_params = CuminParams.as_safe(cumin_params)
@@ -572,7 +568,7 @@ class CmdChecklist:
 
         return self._parse_output(output_lines)
 
-    def evaluate(self, results: CmdCheckListResults) -> int:
+    def evaluate(self, results: CmdChecklistResults) -> int:
         """Evaluate the cmd-checklist-runner results."""
         if results.total < 1:
             LOGGER.warning("%s: no tests were run!", self.name)
@@ -625,7 +621,7 @@ class CommandRunnerMixin:
         try_format: OutputFormat = OutputFormat.JSON,
         last_line_only: bool = False,
         skip_first_line: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a command on a runner node forcing json output.
 
         Returns a dict with the formatted output (loaded from json), usually for show commands.
@@ -661,7 +657,7 @@ class CommandRunnerMixin:
         project_as_arg: bool = False,
         skip_first_line: bool = False,
         cumin_params: CuminParams | None = None,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Run an command on a runner node forcing json output.
 
         Returns a list with the formatted output (loaded from json), usually for `list` commands.
@@ -714,7 +710,7 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
       Define the `run_with_proxy` method instead of the `run` method when writing your cookbook.
     """
 
-    recorder: Optional[WMCSCookbookRecorder] = None
+    recorder: WMCSCookbookRecorder | None = None
 
     def __init__(self, spicerack: Spicerack):
         """Init"""

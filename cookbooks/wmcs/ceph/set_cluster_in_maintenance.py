@@ -6,6 +6,8 @@ Usage example:
         --reason "Doing some tests or similar"
 
 """
+from __future__ import annotations
+
 import argparse
 import logging
 

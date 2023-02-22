@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import json
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Type
 
 import cumin
 import pytest
@@ -60,7 +62,7 @@ def get_stub_silence(silence_id: str):
     )
 )
 def test_AlertManager_get_silences_happy_path(
-    query: str, expected_command: str, commands_outputs: List[str], expected_silences: List[str]
+    query: str, expected_command: str, commands_outputs: list[str], expected_silences: list[str]
 ):
     fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
@@ -122,7 +124,7 @@ def test_AlertManager_get_silences_happy_path(
     )
 )
 def test_AlertManager_downtime_alert_happy_path(
-    params: Dict[str, Any], expected_command: str, commands_outputs: List[str], expected_silence: str
+    params: dict[str, Any], expected_command: str, commands_outputs: list[str], expected_silence: str
 ):
     fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
@@ -167,7 +169,7 @@ def test_AlertManager_downtime_alert_happy_path(
     )
 )
 def test_AlertManager_uptime_alert_happy_path(
-    params: Dict[str, Any], expected_command: Optional[str], commands_outputs: List[str]
+    params: dict[str, Any], expected_command: str | None, commands_outputs: list[str]
 ):
     fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
@@ -193,7 +195,7 @@ def test_AlertManager_uptime_alert_happy_path(
     )
 )
 def test_AlertManager_uptime_alert_raises(
-    params: Dict[str, Any],
+    params: dict[str, Any],
     expected_exception: Type[Exception],
 ):
     fake_remote = UtilsForTesting.get_fake_remote()
@@ -235,7 +237,7 @@ def test_AlertManager_uptime_alert_raises(
     )
 )
 def test_AlertManager_downtime_host_happy_path(
-    params: Dict[str, Any], expected_command: str, commands_outputs: List[str], expected_silence_id: str
+    params: dict[str, Any], expected_command: str, commands_outputs: list[str], expected_silence_id: str
 ):
     fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)
@@ -278,7 +280,7 @@ def test_AlertManager_downtime_host_happy_path(
     )
 )
 def test_AlertManager_uptime_host_happy_path(
-    params: Dict[str, Any], expected_command: str, commands_outputs: List[str]
+    params: dict[str, Any], expected_command: str, commands_outputs: list[str]
 ):
     fake_remote = UtilsForTesting.get_fake_remote(responses=commands_outputs)
     my_alertmanager = AlertManager.from_remote(fake_remote)

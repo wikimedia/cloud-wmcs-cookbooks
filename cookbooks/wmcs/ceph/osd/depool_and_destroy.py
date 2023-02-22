@@ -14,10 +14,12 @@ Usage example:
 
 """
 # pylint: disable=too-many-arguments
+from __future__ import annotations
+
 import argparse
 import logging
 import time
-from typing import List, cast
+from typing import cast
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -112,7 +114,7 @@ class DepoolAndDestroy(CookbookBase):
         )
 
 
-def check_that_osds_belong_to_host(osd_ids: List[int], hostname: str, ceph_controller: CephClusterController) -> None:
+def check_that_osds_belong_to_host(osd_ids: list[int], hostname: str, ceph_controller: CephClusterController) -> None:
     """Check if all the given osds belong to the given host in the cluster managed by the controller.
 
     Will raise an exception if they are not.
@@ -149,7 +151,7 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         force: bool,
         yes_i_know: bool,
         only_check: bool,
-        only_ids: List[int],
+        only_ids: list[int],
         all_osds: bool,
         spicerack: Spicerack,
     ):

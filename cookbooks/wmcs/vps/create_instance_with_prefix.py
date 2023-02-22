@@ -12,12 +12,14 @@ Usage example:
 
 """
 # pylint: disable=too-many-arguments,no-value-for-parameter
+from __future__ import annotations
+
 import argparse
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import partial
-from typing import Callable, List, Optional
+from typing import Callable
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -51,15 +53,15 @@ class CreateServerResponse:
 class InstanceCreationOpts:
     """Instance creation options."""
 
-    prefix: Optional[str] = None
-    flavor: Optional[OpenstackIdentifier] = None
-    image: Optional[OpenstackIdentifier] = None
-    network: Optional[OpenstackIdentifier] = None
-    security_group: Optional[OpenstackIdentifier] = None
-    server_group: Optional[OpenstackIdentifier] = None
-    server_group_policy: Optional[OpenstackServerGroupPolicy] = None
+    prefix: str | None = None
+    flavor: OpenstackIdentifier | None = None
+    image: OpenstackIdentifier | None = None
+    network: OpenstackIdentifier | None = None
+    security_group: OpenstackIdentifier | None = None
+    server_group: OpenstackIdentifier | None = None
+    server_group_policy: OpenstackServerGroupPolicy | None = None
 
-    def to_cli_args(self) -> List[str]:
+    def to_cli_args(self) -> list[str]:
         """Helper to unwrap the options for use with argument parsers."""
         args = []
         if self.prefix:
@@ -237,7 +239,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         instance_creation_opts: InstanceCreationOpts,
         server_group_policy: OpenstackServerGroupPolicy,
         security_group: str,
-        server_group: Optional[str] = None,
+        server_group: str | None = None,
         ssh_retries: int = 15,
     ):
         """Init"""

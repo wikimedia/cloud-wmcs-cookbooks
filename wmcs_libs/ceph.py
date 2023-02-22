@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Ceph related library functions and classes."""
+from __future__ import annotations
+
 import json
 import logging
 import re
 import time
 from copy import copy, deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional, Set, Union, cast
+from typing import Any, Iterable, cast
 
 from spicerack import Remote, Spicerack
 from spicerack.remote import RemoteExecutionError
@@ -32,7 +34,7 @@ from wmcs_libs.inventory import (
 )
 
 LOGGER = logging.getLogger(__name__)
-# List of alerts that are triggered by the cluster aside from the specifics for each node
+# list of alerts that are triggered by the cluster aside from the specifics for each node
 OSD_EXPECTED_OS_DRIVES = 2
 
 
@@ -138,7 +140,7 @@ class OSDTreeEntry:
     crush_weight: float
 
     @classmethod
-    def from_json_data(cls, json_data: Dict[str, Any]) -> "OSDTreeEntry":
+    def from_json_data(cls, json_data: dict[str, Any]) -> "OSDTreeEntry":
         """Get an osd class from the osd entry in the output of `ceph osd tree -f json`."""
         return cls(
             osd_id=json_data["id"],
@@ -155,11 +157,11 @@ class MGRMap:
 
     available: bool
     num_standbys: int
-    modules: List[str]
-    services: Dict[str, str]
+    modules: list[str]
+    services: dict[str, str]
 
     @classmethod
-    def from_dict(cls, obj_dict: Dict[str, Any]) -> "MGRMap":
+    def from_dict(cls, obj_dict: dict[str, Any]) -> "MGRMap":
         """Create the MGRMap from the output of ceph status -f json | jq '.mgrmap'"""
         return cls(
             available=obj_dict["available"],
@@ -173,9 +175,9 @@ class MGRMap:
 class CephClusterStatus:
     """Status of a CEPH cluster."""
 
-    status_dict: Dict[str, Any]
+    status_dict: dict[str, Any]
 
-    def get_osdmap_set_flags(self) -> Set[CephOSDFlag]:
+    def get_osdmap_set_flags(self) -> set[CephOSDFlag]:
         """Get osdmap set flags."""
         osd_maps = self.status_dict["health"]["checks"].get("OSDMAP_FLAGS")
         if not osd_maps:
@@ -190,7 +192,7 @@ class CephClusterStatus:
         return set(CephOSDFlag(flag) for flag in flags)
 
     @staticmethod
-    def _filter_out_octopus_upgrade_warns(status: Dict[str, Any]) -> Dict[str, Any]:
+    def _filter_out_octopus_upgrade_warns(status: dict[str, Any]) -> dict[str, Any]:
         # ignore temporary alert for octopus upgrade
         # https://docs.ceph.com/en/latest/security/CVE-2021-20288/#recommendations
         new_status = deepcopy(status)
@@ -224,7 +226,7 @@ class CephClusterStatus:
         return False
 
     def check_healthy(
-        self, consider_maintenance_healthy: bool = False, health_issues_to_ignore: Optional[Iterable[str]] = None
+        self, consider_maintenance_healthy: bool = False, health_issues_to_ignore: Iterable[str] | None = None
     ) -> None:
         """Check if the cluster is healthy."""
         # ignore temporary alert for octopus upgrade
@@ -253,11 +255,11 @@ class CephClusterStatus:
                 f"The cluster is currently in an unhealthy status: \n{json.dumps(self.status_dict['health'], indent=4)}"
             )
 
-    def get_in_progress(self) -> Dict[str, Any]:
+    def get_in_progress(self) -> dict[str, Any]:
         """Get the current in-progress events."""
         return self.status_dict.get("progress_events", {})
 
-    def get_health_issues(self) -> Dict[str, Any]:
+    def get_health_issues(self) -> dict[str, Any]:
         """Get the current health issues."""
         return self.status_dict.get("health", {}).get("checks", {})
 
@@ -276,7 +278,7 @@ class CephOSDNodeController:
         self._node = self._remote.query(f"D{{{self.node_fqdn}}}", use_sudo=True)
 
     @classmethod
-    def _is_device_available(cls, device_info: Dict[str, Any]) -> bool:
+    def _is_device_available(cls, device_info: dict[str, Any]) -> bool:
         def _is_disk() -> bool:
             return device_info.get("type") == "disk"
 
@@ -288,7 +290,7 @@ class CephOSDNodeController:
 
         return _is_disk() and _does_not_have_partitions() and _its_not_mounted()
 
-    def do_lsblk(self) -> List[Dict[str, Any]]:
+    def do_lsblk(self) -> list[dict[str, Any]]:
         """Simple lsblk on the host to get the devices."""
         structured_output = run_one_formatted(
             command=["lsblk", "--json"],
@@ -305,7 +307,7 @@ class CephOSDNodeController:
 
         return structured_output["blockdevices"]
 
-    def get_available_devices(self) -> List[str]:
+    def get_available_devices(self) -> list[str]:
         """Get the current available devices in the node."""
         return [
             f"/dev/{device_info['name']}"
@@ -374,7 +376,7 @@ class CephOSDNodeController:
             cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )
 
-    def stop_osds(self, osd_ids: List[int]) -> None:
+    def stop_osds(self, osd_ids: list[int]) -> None:
         """Stops all the given OSD daemons from the OSD host."""
         for osd_id in osd_ids:
             self.stop_osd(osd_id=osd_id)
@@ -403,7 +405,7 @@ class CephClusterController(CommandRunnerMixin):
 
         return ["ceph", *command, *format_args]
 
-    def get_nodes(self) -> Dict[str, Any]:
+    def get_nodes(self) -> dict[str, Any]:
         """Get the nodes currently in the cluster."""
         # There's usually a couple empty lines before the json data
         return self.run_formatted_as_dict("node", "ls", last_line_only=True)
@@ -459,9 +461,7 @@ class CephClusterController(CommandRunnerMixin):
         self.run_raw("osd", "crush", "rm-device-class", f"{osd_id}", json_output=False)
         self.run_raw("osd", "crush", "set-device-class", osd_class.value, f"{osd_id}", json_output=False)
 
-    def downtime_cluster_alerts(
-        self, reason: str, duration: str = "4h", task_id: Optional[str] = None
-    ) -> List[SilenceID]:
+    def downtime_cluster_alerts(self, reason: str, duration: str = "4h", task_id: str | None = None) -> list[SilenceID]:
         """Downtime all the known cluster-wide alerts (the ones not related to a specific ceph node)."""
         silences = []
         # There's only one alert left
@@ -477,7 +477,7 @@ class CephClusterController(CommandRunnerMixin):
 
         return silences
 
-    def uptime_cluster_alerts(self, silences: Optional[List[SilenceID]]) -> None:
+    def uptime_cluster_alerts(self, silences: list[SilenceID] | None) -> None:
         """Enable again all the alert for the cluster.
 
         If specific silences are passed, only those are removed, if none are passed, it will remove any existing
@@ -491,7 +491,7 @@ class CephClusterController(CommandRunnerMixin):
             # we match each individually
             uptime_alert(spicerack=self._spicerack, extra_queries=[self.CLUSTER_ALERT_MATCH])
 
-    def set_maintenance(self, reason: str, force: bool = False, task_id: Optional[str] = None) -> List[SilenceID]:
+    def set_maintenance(self, reason: str, force: bool = False, task_id: str | None = None) -> list[SilenceID]:
         """Set maintenance and mute any cluster-wide alerts.
 
         Returns the list of alert silences, to pass back to unset_maintenance for example.
@@ -525,7 +525,7 @@ class CephClusterController(CommandRunnerMixin):
         self.set_osdmap_flag(flag=CephOSDFlag("norebalance"))
         return silences
 
-    def unset_maintenance(self, force: bool = False, silences: Optional[List[SilenceID]] = None) -> None:
+    def unset_maintenance(self, force: bool = False, silences: list[SilenceID] | None = None) -> None:
         """Unset maintenance and remove any cluster-wide alert silences.
 
         If no silences passed, it will remove all the existing silences for the cluster if any.
@@ -611,7 +611,7 @@ class CephClusterController(CommandRunnerMixin):
         # Ceph uses the 15-minute average to measure health, so we need to wait
         #  a long time for it to feel better after a reboot
         timeout_seconds: int = 1800,
-        health_issues_to_ignore: Optional[Iterable[str]] = None,
+        health_issues_to_ignore: Iterable[str] | None = None,
     ) -> None:
         """Wait until a cluster becomes healthy."""
         check_interval_seconds = 10
@@ -642,12 +642,12 @@ class CephClusterController(CommandRunnerMixin):
             f"\n{json.dumps(cluster_status.status_dict['health'], indent=4)}"
         )
 
-    def get_osd_tree(self) -> Dict[str, Any]:
+    def get_osd_tree(self) -> dict[str, Any]:
         """Retrieve the osd tree, already parsed into a tree structure."""
 
         def _get_expanded_node(
-            plain_node: Dict[str, Any], all_nodes: Dict[int, Dict[str, Any]]
-        ) -> Union[Dict[str, Any], OSDTreeEntry]:
+            plain_node: dict[str, Any], all_nodes: dict[int, dict[str, Any]]
+        ) -> dict[str, Any] | OSDTreeEntry:
             # We expect the "osd" nodes to always be leaf nodes of the tree
             if plain_node.get("type") == "osd":
                 return OSDTreeEntry.from_json_data(plain_node)
@@ -662,8 +662,8 @@ class CephClusterController(CommandRunnerMixin):
             expanded_node["children"] = children
             return expanded_node
 
-        def _get_nested_nodes_tree(nodes_list: List[Dict[str, Any]]) -> Union[Dict[str, Any], OSDTreeEntry]:
-            id_to_nodes: Dict[int, Dict[str, Any]] = {node["id"]: node for node in nodes_list}
+        def _get_nested_nodes_tree(nodes_list: list[dict[str, Any]]) -> dict[str, Any] | OSDTreeEntry:
+            id_to_nodes: dict[int, dict[str, Any]] = {node["id"]: node for node in nodes_list}
             root_node = next(node for node in nodes_list if node["type"] == "root")
             return _get_expanded_node(plain_node=root_node, all_nodes=id_to_nodes)
 
@@ -674,13 +674,13 @@ class CephClusterController(CommandRunnerMixin):
             "stray": flat_nodes["stray"],
         }
 
-    def get_all_osd_ips(self) -> Set[str]:
+    def get_all_osd_ips(self) -> set[str]:
         """Returns all the known ips for all the osd, deduplicated.
 
         This includes the public and cluster ips, useful to run tests.
         """
         osd_dump = self.run_formatted_as_dict("osd", "dump", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
-        all_osd_ips: Set[str] = set()
+        all_osd_ips: set[str] = set()
         for osd in osd_dump.get("osds", []):
             public_addr = osd["public_addr"].split(":", 1)[0]
             all_osd_ips.add(public_addr)
@@ -760,7 +760,7 @@ class CephClusterController(CommandRunnerMixin):
         if f"purged osd.{osd_id}" not in response:
             raise CephException(f"Got unexpected output while purging osd {osd_id}: {response}")
 
-    def get_host_osds(self, osd_host: str) -> List[int]:
+    def get_host_osds(self, osd_host: str) -> list[int]:
         """Retrieve the list of osd ids that are there in a host (from the ceph cluster rbdmap)."""
         osd_tree = self.get_osd_tree()
         # Here we are assuming that the tree has root -> osd_hosts -> osds, that might change if we change the crush
@@ -774,7 +774,7 @@ class CephClusterController(CommandRunnerMixin):
 
         raise CephException(f"Unable to find osd host {osd_host} on osd tree: {osd_tree}")
 
-    def check_osds_ok_to_stop(self, osd_ids: List[int]) -> List[str]:
+    def check_osds_ok_to_stop(self, osd_ids: list[int]) -> list[str]:
         """Check if the given OSD daemons can be stopped without affecting the cluster.
 
         Returns a list of failures/reasons if they are not. An empty list otherwise.
@@ -793,7 +793,7 @@ class CephClusterController(CommandRunnerMixin):
 
         return [result]
 
-    def check_osds_safe_to_destroy(self, osd_ids: List[int]) -> List[str]:
+    def check_osds_safe_to_destroy(self, osd_ids: list[int]) -> list[str]:
         """Check if the given OSD daemons can be destroyed without affecting the cluster.
 
         Returns a list of failures/reasons if they are not. An empty list otherwise.
@@ -812,12 +812,12 @@ class CephClusterController(CommandRunnerMixin):
             ),
         ]
 
-    def check_if_osd_ready_for_bootstrap(self, osd_controller: CephOSDNodeController) -> List[str]:
+    def check_if_osd_ready_for_bootstrap(self, osd_controller: CephOSDNodeController) -> list[str]:
         """Check if a node is ready to be added as osd to the cluster.
 
         Returns a list of any failures that happened.
         """
-        failures: List[str] = []
+        failures: list[str] = []
 
         LOGGER.info("Checking that jumbo frames are allowed to all other nodes in the cluster...")
         for other_node_ip in self.get_all_osd_ips():
@@ -876,7 +876,7 @@ class CephClusterController(CommandRunnerMixin):
 
         return failures
 
-    def is_osd_host_valid(self, osd_tree: Dict[str, Any], hostname: str) -> bool:
+    def is_osd_host_valid(self, osd_tree: dict[str, Any], hostname: str) -> bool:
         """Validates a specific hostname in a given OSD tree.
 
         It checks that the hostname is present in the tree, and it has the expected attributes.
@@ -905,9 +905,9 @@ class CephTestUtils(UtilsForTesting):
     """Utils to test ceph related code."""
 
     @staticmethod
-    def get_status_dict(overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def get_status_dict(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
         """Generate a stub status dict to use when creating CephStatus"""
-        status_dict: Dict[str, Any] = {"health": {"status": {}, "checks": {}}}
+        status_dict: dict[str, Any] = {"health": {"status": {}, "checks": {}}}
 
         def _merge_dict(to_update, source_dict):
             if not source_dict:
@@ -952,14 +952,14 @@ class CephTestUtils(UtilsForTesting):
     def get_available_device(
         name: str = "sddummy_non_matching_part",
         device_type: str = "disk",
-        children: Optional[List[Any]] = None,
-        mountpoint: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        children: list[Any] | None = None,
+        mountpoint: str | None = None,
+    ) -> dict[str, Any]:
         """Get a device that is considered available.
 
         If you pass any value, it will not ensure that it's still considered available.
         """
-        available_device: Dict[str, Any] = {"name": name, "type": device_type}
+        available_device: dict[str, Any] = {"name": name, "type": device_type}
         if children is not None:
             available_device["children"] = children
 
@@ -969,12 +969,12 @@ class CephTestUtils(UtilsForTesting):
         return available_device
 
 
-def get_mon_nodes(cluster_name: CephClusterName) -> List[str]:
+def get_mon_nodes(cluster_name: CephClusterName) -> list[str]:
     """Get the list of mon nodes given a cluster."""
     return get_nodes_by_role(cluster_name, role_name=CephNodeRoleName.MON)
 
 
-def get_osd_nodes(cluster_name: CephClusterName) -> List[str]:
+def get_osd_nodes(cluster_name: CephClusterName) -> list[str]:
     """Get the list of osd nodes given a cluster."""
     return get_nodes_by_role(cluster_name, role_name=CephNodeRoleName.OSD)
 
