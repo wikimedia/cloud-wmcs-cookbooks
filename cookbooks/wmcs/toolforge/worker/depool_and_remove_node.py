@@ -18,7 +18,6 @@ from cookbooks.wmcs.toolforge.worker.drain import Drain
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import (
     CommonOpts,
-    KubernetesController,
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
@@ -26,6 +25,7 @@ from wmcs_libs.common import (
     with_common_opts,
 )
 from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.k8s.kubernetes import KubernetesController
 from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)

@@ -21,14 +21,14 @@ from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPre
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 from wmcs_libs.common import (
     CommonOpts,
-    KubeadmController,
-    KubernetesController,
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     run_one_raw,
     with_common_opts,
 )
+from wmcs_libs.k8s.kubeadm import KubeadmController
+from wmcs_libs.k8s.kubernetes import KubernetesController
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackServerGroupPolicy
 
 LOGGER = logging.getLogger(__name__)

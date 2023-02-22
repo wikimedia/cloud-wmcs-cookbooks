@@ -16,12 +16,12 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmcs_libs.common import (
     K8S_SYSTEM_NAMESPACES,
     CommonOpts,
-    KubernetesController,
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     with_common_opts,
 )
+from wmcs_libs.k8s.kubernetes import KubernetesController
 
 LOGGER = logging.getLogger(__name__)
 
