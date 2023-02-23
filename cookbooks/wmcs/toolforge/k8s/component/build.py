@@ -150,6 +150,8 @@ class ToolforgeComponentBuildRunner(WMCSCookbookRunnerBase):
                 self.docker_image_name = "ingress-admission"
             elif self.git_name == "registry-admission-webhook":
                 self.docker_image_name = "registry-admission"
+            elif self.git_name == "volume-admission-controller":
+                self.docker_image_name = "volume-admission"
             else:
                 self.docker_image_name = f"toolforge-{self.git_name}"
             LOGGER.info("INFO: guessed docker image name as %s", self.docker_image_name)
