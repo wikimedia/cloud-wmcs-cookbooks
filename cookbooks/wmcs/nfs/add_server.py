@@ -24,7 +24,16 @@ from cookbooks.wmcs.vps.create_instance_with_prefix import (
     add_instance_creation_options,
     with_instance_creation_options,
 )
-from wmcs_libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
+from wmcs_libs.common import (
+    CommonOpts,
+    OutputFormat,
+    SALLogger,
+    WMCSCookbookRunnerBase,
+    add_common_opts,
+    run_one_as_dict,
+    run_one_raw,
+    with_common_opts,
+)
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackID
 
@@ -42,9 +51,6 @@ class NFSAddServer(CookbookBase):
             prog=__name__, description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
         )
         parser.add_argument(
-            "--project", required=False, default="cloudinfra-nfs", help="Openstack project to contain the new server"
-        )
-        parser.add_argument(
             "--service-ip",
             action="store_true",
             help="If set, a service IP and fqdn will be created and attached to the new host.",
@@ -58,13 +64,16 @@ class NFSAddServer(CookbookBase):
             "an existing volume can be attached later.",
         )
         add_instance_creation_options(parser)
+        add_common_opts(parser, project_default="cloudinfra-nfs")
         parser.add_argument("volume", help=("nfs volume to be provided and managed by this server"))
 
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_instance_creation_options(args, NFSAddServerRunner)(
+        runner = with_common_opts(self.spicerack, args, NFSAddServerRunner)
+        runner = with_instance_creation_options(args, runner)
+        return runner(
             prefix=args.prefix,
             project=args.project,
             volume=args.volume,
@@ -80,17 +89,17 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         prefix: str,
-        project: str,
         service_ip: bool,
         volume: str,
         create_storage_volume_size: int,
         spicerack: Spicerack,
         instance_creation_opts: InstanceCreationOpts,
+        common_opts: CommonOpts,
     ):
         """Init"""
         self.create_storage_volume_size = create_storage_volume_size
         self.volume = volume
-        self.project = project
+        self.project = common_opts.project
         super().__init__(spicerack=spicerack)
         self.prefix = prefix
         self.service_ip = service_ip
@@ -99,6 +108,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
             raise Exception("Missing network please provide one")
 
         self.network = self.instance_creation_opts.network
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point"""
@@ -215,3 +225,4 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
 
         # Apply all pending changes
         run_one_raw(node=new_node, command=["/usr/local/sbin/run-puppet-agent"])
+        self.sallogger.log(f"created NFS server {new_server.server_fqdn}")
