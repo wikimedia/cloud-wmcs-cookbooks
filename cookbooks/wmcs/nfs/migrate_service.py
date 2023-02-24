@@ -22,7 +22,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
 
-from wmcs_libs.common import CUMIN_SAFE_WITH_OUTPUT, OutputFormat, WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CUMIN_SAFE_WITH_OUTPUT, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 
@@ -111,12 +111,10 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         to_node = self.spicerack.remote().query(f"D{{{self.to_fqdn}}}", use_sudo=True)
 
         # Verify that puppet/hiera config agrees between the two hosts
-        response = self.openstack_api.run_formatted_as_dict(
-            "wmcs-enc-cli",
-            "--openstack-project",
-            self.project,
-            "get_node_consolidated_info",
-            self.from_fqdn,
+        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        response = run_one_as_dict(
+            node=control_node,
+            command=["wmcs-enc-cli", "--openstack-project", self.project, "get_node_consolidated_info", self.from_fqdn],
             try_format=OutputFormat.YAML,
             cumin_params=CUMIN_SAFE_WITH_OUTPUT,
         )
@@ -140,12 +138,10 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
 
         mount_name = from_hiera["profile::wmcs::nfs::standalone::volumes"][0]
 
-        response = self.openstack_api.run_formatted_as_dict(
-            "wmcs-enc-cli",
-            "--openstack-project",
-            self.project,
-            "get_node_consolidated_info",
-            self.to_fqdn,
+        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        response = run_one_as_dict(
+            node=control_node,
+            command=["wmcs-enc-cli", "--openstack-project", self.project, "get_node_consolidated_info", self.to_fqdn],
             try_format=OutputFormat.YAML,
             cumin_params=CUMIN_SAFE_WITH_OUTPUT,
         )
@@ -245,26 +241,36 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         from_hiera["profile::wmcs::nfs::standalone::cinder_attached"] = False
         from_hiera_str = json.dumps(from_hiera)
 
-        self.openstack_api.run_raw(
-            "wmcs-enc-cli",
-            "--openstack-project",
-            self.project,
-            "set_prefix_hiera",
-            self.from_fqdn,
-            _quote(from_hiera_str),
+        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        response = run_one_as_dict(
+            node=control_node,
+            command=[
+                "wmcs-enc-cli",
+                "--openstack-project",
+                self.project,
+                "set_prefix_hiera",
+                self.from_fqdn,
+                _quote(from_hiera_str),
+            ],
             cumin_params=CUMIN_SAFE_WITH_OUTPUT,
+            try_format=OutputFormat.YAML,
         )
 
         to_hiera["profile::wmcs::nfs::standalone::cinder_attached"] = True
         to_hiera_str = json.dumps(to_hiera)
-        self.openstack_api.run_raw(
-            "wmcs-enc-cli",
-            "--openstack-project",
-            self.project,
-            "set_prefix_hiera",
-            self.to_fqdn,
-            _quote(to_hiera_str),
+        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        response = run_one_as_dict(
+            node=control_node,
+            command=[
+                "wmcs-enc-cli",
+                "--openstack-project",
+                self.project,
+                "set_prefix_hiera",
+                self.to_fqdn,
+                _quote(to_hiera_str),
+            ],
             cumin_params=CUMIN_SAFE_WITH_OUTPUT,
+            try_format=OutputFormat.YAML,
         )
 
         # Move the service ip

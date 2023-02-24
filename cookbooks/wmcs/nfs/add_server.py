@@ -75,7 +75,6 @@ class NFSAddServer(CookbookBase):
         runner = with_instance_creation_options(args, runner)
         return runner(
             prefix=args.prefix,
-            project=args.project,
             volume=args.volume,
             service_ip=args.service_ip,
             create_storage_volume_size=args.create_storage_volume_size,
