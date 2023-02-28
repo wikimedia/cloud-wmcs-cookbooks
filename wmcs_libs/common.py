@@ -205,7 +205,7 @@ def run_one_raw_needed_to_be_able_to_mock(
     instead for most cases.
     """
     if not isinstance(command, Command):
-        command = Command(command=" ".join(command), ok_codes=[0, 1, 2] if capture_errors else [0])
+        command = Command(command=" ".join(command), ok_codes=[] if capture_errors else [0])
 
     run_sync_params = asdict(cumin_params) if cumin_params else {}
 

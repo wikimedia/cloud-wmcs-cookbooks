@@ -787,6 +787,7 @@ class CephClusterController(CommandRunnerMixin):
             "ok-to-stop",
             *[str(osd_id) for osd_id in osd_ids],
             cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+            capture_errors=True,
         )
         if "are ok to stop without reducing availability or risking data" in result:
             return []
