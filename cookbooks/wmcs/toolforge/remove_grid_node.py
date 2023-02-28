@@ -15,6 +15,7 @@ from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import (
+    CUMIN_SAFE_WITHOUT_OUTPUT,
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -101,7 +102,7 @@ class ToolforgeRemoveGridNodeRunner(WMCSCookbookRunnerBase):
         for node_name in self.node_hostnames:
             node_fqdn = f"{node_name}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
 
-            if not openstack_api.server_exists(node_name, print_output=False, print_progress_bars=False):
+            if not openstack_api.server_exists(node_name, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT):
                 LOGGER.warning("node %s is not a VM in project %s", node_fqdn, self.common_opts.project)
                 return 1
 
@@ -130,6 +131,6 @@ class ToolforgeRemoveGridNodeRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Reconfiguring the grid")
             # HACK: run the reconfigurator a few times, just to make sure it gets absolutely everything
             for _ in range(2):
-                grid_controller.reconfigure(is_tools_project=(self.common_opts.project == "tools"))
+                grid_controller.reconfigure(is_tools_project=self.common_opts.project == "tools")
 
         return 0

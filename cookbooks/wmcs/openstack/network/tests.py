@@ -15,7 +15,7 @@ from typing import Optional
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CmdChecklist, WMCSCookbookRunnerBase
+from wmcs_libs.common import CmdChecklist, CuminParams, WMCSCookbookRunnerBase
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import get_control_nodes
 
@@ -70,5 +70,5 @@ class NetworkTestRunner(WMCSCookbookRunnerBase):
         checklist = CmdChecklist(
             name="Cloud VPS network tests", remote_hosts=remote_host, config_file="/etc/networktests/networktests.yaml"
         )
-        results = checklist.run(print_progress_bars=False)
+        results = checklist.run(cumin_params=CuminParams(print_progress_bars=False))
         return checklist.evaluate(results)

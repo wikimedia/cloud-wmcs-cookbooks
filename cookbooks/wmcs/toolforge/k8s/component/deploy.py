@@ -13,7 +13,15 @@ from typing import List
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, run_one_raw
+from wmcs_libs.common import (
+    CommonOpts,
+    CuminParams,
+    SALLogger,
+    WMCSCookbookRunnerBase,
+    add_common_opts,
+    run_one_raw,
+    with_common_opts,
+)
 from wmcs_libs.inventory import ToolforgeKubernetesClusterName
 from wmcs_libs.kubernetes import (
     add_toolforge_kubernetes_cluster_opts,
@@ -64,7 +72,8 @@ class ToolforgeComponentDeploy(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeComponentDeployRunner,)(
+        runner = with_common_opts(self.spicerack, args, ToolforgeComponentDeployRunner)
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, runner)(
             git_url=args.git_url,
             git_name=args.git_name,
             git_branch=args.git_branch,
@@ -123,36 +132,35 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         deploy_node_fqdn = get_control_nodes(self.cluster_name)[0]
         deploy_node = remote.query(f"D{{{deploy_node_fqdn}}}", use_sudo=True)
         LOGGER.info("INFO: using deploy node %s", deploy_node_fqdn)
+        no_output = CuminParams(print_output=False, print_progress_bars=False)
 
         # create temp dir
         LOGGER.info("INFO: creating temp dir %s", self.random_dir)
-        run_one_raw(node=deploy_node, command=["mkdir", self.random_dir], print_output=False, print_progress_bars=False)
+        run_one_raw(node=deploy_node, command=["mkdir", self.random_dir], cumin_params=no_output)
 
         # git clone
         cmd = f"cd {self.random_dir} ; git clone {self.git_url}"
         LOGGER.info("INFO: git cloning %s", self.git_url)
-        run_one_raw(node=deploy_node, command=_sh_wrap(cmd), print_output=False, print_progress_bars=False)
+        run_one_raw(node=deploy_node, command=_sh_wrap(cmd), cumin_params=no_output)
 
         # git checkout branch
         repo_dir = f"{self.random_dir}/{self.git_name}"
         cmd = f"cd {repo_dir} ; git checkout {self.git_branch}"
         LOGGER.info("INFO: git checkout branch '%s' on %s", self.git_branch, repo_dir)
-        run_one_raw(node=deploy_node, command=_sh_wrap(cmd), print_output=False, print_progress_bars=False)
+        run_one_raw(node=deploy_node, command=_sh_wrap(cmd), cumin_params=no_output)
 
         # get git hash for the SAL logger
         cmd = f"cd {repo_dir} ; git rev-parse --short HEAD"
-        git_hash = run_one_raw(
-            node=deploy_node, command=_sh_wrap(cmd), last_line_only=True, print_output=False, print_progress_bars=False
-        )
+        git_hash = run_one_raw(node=deploy_node, command=_sh_wrap(cmd), last_line_only=True, cumin_params=no_output)
 
         # deploy!
         cmd = f"cd {repo_dir} ; {self.deployment_command}"
         LOGGER.info("INFO: deploying with %s", self.deployment_command)
-        run_one_raw(node=deploy_node, command=_sh_wrap(cmd), print_progress_bars=False)
+        run_one_raw(node=deploy_node, command=_sh_wrap(cmd), cumin_params=CuminParams(print_progress_bars=False))
 
         # cleanup
         cmd = f"rm -rf --preserve-root=all {self.random_dir}"
         LOGGER.info("INFO: cleaning up temp dir %s", self.random_dir)
-        run_one_raw(node=deploy_node, command=cmd.split(), is_safe=False, print_output=False, print_progress_bars=False)
+        run_one_raw(node=deploy_node, command=cmd.split(), cumin_params=no_output)
 
         self.sallogger.log(message=f"deployed kubernetes component {self.git_url} ({git_hash})")

@@ -14,6 +14,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.common import (
+    CUMIN_SAFE_WITHOUT_OUTPUT,
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -210,7 +211,7 @@ def calculate_changelist(
             host_to_canary_vms[hypervisor] = []
 
     changelist = []
-    for host, canary_vms in host_to_canary_vms.items():
+    for host, _ in host_to_canary_vms.items():
         hostchanges = HostChanges.from_canary_vms(
             hostname=host, host_canary_vms=host_to_canary_vms[host], recreate=recreate
         )
@@ -238,6 +239,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
         self.recreate = recreate
         self.control_node_fqdn = get_control_nodes(cluster_name=self.deployment)[0]
         self.disable_sal_log = False
+        self.existing_canary_vms: List[Dict[str, Any]] = []
         super().__init__(spicerack=spicerack)
 
         if deployment == OpenstackClusterName.CODFW1DEV:
@@ -252,7 +254,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
             remote=spicerack.remote(), cluster_name=self.deployment, project=self.common_opts.project
         )
 
-        hypervisor_list = self.openstack_api.hypervisor_list(print_output=False, print_progress_bars=False)
+        hypervisor_list = self.openstack_api.hypervisor_list(cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
         actual_host_list = []
         for hypervisor in hypervisor_list:
@@ -342,9 +344,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
-        self.existing_canary_vms = self.openstack_api.server_list(
-            long=True, print_output=False, print_progress_bars=False
-        )
+        self.existing_canary_vms = self.openstack_api.server_list(long=True, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
         changelist = calculate_changelist(self.hostname_list, self.existing_canary_vms, self.recreate)
 
@@ -359,7 +359,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
             self.disable_sal_log = True
 
         for hostchanges in changelist:
-            LOGGER.info(f"INFO: {hostchanges.hostname} has changes: {hostchanges}")
+            LOGGER.info("INFO: %s has changes: %s", hostchanges.hostname, str(hostchanges))
             self._force_reboot(hostchanges)
             self._create(hostchanges)
             self._delete(hostchanges)

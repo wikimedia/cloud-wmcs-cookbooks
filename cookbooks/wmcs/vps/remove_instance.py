@@ -15,6 +15,7 @@ from spicerack.puppet import PuppetMaster
 
 from wmcs_libs.common import (
     CommonOpts,
+    CuminParams,
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
@@ -89,7 +90,7 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
 
     def run(self) -> None:
         """Main entry point"""
-        if not self.openstack_api.server_exists(self.name_to_remove, print_output=False):
+        if not self.openstack_api.server_exists(self.name_to_remove, cumin_params=CuminParams(print_output=False)):
             LOGGER.warning(
                 "Unable to find server %s in project %s. Please review the project and server name.",
                 self.name_to_remove,
@@ -107,7 +108,9 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
             try:
                 # for legacy VMs in .eqiad.wmflabs
                 result = run_one_raw(
-                    command=["hostname", "-f"], node=remote, print_output=False, print_progress_bars=False
+                    command=["hostname", "-f"],
+                    node=remote,
+                    cumin_params=CuminParams(print_output=False, print_progress_bars=False),
                 )
 
                 # idk why this is needed but it filters out 'mesg: ttyname failed: Inappropriate ioctl for device'

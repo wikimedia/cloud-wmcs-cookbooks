@@ -15,6 +15,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.common import (
     CommonOpts,
+    CuminParams,
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
@@ -158,27 +159,26 @@ class ToolforgeComponentBuildRunner(WMCSCookbookRunnerBase):
         build_node_fqdn = f"{self.docker_builder_hostname}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
         build_node = remote.query(f"D{{{build_node_fqdn}}}", use_sudo=True)
         LOGGER.info("INFO: using build node %s", build_node_fqdn)
+        no_output = CuminParams(print_output=False, print_progress_bars=False)
 
         # create temp dir
         LOGGER.info("INFO: creating temp dir %s", self.random_dir)
-        run_one_raw(node=build_node, command=["mkdir", self.random_dir], print_output=False, print_progress_bars=False)
+        run_one_raw(node=build_node, command=["mkdir", self.random_dir], cumin_params=no_output)
 
         # git clone
         cmd = f"cd {self.random_dir} ; git clone {self.git_url}"
         LOGGER.info("INFO: git cloning %s", self.git_url)
-        run_one_raw(node=build_node, command=_sh_wrap(cmd), print_output=False, print_progress_bars=False)
+        run_one_raw(node=build_node, command=_sh_wrap(cmd), cumin_params=no_output)
 
         # git checkout branch
         repo_dir = f"{self.random_dir}/{self.git_name}"
         cmd = f"cd {repo_dir} ; git checkout {self.git_branch}"
         LOGGER.info("INFO: git checkout %s on cloning %s", self.git_branch, repo_dir)
-        run_one_raw(node=build_node, command=_sh_wrap(cmd), print_output=False, print_progress_bars=False)
+        run_one_raw(node=build_node, command=_sh_wrap(cmd), cumin_params=no_output)
 
         # get git hash for the SAL logger
         cmd = f"cd {repo_dir} ; git rev-parse --short HEAD"
-        git_hash = run_one_raw(
-            node=build_node, command=_sh_wrap(cmd), last_line_only=True, print_output=False, print_progress_bars=False
-        )
+        git_hash = run_one_raw(node=build_node, command=_sh_wrap(cmd), last_line_only=True, cumin_params=no_output)
 
         if not self.docker_image_tag:
             self.docker_image_tag = git_hash
@@ -187,24 +187,22 @@ class ToolforgeComponentBuildRunner(WMCSCookbookRunnerBase):
         image = f"{self.docker_image_name}:{self.docker_image_tag}"
         cmd = f"cd {repo_dir} ; docker build -q --tag {image} ."
         LOGGER.info("INFO: building docker image %s", image)
-        image_id = run_one_raw(
-            node=build_node, command=_sh_wrap(cmd), last_line_only=True, print_output=False, print_progress_bars=False
-        )
+        image_id = run_one_raw(node=build_node, command=_sh_wrap(cmd), last_line_only=True, cumin_params=no_output)
 
         # cleanup
         cmd = f"rm -rf --preserve-root=all {self.random_dir}"
         LOGGER.info("INFO: cleaning up temp dir %s", self.random_dir)
-        run_one_raw(node=build_node, command=cmd.split(), is_safe=False, print_output=False, print_progress_bars=False)
+        run_one_raw(node=build_node, command=cmd.split(), cumin_params=no_output)
 
         # docker tag
         url = f"{self.registry_url}/{image}"
         cmd = f"docker tag {image_id} {url}"
         LOGGER.info("INFO: creating docker tag %s", url)
-        run_one_raw(node=build_node, command=_sh_wrap(cmd), print_output=False, print_progress_bars=False)
+        run_one_raw(node=build_node, command=_sh_wrap(cmd), cumin_params=no_output)
 
         # docker push
         cmd = f"docker push {url}"
         LOGGER.info("INFO: pushing to the registry %s", url)
-        run_one_raw(node=build_node, command=_sh_wrap(cmd), print_output=False, print_progress_bars=False)
+        run_one_raw(node=build_node, command=_sh_wrap(cmd), cumin_params=no_output)
 
         self.sallogger.log(message=f"build & push docker image {url} from {self.git_url} ({git_hash})")

@@ -158,14 +158,14 @@ def test_set_osdmap_flag_happy_path(set_flag_command_output: str):
     my_controller.set_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
     my_controller._controlling_node.run_sync.assert_called_with(
-        Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), is_safe=False
+        Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0])
     )
 
 
 @parametrize(
     {
         "Raises CephFlagSetError if the set command does not return the correct output": {
-            "set_flag_command_output": f"some error happend when setting {CephOSDFlag.NOREBALANCE.value}",
+            "set_flag_command_output": f"some error happened when setting {CephOSDFlag.NOREBALANCE.value}",
         },
     },
 )
@@ -181,7 +181,7 @@ def test_set_osdmap_flag_raising(set_flag_command_output: str):
         my_controller.set_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
     my_controller._controlling_node.run_sync.assert_called_with(
-        Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), is_safe=False
+        Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0])
     )
 
 
@@ -206,7 +206,7 @@ def test_unset_osdmap_flag_happy_path(unset_flag_command_output: str):
     my_controller.unset_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
     my_controller._controlling_node.run_sync.assert_called_with(
-        Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), is_safe=False
+        Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0])
     )
 
 
@@ -229,7 +229,7 @@ def test_unset_osdmap_flag_raising(unset_flag_command_output: str):
         my_controller.unset_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
     my_controller._controlling_node.run_sync.assert_called_with(
-        Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), is_safe=False
+        Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0])
     )
 
 
@@ -446,7 +446,7 @@ def test_wait_for_progress_events_raises(
             "commands_output": [json.dumps(CephTestUtils.get_ok_status_dict())],
             "time_ticks": [0],
         },
-        "Passes if cluster in maintenance and cosider_maintenance_healthy True": {
+        "Passes if cluster in maintenance and consider_maintenance_healthy True": {
             "commands_output": [json.dumps(CephTestUtils.get_maintenance_status_dict())],
             "time_ticks": [0],
             "consider_maintenance_healthy": True,

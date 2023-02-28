@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """Openstack Neutron specific related code."""
+from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from wmcs_libs.common import CommandRunnerMixin
+from wmcs_libs.common import (
+    CUMIN_SAFE_WITH_OUTPUT,
+    CUMIN_UNSAFE_WITHOUT_OUTPUT,
+    CommandRunnerMixin,
+    CuminParams,
+    OutputFormat,
+)
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackError, OpenstackID, OpenstackIdentifier, wait_for_it
 
 LOGGER = logging.getLogger(__name__)
@@ -246,32 +253,54 @@ class NeutronController(CommandRunnerMixin):
         # we need sudo, and the sourced credentials, so we have to wrap it in a bash command
         return ["bash", "-c", f"'{script}'"]
 
-    def run_formatted_as_list(self, *command: str, **kwargs: Any) -> List[Any]:
+    def run_formatted_as_list(
+        self,
+        *command,
+        capture_errors: bool = False,
+        project_as_arg: bool = False,
+        skip_first_line: bool = True,
+        cumin_params: CuminParams | None = None,
+    ) -> List[Any]:
         """Run a neutron command on a control node forcing json output."""
         # neutron command return a first line in the output that is a warning, not part of the json
-        kwargs["skip_first_line"] = True
-        kwargs["print_output"] = False
-        kwargs["print_progress_bars"] = False
-        return super().run_formatted_as_list(*command, **kwargs)
+        return super().run_formatted_as_list(
+            *command,
+            skip_first_line=skip_first_line,
+            capture_errors=capture_errors,
+            project_as_arg=project_as_arg,
+            cumin_params=CuminParams.replace(cumin_params, print_output=False, print_progress_bars=False),
+        )
 
-    def run_formatted_as_dict(self, *command: str, **kwargs: Any) -> Dict[str, Any]:
+    def run_formatted_as_dict(
+        self,
+        *command: str,
+        capture_errors: bool = False,
+        skip_first_line: bool = True,
+        project_as_arg: bool = False,
+        cumin_params: CuminParams | None = None,
+        try_format: OutputFormat = OutputFormat.JSON,
+        last_line_only: bool = False,
+    ) -> Dict[str, Any]:
         """Run a neutron command on a control node forcing json output."""
-        kwargs["skip_first_line"] = True
-        kwargs["print_output"] = False
-        kwargs["print_progress_bars"] = False
-        return super().run_formatted_as_dict(*command, **kwargs)
+        return super().run_formatted_as_dict(
+            *command,
+            capture_errors=capture_errors,
+            cumin_params=CuminParams.replace(cumin_params, print_output=False, print_progress_bars=False),
+            skip_first_line=skip_first_line,
+            last_line_only=last_line_only,
+            try_format=try_format,
+            project_as_arg=project_as_arg,
+        )
 
-    def _run_one_raw(self, *command: str, **kwargs: Any) -> str:
+    def _run_one_raw(self, *command: str, json_output: bool = False) -> str:
         """Run a neutron command on a control node returning the raw string."""
-        kwargs["print_output"] = False
-        kwargs["print_progress_bars"] = False
-        return super().run_raw(*command, **kwargs)
+        return super().run_raw(*command, json_output=json_output, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
     def agent_list(self) -> List[NeutronAgent]:
         """Get the list of neutron agents."""
         return [
             NeutronAgent.from_agent_data(agent_data=agent_data)
-            for agent_data in self.run_formatted_as_list("agent-list", is_safe=True)
+            for agent_data in self.run_formatted_as_list("agent-list", cumin_params=CUMIN_SAFE_WITH_OUTPUT)
         ]
 
     def agent_set_admin_up(self, agent_id: OpenstackID) -> None:
@@ -334,18 +363,22 @@ class NeutronController(CommandRunnerMixin):
         """Get the list of neutron routers."""
         return [
             NeutronPartialRouter.from_data(data=list_data)
-            for list_data in self.run_formatted_as_list("router-list", is_safe=True)
+            for list_data in self.run_formatted_as_list("router-list", cumin_params=CUMIN_SAFE_WITH_OUTPUT)
         ]
 
     def router_show(self, router: OpenstackIdentifier) -> NeutronRouter:
         """Show details of the given router."""
-        return NeutronRouter.from_data(data=self.run_formatted_as_dict("router-show", router, is_safe=True))
+        return NeutronRouter.from_data(
+            data=self.run_formatted_as_dict("router-show", router, cumin_params=CUMIN_SAFE_WITH_OUTPUT)
+        )
 
     def list_agents_hosting_router(self, router: OpenstackIdentifier) -> List[NeutronAgent]:
         """Get the list of nodes hosting a given router routers."""
         return [
             NeutronAgent.from_agent_data(agent_data={**agent_data, "agent_type": NeutronAgentType.L3_AGENT.value})
-            for agent_data in self.run_formatted_as_list("l3-agent-list-hosting-router", router, is_safe=True)
+            for agent_data in self.run_formatted_as_list(
+                "l3-agent-list-hosting-router", router, cumin_params=CUMIN_SAFE_WITH_OUTPUT
+            )
         ]
 
     def get_cloudnets(self) -> List[str]:
@@ -357,7 +390,7 @@ class NeutronController(CommandRunnerMixin):
 
     def list_routers_on_agent(self, agent_id: OpenstackID) -> List[Dict[str, Any]]:
         """Get the list of routers hosted a given agent."""
-        return self.run_formatted_as_list("router-list-on-l3-agent", agent_id, is_safe=True)
+        return self.run_formatted_as_list("router-list-on-l3-agent", agent_id, cumin_params=CUMIN_SAFE_WITH_OUTPUT)
 
     def check_if_network_is_alive(self) -> None:
         """Check if the network is in a working state (all agents up and running, all routers up and running).

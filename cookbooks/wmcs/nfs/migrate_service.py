@@ -20,7 +20,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
 
-from wmcs_libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CUMIN_SAFE_WITH_OUTPUT, OutputFormat, WMCSCookbookRunnerBase, run_one_raw
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 
@@ -115,7 +115,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
             "get_node_consolidated_info",
             self.from_fqdn,
             try_format=OutputFormat.YAML,
-            is_safe=True,
+            cumin_params=CUMIN_SAFE_WITH_OUTPUT,
         )
 
         from_hiera = response["hiera"]
@@ -144,7 +144,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
             "get_node_consolidated_info",
             self.to_fqdn,
             try_format=OutputFormat.YAML,
-            is_safe=True,
+            cumin_params=CUMIN_SAFE_WITH_OUTPUT,
         )
         to_hiera = response["hiera"]
         to_roles = response["roles"]
@@ -249,8 +249,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
             "set_prefix_hiera",
             self.from_fqdn,
             _quote(from_hiera_str),
-            try_format=OutputFormat.YAML,
-            is_safe=True,
+            cumin_params=CUMIN_SAFE_WITH_OUTPUT,
         )
 
         to_hiera["profile::wmcs::nfs::standalone::cinder_attached"] = True
@@ -262,8 +261,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
             "set_prefix_hiera",
             self.to_fqdn,
             _quote(to_hiera_str),
-            try_format=OutputFormat.YAML,
-            is_safe=True,
+            cumin_params=CUMIN_SAFE_WITH_OUTPUT,
         )
 
         # Move the service ip

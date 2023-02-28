@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # pylint: disable=too-many-arguments
 """Openstack generic related code."""
+from __future__ import annotations
+
 import logging
 import time
 from enum import Enum, auto
@@ -13,6 +15,7 @@ from spicerack.remote import Remote, RemoteHosts
 from wmcs_libs.common import (
     ArgparsableEnum,
     CommandRunnerMixin,
+    CuminParams,
     OutputFormat,
     run_one_formatted,
     run_one_raw,
@@ -272,9 +275,15 @@ class OpenstackAPI(CommandRunnerMixin):
 
         return ["env", f"OS_PROJECT_ID={self.project}", "wmcs-openstack", *command, *format_args]
 
-    def hypervisor_list(self, **kwargs) -> List[Dict[str, Any]]:
+    def hypervisor_list(self, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
         """Returns a list of hypervisors."""
-        return self.run_formatted_as_list("hypervisor", "list", "--long", "--sort-descending", is_safe=True, **kwargs)
+        return self.run_formatted_as_list(
+            "hypervisor",
+            "list",
+            "--long",
+            "--sort-descending",
+            cumin_params=CuminParams.as_safe(cumin_params),
+        )
 
     def get_nodes_domain(self) -> str:
         """Return the domain of the cluster handled by this controller.
@@ -284,18 +293,12 @@ class OpenstackAPI(CommandRunnerMixin):
         info = get_node_inventory_info(node=self.control_node_fqdn)
         return f"{info.site_name.value}.wmnet"
 
-    def create_service_ip(self, ip_name: OpenstackName, network: OpenstackIdentifier, **kwargs) -> Dict[str, Any]:
-        """Create a service IP with a specified name
+    def create_service_ip(self, ip_name: OpenstackName, network: OpenstackIdentifier) -> Dict[str, Any]:
+        """Create a service IP with a specified name"""
+        return self.run_formatted_as_dict("port", "create", "--network", _quote(network), _quote(ip_name))
 
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
-        """
-        return self.run_formatted_as_dict("port", "create", "--network", _quote(network), _quote(ip_name), **kwargs)
-
-    def attach_service_ip(self, ip_address: str, server_port_id: OpenstackIdentifier, **kwargs) -> str:
-        """Attach a specified service ip address to the specified port
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
-        """
+    def attach_service_ip(self, ip_address: str, server_port_id: OpenstackIdentifier) -> str:
+        """Attach a specified service ip address to the specified port"""
         return self.run_raw(
             "port",
             "set",
@@ -303,14 +306,10 @@ class OpenstackAPI(CommandRunnerMixin):
             f"ip-address={ip_address}",
             _quote(server_port_id),
             json_output=False,
-            **kwargs,
         )
 
-    def detach_service_ip(self, ip_address: str, mac_addr: str, server_port_id: OpenstackIdentifier, **kwargs) -> str:
-        """Detach a specified service ip address from the specified port
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
-        """
+    def detach_service_ip(self, ip_address: str, mac_addr: str, server_port_id: OpenstackIdentifier) -> str:
+        """Detach a specified service ip address from the specified port"""
         return self.run_raw(
             "port",
             "unset",
@@ -318,60 +317,54 @@ class OpenstackAPI(CommandRunnerMixin):
             f"ip-address={ip_address},mac-address={mac_addr}",
             _quote(server_port_id),
             json_output=False,
-            **kwargs,
         )
 
-    def get_nova_services(self, **kwargs) -> List[Dict[str, Any]]:
+    def get_nova_services(self) -> List[Dict[str, Any]]:
         """Return nova's list of registered services"""
-        return self.run_formatted_as_list("compute", "service", "list", **kwargs)
+        return self.run_formatted_as_list("compute", "service", "list")
 
-    def get_designate_services(self, **kwargs) -> List[Dict[str, Any]]:
+    def get_designate_services(self) -> List[Dict[str, Any]]:
         """Return designate's list of registered services"""
-        return self.run_formatted_as_list("dns", "service", "list", **kwargs)
+        return self.run_formatted_as_list("dns", "service", "list")
 
-    def get_neutron_services(self, **kwargs) -> List[Dict[str, Any]]:
+    def get_neutron_services(self) -> List[Dict[str, Any]]:
         """Return neutron's list of registered services"""
-        return self.run_formatted_as_list("network", "agent", "list", **kwargs)
+        return self.run_formatted_as_list("network", "agent", "list")
 
-    def get_cinder_services(self, **kwargs) -> List[Dict[str, Any]]:
+    def get_cinder_services(self) -> List[Dict[str, Any]]:
         """Return cinder's list of registered services"""
-        return self.run_formatted_as_list("volume", "service", "list", **kwargs)
+        return self.run_formatted_as_list("volume", "service", "list")
 
-    def port_get(self, ip_address, **kwargs) -> List[Dict[str, Any]]:
+    def port_get(self, ip_address) -> List[Dict[str, Any]]:
         """Get port for specified IP address"""
         ip_filter = f'--fixed-ip="ip-address={ip_address}"'
-        return self.run_formatted_as_list("port", "list", ip_filter, **kwargs)
+        return self.run_formatted_as_list("port", "list", ip_filter)
 
-    def zone_get(self, name, **kwargs) -> List[Dict[str, Any]]:
+    def zone_get(self, name) -> List[Dict[str, Any]]:
         """Get zone record for specified dns zone"""
-        return self.run_formatted_as_list("zone", "list", "--name", name, **kwargs)
+        return self.run_formatted_as_list("zone", "list", "--name", name)
 
-    def recordset_create(self, zone_id, record_type, name, record, **kwargs) -> Dict[str, Any]:
+    def recordset_create(self, zone_id, record_type, name, record) -> Dict[str, Any]:
         """Get zone record for specified dns zone"""
         return self.run_formatted_as_dict(
-            "recordset", "create", "--type", record_type, "--record", record, zone_id, name, **kwargs
+            "recordset", "create", "--type", record_type, "--record", record, zone_id, name
         )
 
     def server_show(self, vm_name: OpenstackIdentifier) -> Dict[str, Any]:
         """Get the information for a VM."""
-        return self.run_formatted_as_dict("server", "show", vm_name, is_safe=True)
+        return self.run_formatted_as_dict("server", "show", vm_name, cumin_params=CuminParams(is_safe=True))
 
-    def server_list(self, long: bool = False, **kwargs) -> List[Dict[str, Any]]:
-        """Retrieve the list of servers for the project.
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
-        """
+    def server_list(self, long: bool = False, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
+        """Retrieve the list of servers for the project."""
         _long = "--long" if long else ""
-        return self.run_formatted_as_list("server", "list", _long, is_safe=True, **kwargs)
+        return self.run_formatted_as_list("server", "list", _long, cumin_params=CuminParams.as_safe(cumin_params))
 
-    def server_list_filter_exists(self, hostnames: List[str], **kwargs) -> List[str]:
+    def server_list_filter_exists(self, hostnames: List[str], cumin_params: CuminParams | None = None) -> List[str]:
         """Verify if all servers in the list exists.
 
         Returns the input list filtered with those hostnames that do exists.
-
-        Any extra kwarg will be passed to the RemoteHosts.run_sync function.
         """
-        listing = self.server_list(**kwargs)
+        listing = self.server_list(cumin_params=cumin_params)
 
         for hostname in hostnames:
             if not any(info for info in listing if info["Name"] == hostname):
@@ -379,12 +372,9 @@ class OpenstackAPI(CommandRunnerMixin):
 
         return hostnames
 
-    def server_exists(self, hostname: str, **kwargs) -> bool:
-        """Returns True if a server exists, False otherwise.
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
-        """
-        listing = self.server_list(**kwargs)
+    def server_exists(self, hostname: str, cumin_params: CuminParams | None = None) -> bool:
+        """Returns True if a server exists, False otherwise."""
+        listing = self.server_list(cumin_params=cumin_params)
 
         if not any(info for info in listing if info["Name"] == hostname):
             return False
@@ -398,7 +388,7 @@ class OpenstackAPI(CommandRunnerMixin):
         Openstack, that's probably not the FQDN (and hopefully the hostname,
         but maybe not).
         """
-        self.run_raw("server", "delete", name_to_remove, is_safe=False)
+        self.run_raw("server", "delete", name_to_remove)
 
     def server_force_reboot(self, name_to_reboot: OpenstackName) -> None:
         """Force reboot a VM.
@@ -407,7 +397,7 @@ class OpenstackAPI(CommandRunnerMixin):
         Openstack, that's probably not the FQDN (and hopefully the hostname,
         but maybe not).
         """
-        self.run_raw("server", "reboot", "--hard", name_to_reboot, json_output=False, is_safe=False)
+        self.run_raw("server", "reboot", "--hard", name_to_reboot, json_output=False)
 
     def volume_create(self, name: OpenstackName, size: int) -> str:
         """Create a volume and return the ID of the created volume.
@@ -489,23 +479,20 @@ class OpenstackAPI(CommandRunnerMixin):
         # NOTE: this currently does a bunch of requests making it slow, can be simplified
         # once the following gets released:
         #  https://review.opendev.org/c/openstack/python-openstackclient/+/794237
-        current_aggregates = self.aggregate_list(print_output=False)
+        current_aggregates = self.aggregate_list(cumin_params=CuminParams(print_output=False))
         server_aggregates: List[Dict[str, Any]] = []
         for aggregate in current_aggregates:
             aggregate_details = self.aggregate_show(
-                aggregate=aggregate["Name"], print_output=False, print_progress_bars=False
+                aggregate=aggregate["Name"], cumin_params=CuminParams(print_output=False, print_progress_bars=False)
             )
             if name in aggregate_details.get("hosts", []):
                 server_aggregates.append(aggregate_details)
 
         return server_aggregates
 
-    def security_group_list(self, **kwargs) -> List[Dict[str, Any]]:
-        """Retrieve the list of security groups.
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
-        """
-        return self.run_formatted_as_list("security", "group", "list", is_safe=True, **kwargs)
+    def security_group_list(self, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
+        """Retrieve the list of security groups."""
+        return self.run_formatted_as_list("security", "group", "list", cumin_params=CuminParams.as_safe(cumin_params))
 
     def security_group_create(self, name: OpenstackName, description: str) -> None:
         """Create a security group."""
@@ -533,7 +520,7 @@ class OpenstackAPI(CommandRunnerMixin):
     ) -> None:
         """Make sure that the given security group exists, create it if not there."""
         try:
-            self.security_group_by_name(name=security_group, print_output=False)
+            self.security_group_by_name(name=security_group, cumin_params=CuminParams(print_output=False))
             LOGGER.info("Security group %s already exists, not creating.", security_group)
 
         except OpenstackNotFound:
@@ -546,14 +533,14 @@ class OpenstackAPI(CommandRunnerMixin):
                 direction=OpenstackRuleDirection.INGRESS, remote_group=security_group, security_group=security_group
             )
 
-    def security_group_by_name(self, name: OpenstackName, **kwargs) -> Optional[Dict[str, Any]]:
+    def security_group_by_name(
+        self, name: OpenstackName, cumin_params: CuminParams | None = None
+    ) -> Optional[Dict[str, Any]]:
         """Retrieve the security group info given a name.
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
 
         Raises OpenstackNotFound if there's no security group found for the given name in the current project.
         """
-        existing_security_groups = self.security_group_list(**kwargs)
+        existing_security_groups = self.security_group_list(cumin_params=cumin_params)
         for security_group in existing_security_groups:
             if security_group["Project"] == self.project:
                 if security_group["Name"] == name:
@@ -561,14 +548,12 @@ class OpenstackAPI(CommandRunnerMixin):
 
         raise OpenstackNotFound(f"Unable to find a security group with name {name}")
 
-    def server_group_list(self, **kwargs) -> List[Dict[str, Any]]:
+    def server_group_list(self, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
         """Get the list of server groups.
 
         Note:  it seems that on cli the project flag shows nothing :/ so we get the list all of them.
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
         """
-        return self.run_formatted_as_list("server", "group", "list", is_safe=True, **kwargs)
+        return self.run_formatted_as_list("server", "group", "list", cumin_params=CuminParams.as_safe(cumin_params))
 
     def server_group_create(self, name: OpenstackName, policy: OpenstackServerGroupPolicy) -> None:
         """Create a server group."""
@@ -587,38 +572,34 @@ class OpenstackAPI(CommandRunnerMixin):
     ) -> None:
         """Make sure that the given server group exists, create it if not there."""
         try:
-            self.server_group_by_name(name=server_group, print_output=False)
+            self.server_group_by_name(name=server_group, cumin_params=CuminParams(print_output=False))
             LOGGER.info("Server group %s already exists, not creating.", server_group)
         except OpenstackNotFound:
             self.server_group_create(policy=policy, name=server_group)
 
-    def server_group_by_name(self, name: OpenstackName, **kwargs) -> Optional[Dict[str, Any]]:
+    def server_group_by_name(
+        self, name: OpenstackName, cumin_params: CuminParams | None = None
+    ) -> Optional[Dict[str, Any]]:
         """Retrieve the server group info given a name.
 
         Raises OpenstackNotFound if there's no server group found with the given name.
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
         """
-        all_server_groups = self.server_group_list(**kwargs)
+        all_server_groups = self.server_group_list(cumin_params=cumin_params)
         for server_group in all_server_groups:
             if server_group.get("Name", "") == name:
                 return server_group
 
         raise OpenstackNotFound(f"Unable to find a server group with name {name}")
 
-    def aggregate_list(self, **kwargs) -> List[Dict[str, Any]]:
-        """Get the simplified list of aggregates.
+    def aggregate_list(self, cumin_params: CuminParams | None = None) -> List[Dict[str, Any]]:
+        """Get the simplified list of aggregates."""
+        return self.run_formatted_as_list("aggregate", "list", "--long", cumin_params=CuminParams.as_safe(cumin_params))
 
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
-        """
-        return self.run_formatted_as_list("aggregate", "list", "--long", is_safe=True, **kwargs)
-
-    def aggregate_show(self, aggregate: OpenstackIdentifier, **kwargs) -> Dict[str, Any]:
-        """Get the details of a given aggregate.
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
-        """
-        return self.run_formatted_as_dict("aggregate", "show", aggregate, is_safe=True, **kwargs)
+    def aggregate_show(self, aggregate: OpenstackIdentifier, cumin_params: CuminParams | None) -> Dict[str, Any]:
+        """Get the details of a given aggregate."""
+        return self.run_formatted_as_dict(
+            "aggregate", "show", aggregate, cumin_params=CuminParams.as_safe(cumin_params)
+        )
 
     def aggregate_remove_host(self, aggregate_name: OpenstackName, host_name: OpenstackName) -> None:
         """Remove the given host from the aggregate."""
@@ -629,8 +610,7 @@ class OpenstackAPI(CommandRunnerMixin):
             aggregate_name,
             host_name,
             capture_errors=True,
-            print_output=False,
-            print_progress_bars=False,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False),
         )
         if "HTTP 404" in result:
             raise OpenstackNotFound(
@@ -647,15 +627,13 @@ class OpenstackAPI(CommandRunnerMixin):
                 "instead of the fqdn?"
             )
 
-    def aggregate_persist_on_host(self, host: RemoteHosts, **kwargs) -> None:
+    def aggregate_persist_on_host(self, host: RemoteHosts) -> None:
         """Creates a file in the host with it's current list of aggregates.
 
         For later usage, for example, when moving the host temporarily to another aggregate.
-
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
         """
         hostname = str(host).split(".", 1)[0]
-        current_aggregates = self.server_get_aggregates(name=hostname, **kwargs)
+        current_aggregates = self.server_get_aggregates(name=hostname)
         simple_create_file(
             dst_node=host, contents=yaml.dump(current_aggregates, indent=4), remote_path=AGGREGATES_FILE_PATH
         )
@@ -667,10 +645,8 @@ class OpenstackAPI(CommandRunnerMixin):
             result = run_one_formatted(
                 command=["cat", AGGREGATES_FILE_PATH],
                 node=host,
-                is_safe=True,
                 try_format=OutputFormat.YAML,
-                print_output=False,
-                print_progress_bars=False,
+                cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
             )
 
         except Exception as error:
@@ -687,7 +663,7 @@ class OpenstackAPI(CommandRunnerMixin):
             command=f"bash -c 'source /root/novaenv.sh && wmcs-drain-hypervisor {hypervisor_name}'",
             timeout=SECONDS_IN_MINUTE * MINUTES_IN_HOUR * 2,
         )
-        result = run_one_raw(command=command, node=self.control_node, is_safe=False)
+        result = run_one_raw(command=command, node=self.control_node)
 
         if not result:
             raise OpenstackMigrationError(

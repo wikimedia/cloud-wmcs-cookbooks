@@ -22,7 +22,7 @@ import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
+from wmcs_libs.common import CuminParams, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class RemoveNodeFromHieraRunner(WMCSCookbookRunnerBase):
             node=control_node,
             command=["wmcs-enc-cli", "--openstack-project", self.project, "get_prefix_hiera", etcd_prefix],
             try_format=OutputFormat.YAML,
-            is_safe=True,
+            cumin_params=CuminParams(is_safe=True),
         )
         # double yaml yep xd
         current_hiera_config = yaml.safe_load(response["hiera"])

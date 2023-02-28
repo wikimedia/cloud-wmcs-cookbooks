@@ -11,7 +11,8 @@ import json
 import logging
 import re
 import socket
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from dataclasses import replace as replace_in_dataclass
 from enum import Enum, auto
 from functools import partial
 from itertools import chain
@@ -96,6 +97,44 @@ class OutputFormat(Enum):
 
 
 @dataclass(frozen=True)
+class CuminParams:
+    """Bundle of the parameters that run_sync allows."""
+
+    print_output: bool = True
+    print_progress_bars: bool = True
+    is_safe: bool = False
+    success_threshold: float = 1.0
+    batch_size: int | str | None = None
+    batch_sleep: float | None = None
+
+    @staticmethod
+    def replace(original: "CuminParams" | None, **what: Any) -> "CuminParams":
+        """Given CuminParams instance, create a new one based on the existing one with the given params replaced.
+
+        The staticmethod is needed as we sometimes get None instead of a CuminParams instance.
+        """
+        if not original:
+            return CuminParams(**what)
+
+        return replace_in_dataclass(original, **what)
+
+    @staticmethod
+    def as_safe(original: "CuminParams" | None) -> "CuminParams":
+        """Return this same params but with the safe flag on.
+
+        The staticmethod is needed as we sometimes get None instead of a CuminParams instance.
+        """
+        return CuminParams.replace(original=original, is_safe=True)
+
+
+# Handy pre-set common cumin params
+CUMIN_SAFE_WITHOUT_OUTPUT = CuminParams(print_output=False, print_progress_bars=False, is_safe=True)
+CUMIN_UNSAFE_WITHOUT_OUTPUT = CuminParams(print_output=False, print_progress_bars=False)
+CUMIN_SAFE_WITH_OUTPUT = CuminParams(is_safe=True)
+CUMIN_UNSAFE_WITH_OUTPUT = CuminParams()
+
+
+@dataclass(frozen=True)
 class CommonOpts:
     """Common WMCS cookbook options."""
 
@@ -159,7 +198,7 @@ def run_one_raw_needed_to_be_able_to_mock(
     capture_errors: bool = False,
     last_line_only: bool = False,
     skip_first_line: bool = False,
-    **kwargs,
+    cumin_params: None | CuminParams = None,
 ) -> str:
     """Only exists to be able to mock in one single place the run_one_raw function.
 
@@ -169,8 +208,10 @@ def run_one_raw_needed_to_be_able_to_mock(
     if not isinstance(command, Command):
         command = Command(command=" ".join(command), ok_codes=[0, 1, 2] if capture_errors else [0])
 
+    run_sync_params = asdict(cumin_params) if cumin_params else {}
+
     try:
-        result = next(node.run_sync(command, **kwargs))
+        result = next(node.run_sync(command, **run_sync_params))
 
     except StopIteration:
         return ""
@@ -191,13 +232,11 @@ def run_one_raw(
     capture_errors: bool = False,
     last_line_only: bool = False,
     skip_first_line: bool = False,
-    **kwargs,
+    cumin_params: CuminParams | None = None,
 ) -> str:
     """Run a command on a node.
 
     Returns the the raw output.
-
-    Any extra kwargs will be passed to the RemoteHosts.run_sync function.
     """
     return run_one_raw_needed_to_be_able_to_mock(
         command=command,
@@ -205,7 +244,7 @@ def run_one_raw(
         capture_errors=capture_errors,
         last_line_only=last_line_only,
         skip_first_line=skip_first_line,
-        **kwargs,
+        cumin_params=cumin_params,
     )
 
 
@@ -216,7 +255,7 @@ def run_one_formatted_as_list(
     last_line_only: bool = False,
     skip_first_line: bool = False,
     try_format: OutputFormat = OutputFormat.JSON,
-    **kwargs,
+    cumin_params: CuminParams | None = None,
 ) -> List[Any]:
     """Run one command and return a list of elements."""
     result = run_one_formatted(
@@ -226,7 +265,7 @@ def run_one_formatted_as_list(
         last_line_only=last_line_only,
         skip_first_line=skip_first_line,
         try_format=try_format,
-        **kwargs,
+        cumin_params=cumin_params,
     )
     if not isinstance(result, list):
         raise TypeError(f"Was expecting a list, got {result}")
@@ -239,8 +278,9 @@ def run_one_as_dict(
     node: RemoteHosts,
     capture_errors: bool = False,
     last_line_only: bool = False,
+    skip_first_line: bool = False,
     try_format: OutputFormat = OutputFormat.JSON,
-    **kwargs,
+    cumin_params: CuminParams | None = None,
 ) -> Dict[str, Any]:
     """Run a command and return a dict."""
     result = run_one_formatted(
@@ -248,8 +288,9 @@ def run_one_as_dict(
         node=node,
         capture_errors=capture_errors,
         last_line_only=last_line_only,
+        skip_first_line=skip_first_line,
         try_format=try_format,
-        **kwargs,
+        cumin_params=cumin_params,
     )
     if not isinstance(result, dict):
         raise TypeError(f"Was expecting a list, got {result}")
@@ -265,13 +306,11 @@ def run_one_formatted(
     skip_first_line: bool = False,
     ignore_lines: Optional[List[Pattern[str]]] = None,
     try_format: OutputFormat = OutputFormat.JSON,
-    **kwargs,
+    cumin_params: CuminParams | None = None,
 ) -> Union[List[Any], Dict[str, Any]]:
     """Run a command on a node.
 
     Returns the loaded json/yaml.
-
-    Any extra kwargs will be passed to the RemoteHosts.run_sync function.
     """
     raw_result = run_one_raw(
         command=command,
@@ -279,7 +318,7 @@ def run_one_formatted(
         capture_errors=capture_errors,
         last_line_only=last_line_only,
         skip_first_line=skip_first_line,
-        **kwargs,
+        cumin_params=cumin_params,
     )
 
     if ignore_lines:
@@ -521,13 +560,14 @@ class CmdChecklist:
 
         return CmdCheckListResults(passed=passed, failed=failed, total=total)
 
-    def run(self, **kwargs) -> CmdCheckListResults:
+    def run(self, cumin_params: CuminParams | None = None) -> CmdCheckListResults:
         """Run the cmd-checklist-runner testsuite."""
+        # Not sure if this is what we want, it's what was there
+        final_cumin_params = CuminParams.as_safe(cumin_params)
         output_lines = run_one_raw(
             node=self.remote_hosts,
             command=["cmd-checklist-runner", "--config", self.config_file],
-            is_safe=True,
-            **kwargs,
+            cumin_params=final_cumin_params,
         ).splitlines()
 
         return self._parse_output(output_lines)
@@ -559,33 +599,36 @@ class CommandRunnerMixin:
     def run_raw(
         self,
         *command: str,
-        is_safe: bool = False,
         capture_errors: bool = False,
         json_output=True,
         project_as_arg: bool = False,
-        **kwargs,
+        cumin_params: CuminParams | None = None,
     ) -> str:
         """Run a command on a runner node.
 
         Returns the raw output (not loaded from json).
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
         """
         full_command = self._get_full_command(*command, json_output=json_output, project_as_arg=project_as_arg)
         return run_one_raw(
             command=full_command,
             node=self.command_runner_node,
-            is_safe=is_safe,
             capture_errors=capture_errors,
-            **kwargs,
+            cumin_params=cumin_params,
         )
 
     def run_formatted_as_dict(
-        self, *command: str, is_safe: bool = False, capture_errors: bool = False, project_as_arg: bool = False, **kwargs
+        self,
+        *command: str,
+        capture_errors: bool = False,
+        project_as_arg: bool = False,
+        cumin_params: CuminParams | None = None,
+        try_format: OutputFormat = OutputFormat.JSON,
+        last_line_only: bool = False,
+        skip_first_line: bool = False,
     ) -> Dict[str, Any]:
         """Run a command on a runner node forcing json output.
 
         Returns a dict with the formatted output (loaded from json), usually for show commands.
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
 
         Example:
             >>> self.run_formatted("port", "show")
@@ -604,18 +647,24 @@ class CommandRunnerMixin:
         return run_one_as_dict(
             command=full_command,
             node=self.command_runner_node,
-            is_safe=is_safe,
             capture_errors=capture_errors,
-            **kwargs,
+            try_format=try_format,
+            cumin_params=cumin_params,
+            skip_first_line=skip_first_line,
+            last_line_only=last_line_only,
         )
 
     def run_formatted_as_list(
-        self, *command: str, is_safe: bool = False, capture_errors: bool = False, project_as_arg: bool = False, **kwargs
+        self,
+        *command: str,
+        capture_errors: bool = False,
+        project_as_arg: bool = False,
+        skip_first_line: bool = False,
+        cumin_params: CuminParams | None = None,
     ) -> List[Any]:
         """Run an command on a runner node forcing json output.
 
         Returns a list with the formatted output (loaded from json), usually for `list` commands.
-        Any extra kwargs will be passed to the RemoteHosts.run_sync function.
 
         Example:
             >>> self.run_formatted_as_list("port", "list")
@@ -651,9 +700,9 @@ class CommandRunnerMixin:
         return run_one_formatted_as_list(
             command=full_command,
             node=self.command_runner_node,
-            is_safe=is_safe,
             capture_errors=capture_errors,
-            **kwargs,
+            skip_first_line=skip_first_line,
+            cumin_params=cumin_params,
         )
 
 

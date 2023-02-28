@@ -13,7 +13,15 @@ from spicerack.remote import RemoteExecutionError
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.alerts import SilenceID, downtime_alert, uptime_alert
-from wmcs_libs.common import ArgparsableEnum, CommandRunnerMixin, UtilsForTesting, run_one_formatted, run_one_raw
+from wmcs_libs.common import (
+    CUMIN_SAFE_WITHOUT_OUTPUT,
+    CUMIN_UNSAFE_WITHOUT_OUTPUT,
+    ArgparsableEnum,
+    CommandRunnerMixin,
+    UtilsForTesting,
+    run_one_formatted,
+    run_one_raw,
+)
 from wmcs_libs.inventory import (
     CephClusterName,
     CephNodeRoleName,
@@ -285,8 +293,7 @@ class CephOSDNodeController:
         structured_output = run_one_formatted(
             command=["lsblk", "--json"],
             node=self._node,
-            print_output=False,
-            print_progress_bars=False,
+            cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
         )
         if not isinstance(structured_output, dict):
             raise TypeError(f"Was expecting a dict, got {structured_output}")
@@ -351,8 +358,7 @@ class CephOSDNodeController:
                     dst_ip,
                 ],
                 node=self._node,
-                print_output=False,
-                print_progress_bars=False,
+                cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
             )
         except RemoteExecutionError as err:
             LOGGER.warning("Failed to ping %s with a jumbo frame: %s", dst_ip, str(err))
@@ -365,9 +371,7 @@ class CephOSDNodeController:
         return run_one_raw(
             ["systemctl", "stop", f"ceph-osd@{osd_id}"],
             node=self._node,
-            print_output=False,
-            print_progress_bars=False,
-            is_safe=False,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )
 
     def stop_osds(self, osd_ids: List[int]) -> None:
@@ -426,9 +430,7 @@ class CephClusterController(CommandRunnerMixin):
 
     def get_cluster_status(self) -> CephClusterStatus:
         """Get the current cluster status."""
-        cluster_status_output = self.run_formatted_as_dict(
-            "status", is_safe=True, print_output=False, print_progress_bars=False
-        )
+        cluster_status_output = self.run_formatted_as_dict("status", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
         return CephClusterStatus(status_dict=cluster_status_output)
 
     def is_osdmap_flag_set(self, flag: CephOSDFlag) -> bool:
@@ -665,9 +667,7 @@ class CephClusterController(CommandRunnerMixin):
             root_node = next(node for node in nodes_list if node["type"] == "root")
             return _get_expanded_node(plain_node=root_node, all_nodes=id_to_nodes)
 
-        flat_nodes = self.run_formatted_as_dict(
-            "osd", "tree", print_output=False, print_progress_bars=False, is_safe=True
-        )
+        flat_nodes = self.run_formatted_as_dict("osd", "tree", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
         return {
             "nodes": _get_nested_nodes_tree(nodes_list=flat_nodes["nodes"]),
             # TODO: update the following to a useful structure if it's ever needed
@@ -679,12 +679,7 @@ class CephClusterController(CommandRunnerMixin):
 
         This includes the public and cluster ips, useful to run tests.
         """
-        osd_dump = self.run_formatted_as_dict(
-            "osd",
-            "dump",
-            print_output=False,
-            print_progress_bars=False,
-        )
+        osd_dump = self.run_formatted_as_dict("osd", "dump", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
         all_osd_ips: Set[str] = set()
         for osd in osd_dump.get("osds", []):
             public_addr = osd["public_addr"].split(":", 1)[0]
@@ -701,9 +696,7 @@ class CephClusterController(CommandRunnerMixin):
             "reweight",
             str(osd_id),
             str(new_weight),
-            print_output=False,
-            print_progress_bars=False,
-            is_safe=False,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )
         if f"reweighted osd.{osd_id} " in response:
             return
@@ -730,7 +723,11 @@ class CephClusterController(CommandRunnerMixin):
         Note that it will fail if it's not empty already, see destroy_osd for osd entries instead.
         """
         response = self.run_raw(
-            "osd", "crush", "remove", bucket_name, is_safe=False, print_output=False, print_progress_bars=False
+            "osd",
+            "crush",
+            "remove",
+            bucket_name,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )
 
         if "removed item" not in response:
@@ -757,9 +754,7 @@ class CephClusterController(CommandRunnerMixin):
             "purge",
             str(osd_id),
             "--yes-i-really-mean-it",
-            is_safe=False,
-            print_output=False,
-            print_progress_bars=False,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )
 
         if f"purged osd.{osd_id}" not in response:
@@ -791,9 +786,7 @@ class CephClusterController(CommandRunnerMixin):
             "osd",
             "ok-to-stop",
             *[str(osd_id) for osd_id in osd_ids],
-            print_output=False,
-            print_progress_bars=False,
-            is_safe=True,
+            cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
         )
         if "are ok to stop without reducing availability or risking data" in result:
             return []
@@ -806,12 +799,7 @@ class CephClusterController(CommandRunnerMixin):
         Returns a list of failures/reasons if they are not. An empty list otherwise.
         """
         result = self.run_formatted_as_dict(
-            "osd",
-            "safe-to-destroy",
-            *[str(osd_id) for osd_id in osd_ids],
-            print_output=False,
-            print_progress_bars=False,
-            is_safe=True,
+            "osd", "safe-to-destroy", *[str(osd_id) for osd_id in osd_ids], cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
         )
         # if there has been enough time between the osds being down they will go to missing_stats
         if set(result["safe_to_destroy"]).union(set(result["missing_stats"])) == set(osd_ids):

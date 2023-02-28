@@ -13,6 +13,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import (
+    CUMIN_SAFE_WITHOUT_OUTPUT,
     CommonOpts,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -94,7 +95,7 @@ class ToolforgeGridNodeDepoolRunner(WMCSCookbookRunnerBase):
         grid_controller = GridController(remote=self.spicerack.remote(), master_node_fqdn=self.grid_master_fqdn)
 
         for node in self.node_hostnames:
-            if not openstack_api.server_exists(node, print_output=False, print_progress_bars=False):
+            if not openstack_api.server_exists(node, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT):
                 LOGGER.warning("node %s is not a VM in project %s", node, self.common_opts.project)
                 return 1
 

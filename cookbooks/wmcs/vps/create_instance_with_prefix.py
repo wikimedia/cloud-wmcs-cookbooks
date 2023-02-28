@@ -26,6 +26,7 @@ from wmflib.decorators import retry
 
 from wmcs_libs.common import (
     CommonOpts,
+    CuminParams,
     WMCSCookbookRunnerBase,
     add_common_opts,
     natural_sort_key,
@@ -270,8 +271,9 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
             server_group=self.server_group,
             policy=self.server_group_policy,
         )
+        no_output = CuminParams(print_output=False)
 
-        all_project_servers = self.openstack_api.server_list(print_output=False)
+        all_project_servers = self.openstack_api.server_list(cumin_params=no_output)
         other_prefix_members = list(
             sorted(
                 (
@@ -304,7 +306,9 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
             )
 
         new_prefix_member_name = f"{self.prefix}-{last_prefix_member_id + 1}"
-        maybe_security_group = self.openstack_api.security_group_by_name(name=self.security_group, print_output=False)
+        maybe_security_group = self.openstack_api.security_group_by_name(
+            name=self.security_group, cumin_params=no_output
+        )
         if maybe_security_group is None:
             raise Exception(
                 f"Unable to find a '{self.security_group}' security group for project {self.common_opts.project}, "
@@ -313,13 +317,13 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
 
         security_group_id: str = maybe_security_group["ID"]
 
-        maybe_default_security_group = self.openstack_api.security_group_by_name(name="default", print_output=False)
+        maybe_default_security_group = self.openstack_api.security_group_by_name(name="default", cumin_params=no_output)
         if maybe_default_security_group is None:
             raise Exception(f"Unable to find a default security group for project {self.common_opts.project}")
 
         default_security_group_id: str = maybe_default_security_group["ID"]
 
-        maybe_server_group = self.openstack_api.server_group_by_name(name=self.server_group, print_output=False)
+        maybe_server_group = self.openstack_api.server_group_by_name(name=self.server_group, cumin_params=no_output)
         if maybe_server_group is None:
             raise Exception(
                 f"Unable to find a server group with name {self.server_group} for project {self.common_opts.project}, "

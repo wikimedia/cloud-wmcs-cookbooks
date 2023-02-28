@@ -17,6 +17,7 @@ from spicerack.cookbook import CookbookBase
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import (
     CommonOpts,
+    CuminParams,
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
@@ -93,7 +94,7 @@ class ToolforgeGridNodeDepoolRemoveRunner(WMCSCookbookRunnerBase):
             cluster_name=OpenstackClusterName.EQIAD1,
             project=self.common_opts.project,
         )
-        if not openstack_api.server_exists(self.node_hostname, print_output=False):
+        if not openstack_api.server_exists(self.node_hostname, cumin_params=CuminParams(print_output=False)):
             LOGGER.warning("%s is not an openstack VM in project %s", self.node_hostname, self.common_opts.project)
             return
 
@@ -137,7 +138,7 @@ class ToolforgeGridNodeDepoolRemoveRunner(WMCSCookbookRunnerBase):
 
         # step 3
         LOGGER.info("STEP 3: reconfigure the grid so it knows %s no longer exists", self.node_hostname)
-        grid_controller.reconfigure(is_tools_project=(self.common_opts.project == "tools"))
+        grid_controller.reconfigure(is_tools_project=self.common_opts.project == "tools")
 
         # all done
         LOGGER.info("all operations done. Congratulations, you have one less grid node.")

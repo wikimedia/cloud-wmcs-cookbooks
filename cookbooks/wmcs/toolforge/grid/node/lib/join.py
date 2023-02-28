@@ -16,7 +16,14 @@ from spicerack.cookbook import CookbookBase
 from spicerack.puppet import PuppetHosts
 from spicerack.remote import RemoteError
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import (
+    CUMIN_SAFE_WITH_OUTPUT,
+    CommonOpts,
+    SALLogger,
+    WMCSCookbookRunnerBase,
+    add_common_opts,
+    with_common_opts,
+)
 from wmcs_libs.grid import GridController
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
@@ -125,9 +132,7 @@ class ToolforgeGridNodeJoinRunner(WMCSCookbookRunnerBase):
             remote=self.spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.common_opts.project
         )
 
-        actual_nodes = openstack_api.server_list_filter_exists(
-            requested_nodes[:], print_output=False, print_progress_bars=False
-        )
+        actual_nodes = openstack_api.server_list_filter_exists(requested_nodes[:], cumin_params=CUMIN_SAFE_WITH_OUTPUT)
 
         for node in set(requested_nodes) - set(actual_nodes):
             LOGGER.warning("WARNING: node %s is not a VM in project %s, ignoring", node, self.common_opts.project)

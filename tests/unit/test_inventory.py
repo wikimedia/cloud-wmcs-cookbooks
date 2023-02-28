@@ -113,7 +113,7 @@ def get_dummy_inventory(
                 ),
                 "inventory": get_dummy_inventory(),
             },
-            "Node not in inventory, with unknown domain, matches by number 1001 -> eqaid": {
+            "Node not in inventory, with unknown domain, matches by number 1001 -> eqiad": {
                 "node_fqdn": "something1001.some.where",
                 "expected_node_inventory_info": NodeInventoryInfo(
                     site_name=SiteName.EQIAD,

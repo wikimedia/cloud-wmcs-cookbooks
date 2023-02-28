@@ -14,7 +14,14 @@ from cumin.backends import InvalidQueryError
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import (
+    CUMIN_SAFE_WITHOUT_OUTPUT,
+    CommonOpts,
+    SALLogger,
+    WMCSCookbookRunnerBase,
+    add_common_opts,
+    with_common_opts,
+)
 from wmcs_libs.grid import GridController, GridNodeNotFound
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
@@ -97,7 +104,7 @@ class ToolforgeGridNodePoolRunner(WMCSCookbookRunnerBase):
         )
 
         actual_nodes = openstack_api.server_list_filter_exists(
-            requested_nodes[:], print_output=False, print_progress_bars=False
+            requested_nodes[:], cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
         )
 
         for node in set(requested_nodes) - set(actual_nodes):

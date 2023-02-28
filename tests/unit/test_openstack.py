@@ -26,7 +26,7 @@ from wmcs_libs.openstack.common import OpenstackAPI, OpenstackBadQuota, Openstac
         }
     )
 )
-def test_Unit_next_unit_works(from_unit: str, expected_unit: str):
+def test_Unit_next_unit_works(from_unit: Unit, expected_unit: Unit):
     gotten_unit = from_unit.next_unit()
     assert gotten_unit == expected_unit
 
@@ -43,12 +43,12 @@ def test_Unit_next_unit_raises_when_last_unit():
             "Gigabytes": {
                 "quota_name": OpenstackQuotaName.GIGABYTES,
                 "value": "3G",
-                "expected_cli": "--gigabytes=3G",
+                "expected_cli": "--gigabytes=3",
             },
             "Per-volume gigabytes": {
                 "quota_name": OpenstackQuotaName.PER_VOLUME_GIGABYTES,
                 "value": "4G",
-                "expected_cli": "--per-volume-gigabytes=4G",
+                "expected_cli": "--per-volume-gigabytes=4",
             },
             "Cores": {
                 "quota_name": OpenstackQuotaName.CORES,
@@ -59,7 +59,7 @@ def test_Unit_next_unit_raises_when_last_unit():
     )
 )
 def test_OpenstackQuotaEntry_name_to_cli_works(quota_name: OpenstackQuotaName, value: str, expected_cli: str):
-    gotten_cli = OpenstackQuotaEntry(name=quota_name, value=value).to_cli()
+    gotten_cli = OpenstackQuotaEntry.from_human_spec(name=quota_name, human_spec=value).to_cli()
     assert gotten_cli == expected_cli
 
 
@@ -250,7 +250,7 @@ def test_OpenstackAPI_quota_set_happy_path():
         ok_codes=[0],
     )
     fake_control_host = fake_remote.query.return_value
-    fake_control_host.run_sync.assert_called_with(expected_command, is_safe=False)
+    fake_control_host.run_sync.assert_called_with(expected_command)
 
 
 def test_OpenstackAPI_quota_increase_happy_path():
@@ -423,8 +423,8 @@ def test_OpenstackAPI_quota_increase_happy_path():
     fake_control_host = fake_remote.query.return_value
     assert fake_control_host.run_sync.call_count == 3
     calls = [
-        mock.call(expected_show_command, is_safe=False),
-        mock.call(expected_set_command, is_safe=False),
-        mock.call(expected_show_command, is_safe=False),
+        mock.call(expected_show_command),
+        mock.call(expected_set_command),
+        mock.call(expected_show_command),
     ]
     fake_control_host.run_sync.assert_has_calls(calls)

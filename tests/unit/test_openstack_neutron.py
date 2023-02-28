@@ -239,6 +239,9 @@ def test_NeutronController_agent_list_works(neutron_output: str, expected_agents
         is_safe=True,
         print_output=False,
         print_progress_bars=False,
+        success_threshold=1,
+        batch_size=None,
+        batch_sleep=None,
     )
 
 
@@ -355,6 +358,9 @@ def test_NeutronController_router_list_works(neutron_output: str, expected_route
         is_safe=True,
         print_output=False,
         print_progress_bars=False,
+        success_threshold=1,
+        batch_size=None,
+        batch_sleep=None,
     )
 
 
@@ -447,6 +453,9 @@ def test_NeutronController_list_agents_hosting_router_works(neutron_output: str,
         is_safe=True,
         print_output=False,
         print_progress_bars=False,
+        success_threshold=1,
+        batch_size=None,
+        batch_sleep=None,
     )
 
 
@@ -575,6 +584,9 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
         is_safe=True,
         print_output=False,
         print_progress_bars=False,
+        success_threshold=1,
+        batch_size=None,
+        batch_sleep=None,
     )
 
 
@@ -713,6 +725,9 @@ def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_clo
         is_safe=True,
         print_output=False,
         print_progress_bars=False,
+        success_threshold=1,
+        batch_size=None,
+        batch_sleep=None,
     )
 
 

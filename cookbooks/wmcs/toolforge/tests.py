@@ -15,6 +15,7 @@ from spicerack.cookbook import CookbookBase
 from wmcs_libs.common import (
     CmdChecklist,
     CommonOpts,
+    CuminParams,
     WMCSCookbookRunnerBase,
     add_common_opts,
     parser_type_str_hostname,
@@ -78,5 +79,5 @@ class ToolforgeTestsRunner(WMCSCookbookRunnerBase):
             remote_hosts=bastion,
             config_file="/etc/toolforge/automated-toolforge-tests.yaml",
         )
-        results = checklist.run(print_progress_bars=False)
+        results = checklist.run(cumin_params=CuminParams(print_progress_bars=False))
         return checklist.evaluate(results)

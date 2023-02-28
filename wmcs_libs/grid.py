@@ -14,7 +14,7 @@ from defusedxml import ElementTree
 from spicerack.puppet import PuppetHosts
 from spicerack.remote import Remote
 
-from wmcs_libs.common import ArgparsableEnum, run_one_raw
+from wmcs_libs.common import ArgparsableEnum, CuminParams, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 
@@ -329,7 +329,9 @@ class GridController:
         """Retrieve node and queue information from the nodes currently in the cluster."""
         nodes_info: Dict[str, GridNodeInfo] = {}
 
-        xml_output = run_one_raw(node=self._master_node, command=["qhost", "-q", "-xml"], print_output=False)
+        xml_output = run_one_raw(
+            node=self._master_node, command=["qhost", "-q", "-xml"], cumin_params=CuminParams(print_output=False)
+        )
         parsed_xml = ElementTree.fromstring(xml_output)
         for node_xml in parsed_xml:
             if node_xml.tag == "global":
@@ -350,8 +352,7 @@ class GridController:
             node=self._master_node,
             command=["qhost", "-q", "-xml", "-h", host_fqdn],
             capture_errors=True,
-            print_output=False,
-            print_progress_bars=False,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False, is_safe=True),
         )
         for line in raw_output.split("\n"):
             if line.startswith("error: can't resolve hostname"):
@@ -372,8 +373,7 @@ class GridController:
             node=self._master_node,
             command=["qstat", "-explain", "E", "-xml"],
             capture_errors=True,
-            print_output=False,
-            print_progress_bars=False,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False, is_safe=True),
         )
         parsed_xml = ElementTree.fromstring(raw_output)
         queues_info: List[GridQueueInfo] = []
@@ -388,8 +388,7 @@ class GridController:
             node=self._master_node,
             command=["grep", f"{job_id}", self.JOB_LOGS_GLOB],
             capture_errors=True,
-            print_output=False,
-            print_progress_bars=False,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False, is_safe=True),
         )
 
     def depool_node(self, host_fqdn: str) -> None:
@@ -405,7 +404,7 @@ class GridController:
         run_one_raw(
             command=["exec-manage", "depool", hostname],
             node=self._master_node,
-            print_output=False,
+            cumin_params=CuminParams(print_output=False),
         )
 
     def pool_node(self, hostname: str) -> None:
@@ -420,8 +419,7 @@ class GridController:
         run_one_raw(
             command=["exec-manage", "repool", hostname],
             node=self._master_node,
-            print_output=False,
-            print_progress_bars=False,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False),
         )
 
     @contextmanager
@@ -438,4 +436,6 @@ class GridController:
 
     def cleanup_queue_errors(self) -> None:
         """Cleans up queue errors."""
-        run_one_raw(command=["qmod", "-c", "'*'"], node=self._master_node, print_progress_bars=False)
+        run_one_raw(
+            command=["qmod", "-c", "'*'"], node=self._master_node, cumin_params=CuminParams(print_progress_bars=False)
+        )

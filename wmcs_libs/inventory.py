@@ -151,7 +151,7 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
 class Cluster:
     """Base cluster, to be used as parent."""
 
-    name: Union[OpenstackClusterName, CephClusterName, ToolforgeKubernetesClusterName]
+    name: ClusterName
     # Enum as dict key does not match correctly to an Enum superclass (ex. CephNodeRoleName), so use Any
     nodes_by_role: Dict[Any, List[str]]
 

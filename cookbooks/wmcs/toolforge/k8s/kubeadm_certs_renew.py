@@ -20,6 +20,7 @@ from spicerack.remote import RemoteExecutionError
 
 from wmcs_libs.common import (
     CommonOpts,
+    CuminParams,
     OutputFormat,
     SALLogger,
     WMCSCookbookRunnerBase,
@@ -70,7 +71,10 @@ def node_check_leftovers(node) -> None:
     """Quick and dirty check to see if there was a previous unfinished run."""
     command = ["ls", "-ad", f"{KUBERNETES_STATIC_POD_DIR}.*"]
     raw_output = run_one_raw(
-        node=node, command=command, print_output=False, print_progress_bars=False, is_safe=True, capture_errors=False
+        node=node,
+        command=command,
+        capture_errors=False,
+        cumin_params=CuminParams(print_output=False, print_progress_bars=False, is_safe=True),
     )
     for line in raw_output.splitlines():
         if line in [f"{KUBERNETES_STATIC_POD_DIR}.", f"{KUBERNETES_STATIC_POD_DIR}.."]:
@@ -90,7 +94,10 @@ def reset_creation_timestamp(node, static_pod_file: str) -> None:
     LOGGER.info("INFO: %s: reset creationTimestamp: %s", node, " ".join(command))
     try:
         result = run_one_raw(
-            node=node, command=command, print_output=False, print_progress_bars=False, capture_errors=True
+            node=node,
+            command=command,
+            capture_errors=True,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False),
         )
     except RemoteExecutionError as e:
         if not result:
@@ -109,14 +116,22 @@ def restart_static_pod(node, static_pod_file: str, wait: int) -> None:
 
     command = ["mv", orig, temp]
     LOGGER.info("INFO: %s: %s", node, " ".join(command))
-    run_one_raw(node=node, command=command, print_output=False, print_progress_bars=False)
+    run_one_raw(
+        node=node,
+        command=command,
+        cumin_params=CuminParams(print_output=False, print_progress_bars=False),
+    )
 
     LOGGER.info("INFO: %s: waiting %d secs for kubelet to do filecheck for %s", node, wait, orig)
     time.sleep(wait)
 
     command = ["mv", temp, orig]
     LOGGER.info("INFO: %s: %s", node, " ".join(command))
-    run_one_raw(node=node, command=command, print_output=False, print_progress_bars=False)
+    run_one_raw(
+        node=node,
+        command=command,
+        cumin_params=CuminParams(print_output=False, print_progress_bars=False),
+    )
 
     LOGGER.info("INFO: %s: waiting %d secs for kubelet to do filecheck for %s", node, wait, orig)
     time.sleep(wait)
@@ -131,9 +146,7 @@ def restart_control_plane_static_pods(node) -> None:
         node=node,
         command=command,
         try_format=OutputFormat.YAML,
-        print_output=False,
-        print_progress_bars=False,
-        is_safe=True,
+        cumin_params=CuminParams(print_output=False, print_progress_bars=False, is_safe=True),
     )
     kubelet_filecheck_freq = kubelet_config["fileCheckFrequency"]
     LOGGER.info("INFO: %s: figured kubelet fileCheckFrequency to be %s", node, kubelet_filecheck_freq)
@@ -144,7 +157,11 @@ def restart_control_plane_static_pods(node) -> None:
     wait = 1 + int(kubelet_filecheck_freq.rstrip("s"))
 
     command = ["ls", KUBERNETES_STATIC_POD_DIR]
-    raw_output = run_one_raw(node=node, command=command, print_output=False, print_progress_bars=False, is_safe=True)
+    raw_output = run_one_raw(
+        node=node,
+        command=command,
+        cumin_params=CuminParams(print_output=False, print_progress_bars=False, is_safe=True),
+    )
     static_pod_file_list = raw_output.splitlines()
     for static_pod_file in static_pod_file_list:
         if not static_pod_file.endswith(".yaml"):
@@ -182,7 +199,9 @@ class ToolforgeK8sKubeadmCertRenewRunner(WMCSCookbookRunnerBase):
 
             command = ["kubeadm", "certs", "renew", "all"]
             LOGGER.info("INFO: %s: step 1 -- %s", node, " ".join(command))
-            run_one_raw(node=node, command=command, print_output=False, print_progress_bars=False)
+            run_one_raw(
+                node=node, command=command, cumin_params=CuminParams(print_output=False, print_progress_bars=False)
+            )
 
             LOGGER.info("INFO: %s: step 2 -- restart control plane static pods", node)
             restart_control_plane_static_pods(node)
