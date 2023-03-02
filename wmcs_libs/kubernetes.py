@@ -1,11 +1,13 @@
 """Toolforge Kubernetes related classes and functions."""
+from __future__ import annotations
+
 import argparse
 from functools import partial
-from typing import Callable, List
+from typing import Callable
 
 from spicerack import Spicerack
 
-from wmcs_libs.common import CommonOpts
+from wmcs_libs.common import CommonOpts, add_common_opts
 from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName, get_nodes_by_role
 
 
@@ -19,7 +21,7 @@ def add_toolforge_kubernetes_cluster_opts(parser: argparse.ArgumentParser) -> ar
         help="cluster to work on",
     )
 
-    return parser
+    return add_common_opts(parser, project_default=None)
 
 
 def with_toolforge_kubernetes_cluster_opts(
@@ -34,6 +36,6 @@ def with_toolforge_kubernetes_cluster_opts(
     return partial(runner, common_opts=common_opts, cluster_name=cluster_name)
 
 
-def get_control_nodes(cluster_name: ToolforgeKubernetesClusterName) -> List[str]:
+def get_control_nodes(cluster_name: ToolforgeKubernetesClusterName) -> list[str]:
     """Get the list of control nodes given a cluster."""
     return get_nodes_by_role(cluster_name, role_name=ToolforgeKubernetesNodeRoleName.CONTROL)

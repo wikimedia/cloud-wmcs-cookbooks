@@ -14,15 +14,7 @@ import string
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import (
-    CommonOpts,
-    CuminParams,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    run_one_raw,
-    with_common_opts,
-)
+from wmcs_libs.common import CommonOpts, CuminParams, SALLogger, WMCSCookbookRunnerBase, run_one_raw
 from wmcs_libs.inventory import ToolforgeKubernetesClusterName
 from wmcs_libs.kubernetes import (
     add_toolforge_kubernetes_cluster_opts,
@@ -45,7 +37,6 @@ class ToolforgeComponentDeploy(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        add_common_opts(parser, project_default=None)
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--git-url",
@@ -73,8 +64,7 @@ class ToolforgeComponentDeploy(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        runner = with_common_opts(self.spicerack, args, ToolforgeComponentDeployRunner)
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, runner)(
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeComponentDeployRunner)(
             git_url=args.git_url,
             git_name=args.git_name,
             git_branch=args.git_branch,

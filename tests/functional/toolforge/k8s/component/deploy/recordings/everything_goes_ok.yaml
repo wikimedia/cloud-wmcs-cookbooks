@@ -1,0 +1,100 @@
+output: ''
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - mkdir
+    - /tmp/cookbook-toolforge-k8s-component-deploy-ibolhrnwcx
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: Cloning into 'buildpack-admission-controller'...
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - /bin/sh
+    - -c
+    - --
+    - '''cd /tmp/cookbook-toolforge-k8s-component-deploy-ibolhrnwcx ; git clone https://github.com/toolforge/buildpack-admission-controller'''
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Your branch is up to date with ''origin/main''.
+
+  Already on ''main'''
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - /bin/sh
+    - -c
+    - --
+    - '''cd /tmp/cookbook-toolforge-k8s-component-deploy-ibolhrnwcx/buildpack-admission-controller
+      ; git checkout main'''
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: f90bd8f
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - /bin/sh
+    - -c
+    - --
+    - '''cd /tmp/cookbook-toolforge-k8s-component-deploy-ibolhrnwcx/buildpack-admission-controller
+      ; git rev-parse --short HEAD'''
+    cumin_params: non-serializable
+    last_line_only: true
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Building dependency release=buildpack-admission, chart=chart
+
+  Comparing release=buildpack-admission, chart=chart'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - /bin/sh
+    - -c
+    - --
+    - '''cd /tmp/cookbook-toolforge-k8s-component-deploy-ibolhrnwcx/buildpack-admission-controller
+      ; ./deploy.sh'''
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: ''
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - rm
+    - -rf
+    - --preserve-root=all
+    - /tmp/cookbook-toolforge-k8s-component-deploy-ibolhrnwcx
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1

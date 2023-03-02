@@ -157,7 +157,7 @@ class CommonOpts:
 
 def add_common_opts(parser: argparse.ArgumentParser, project_default: str | None = "admin") -> argparse.ArgumentParser:
     """Adds the common WMCS options to a cookbook parser."""
-    if project_default:
+    if project_default is not None:
         parser.add_argument(
             "--project",
             default=project_default,
@@ -165,6 +165,7 @@ def add_common_opts(parser: argparse.ArgumentParser, project_default: str | None
             "If this cookbook is for hardware, this only affects dologmsg calls. "
             "Default is '%(default)s'.",
         )
+
     parser.add_argument(
         "--task-id",
         required=False,
