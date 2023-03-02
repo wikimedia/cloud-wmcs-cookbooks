@@ -5,7 +5,7 @@ Usage example:
         --cluster-name eqiad1 \
         --project toolsbeta \
         --user dcaro \
-        --as-projectadmin
+        --as-member
 
 """
 from __future__ import annotations
@@ -49,7 +49,7 @@ class AddUserToProject(CookbookBase):
             help="Username to add to the project",
         )
         parser.add_argument(
-            "--as-projectadmin",
+            "--as-member",
             action="store_true",
             default=False,
             help="If set, the user will be added as project admin (otherwise will just add as user)",
@@ -62,7 +62,7 @@ class AddUserToProject(CookbookBase):
         return with_common_opts(self.spicerack, args, AddUserToProjectRunner,)(
             user=args.user,
             cluster_name=args.cluster_name,
-            as_projectadmin=args.as_projectadmin,
+            as_member=args.as_member,
             spicerack=self.spicerack,
         )
 
@@ -74,7 +74,7 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         user: str,
-        as_projectadmin: bool,
+        as_member: bool,
         cluster_name: OpenstackClusterName,
         spicerack: Spicerack,
     ):
@@ -94,7 +94,7 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
             message += "`user@cloudcontrol1005:~$ sudo wmcs-openstack user list | grep -i username`"
             raise ValueError(message)
 
-        self.role_name = "projectadmin" if as_projectadmin else "user"
+        self.role_name = "member" if as_member else "reader"
         super().__init__(spicerack=spicerack)
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
@@ -104,9 +104,9 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
         """Main entry point"""
         self.openstack_api.role_add(role_name=self.role_name, user_name=self.user)
 
-        if self.role_name == "projectadmin":
-            # if we leave only the projectadmin role, users wont be able to SSH. Add 'user' too.
-            self.openstack_api.role_add(role_name="user", user_name=self.user)
+        if self.role_name == "member":
+            # if we leave only the member role, users wont be able to SSH. Add 'reader' too.
+            self.openstack_api.role_add(role_name="reader", user_name=self.user)
             self.sallogger.log(f"added user {self.user} to the project as user")
 
         self.sallogger.log(f"added user {self.user} to the project as {self.role_name}")
