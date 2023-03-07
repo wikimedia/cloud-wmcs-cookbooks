@@ -14,6 +14,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetMaster
+from spicerack.remote import RemoteHosts
 
 from wmcs_libs.common import (
     CommonOpts,
@@ -53,6 +54,11 @@ class RemoveInstance(CookbookBase):
             required=True,
             help="Name of the server to remove (without domain, ex. toolsbeta-test-k8s-etcd-9).",
         )
+        parser.add_argument(
+            "--already-off",
+            action="store_true",
+            help="Pass this if the server is turned off already, will skip some steps.",
+        )
 
         return parser
 
@@ -61,6 +67,7 @@ class RemoveInstance(CookbookBase):
         return with_common_opts(self.spicerack, args, RemoveInstanceRunner,)(
             name_to_remove=args.server_name,
             revoke_puppet_certs=args.revoke_puppet_certs,
+            already_off=args.already_off,
             spicerack=self.spicerack,
         )
 
@@ -73,6 +80,7 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         name_to_remove: str,
         revoke_puppet_certs: bool,
+        already_off: bool,
         spicerack: Spicerack,
     ):
         """Init"""
@@ -85,10 +93,43 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
 
         self.name_to_remove = name_to_remove
         self.revoke_puppet_certs = revoke_puppet_certs
+        self.already_off = already_off
         super().__init__(spicerack=spicerack)
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
         )
+
+    def _guess_puppet_cert_hostname(self, remote: RemoteHosts | None, node_fqdn: str) -> str:
+        if not remote:
+            return node_fqdn
+
+        try:
+            # for legacy VMs in .eqiad.wmflabs
+            result = run_one_raw(
+                command=["hostname", "-f"],
+                node=remote,
+                cumin_params=CuminParams(print_output=False, print_progress_bars=False),
+            )
+
+            # idk why this is needed but it filters out 'mesg: ttyname failed: Inappropriate ioctl for device'
+            return [
+                line for line in result.splitlines() if line.endswith(".wikimedia.cloud") or line.endswith(".wmflabs")
+            ][0]
+        except IndexError:
+            LOGGER.warning("Failed to query the hostname, falling back to the generated one")
+            return node_fqdn
+
+    def _guess_puppetmaster(self, remote: RemoteHosts | None, node_fqdn) -> str:
+        if remote:
+            puppet = self.spicerack.puppet(remote)
+            puppet.disable(self.spicerack.admin_reason("host is being removed"))
+
+            return puppet.get_ca_servers()[node_fqdn]
+
+        domain = node_fqdn.split(".", 1)[-1]
+        project = domain.split(".", 1)[0]
+        # dummy guess
+        return f"{project}-puppetmaster-1.{domain}"
 
     def run(self) -> None:
         """Main entry point"""
@@ -102,37 +143,20 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
 
         if self.revoke_puppet_certs:
             node_fqdn = f"{self.name_to_remove}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
-            remote = self.spicerack.remote().query(f"D{{{node_fqdn}}}", use_sudo=True)
+            if self.already_off:
+                remote = None
+            else:
+                remote = self.spicerack.remote().query(f"D{{{node_fqdn}}}", use_sudo=True)
 
-            puppet = self.spicerack.puppet(remote)
-            puppet.disable(self.spicerack.admin_reason("host is being removed"))
-
-            try:
-                # for legacy VMs in .eqiad.wmflabs
-                result = run_one_raw(
-                    command=["hostname", "-f"],
-                    node=remote,
-                    cumin_params=CuminParams(print_output=False, print_progress_bars=False),
-                )
-
-                # idk why this is needed but it filters out 'mesg: ttyname failed: Inappropriate ioctl for device'
-                hostname = [
-                    line
-                    for line in result.splitlines()
-                    if line.endswith(".wikimedia.cloud") or line.endswith(".wmflabs")
-                ][0]
-            except StopIteration:
-                LOGGER.warning("Failed to query the hostname, falling back to the generated one")
-                hostname = node_fqdn
-
-            puppet_master_hostname = puppet.get_ca_servers()[node_fqdn]
+            puppet_master_hostname = self._guess_puppetmaster(node_fqdn=node_fqdn, remote=remote)
 
             # if it's the central puppetmaster, this will be handled by wmf_sink
             if puppet_master_hostname not in ("puppet", "puppetmaster.cloudinfra.wmflabs.org"):
                 puppet_master = PuppetMaster(
                     self.spicerack.remote().query(f"D{{{puppet_master_hostname}}}", use_sudo=True)
                 )
-                puppet_master.delete(hostname)
+                puppet_cert_hostname = self._guess_puppet_cert_hostname(remote, node_fqdn)
+                puppet_master.delete(puppet_cert_hostname)
 
-        self.sallogger.log(message=f"removing instance {self.name_to_remove}")
         self.openstack_api.server_delete(name_to_remove=self.name_to_remove)
+        self.sallogger.log(message=f"removed instance {self.name_to_remove}")
