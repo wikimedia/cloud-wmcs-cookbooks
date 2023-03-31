@@ -10,7 +10,7 @@ from typing import Any
 
 from spicerack.remote import Remote
 
-from wmcs_libs.common import run_one_as_dict, run_one_raw
+from wmcs_libs.common import CuminParams, run_one_as_dict, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,7 +106,9 @@ class KubernetesController:
             selector_cli = ""
 
         output = run_one_as_dict(
-            command=["kubectl", "get", "nodes", "--output=json", selector_cli], node=self._controlling_node
+            command=["kubectl", "get", "nodes", "--output=json", selector_cli],
+            node=self._controlling_node,
+            cumin_params=CuminParams(is_safe=True),
         )
         return output["items"]
 
@@ -122,7 +124,9 @@ class KubernetesController:
             field_selector_cli = ""
 
         output = run_one_as_dict(
-            command=["kubectl", "get", "pods", "--output=json", field_selector_cli], node=self._controlling_node
+            command=["kubectl", "get", "pods", "--output=json", field_selector_cli],
+            node=self._controlling_node,
+            cumin_params=CuminParams(is_safe=True),
         )
         return output["items"]
 
