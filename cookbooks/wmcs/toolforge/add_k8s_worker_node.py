@@ -2,9 +2,7 @@ r"""WMCS Toolforge - Add a new k8s worker node to a toolforge installation.
 
 Usage example:
     cookbook wmcs.toolforge.add_k8s_worker_node \
-        --project toolsbeta \
-        --worker-prefix toolsbeta-k8s-test-worker
-
+        --cluster toolsbeta
 """
 # pylint: disable=too-many-arguments
 from __future__ import annotations
@@ -20,17 +18,18 @@ from spicerack.puppet import PuppetHosts
 
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
-from wmcs_libs.common import (
-    CommonOpts,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    run_one_raw,
-    with_common_opts,
+from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
+from wmcs_libs.k8s.clusters import (
+    add_toolforge_kubernetes_cluster_opts,
+    get_cluster_node_prefix,
+    get_cluster_security_group_name,
+    get_control_nodes,
+    with_toolforge_kubernetes_cluster_opts,
 )
 from wmcs_libs.k8s.kubeadm import KubeadmController
 from wmcs_libs.k8s.kubernetes import KubernetesController
-from wmcs_libs.openstack.common import OpenstackAPI, OpenstackServerGroupPolicy
+from wmcs_libs.openstack.common import OpenstackServerGroupPolicy
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,19 +46,7 @@ class ToolforgeAddK8sWorkerNode(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        add_common_opts(parser, project_default="toolsbeta")
-        parser.add_argument(
-            "--k8s-worker-prefix",
-            required=False,
-            default=None,
-            help="Prefix for the k8s worker nodes, default is <project>-k8s-worker.",
-        )
-        parser.add_argument(
-            "--k8s-control-prefix",
-            required=False,
-            default=None,
-            help="Prefix for the k8s control nodes, default is the k8s_worker_prefix replacing 'worker' by 'control'.",
-        )
+        add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--flavor",
             required=False,
@@ -83,7 +70,7 @@ class ToolforgeAddK8sWorkerNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, ToolforgeAddK8sWorkerNodeRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeAddK8sWorkerNodeRunner,)(
             k8s_worker_prefix=args.k8s_worker_prefix,
             k8s_control_prefix=args.k8s_control_prefix,
             image=args.image,
@@ -98,6 +85,7 @@ class ToolforgeAddK8sWorkerNodeRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
+        cluster_name: ToolforgeKubernetesClusterName,
         k8s_worker_prefix: str | None,
         k8s_control_prefix: str | None,
         spicerack: Spicerack,
@@ -106,6 +94,7 @@ class ToolforgeAddK8sWorkerNodeRunner(WMCSCookbookRunnerBase):
     ):
         """Init"""
         self.common_opts = common_opts
+        self.cluster_name = cluster_name
         self.k8s_worker_prefix = k8s_worker_prefix
         self.k8s_control_prefix = k8s_control_prefix
         super().__init__(spicerack=spicerack)
@@ -118,22 +107,17 @@ class ToolforgeAddK8sWorkerNodeRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
         """Main entry point"""
         self.sallogger.log(message="Adding a new k8s worker node")
-        k8s_worker_prefix = (
-            self.k8s_worker_prefix if self.k8s_worker_prefix is not None else f"{self.common_opts.project}-k8s-worker"
-        )
-        k8s_control_prefix = (
-            self.k8s_control_prefix
-            if self.k8s_control_prefix is not None
-            else k8s_worker_prefix.replace("worker", "control")
-        )
+
+        node_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.WORKER)
+        security_group = get_cluster_security_group_name(self.cluster_name)
 
         start_args = [
             "--prefix",
-            k8s_worker_prefix,
+            node_prefix,
             "--security-group",
-            f"{self.common_opts.project}-k8s-full-connectivity",
+            security_group,
             "--server-group",
-            k8s_worker_prefix,
+            node_prefix,
             "--server-group-policy",
             OpenstackServerGroupPolicy.SOFT_ANTI_AFFINITY.value,
         ] + self.common_opts.to_cli_args()
@@ -191,17 +175,11 @@ class ToolforgeAddK8sWorkerNodeRunner(WMCSCookbookRunnerBase):
         )
         PuppetHosts(remote_hosts=node).run()
 
-        LOGGER.info("Getting the list of k8s control nodes for the project...")
-        openstack_api = OpenstackAPI(remote=self.spicerack.remote(), project=self.common_opts.project)
-        all_nodes = openstack_api.server_list()
-        k8s_control_node_hostname = next(
-            node["Name"] for node in all_nodes if node["Name"].startswith(k8s_control_prefix)
-        )
-
         kubeadm = KubeadmController(remote=self.spicerack.remote(), controlling_node_fqdn=new_member.server_fqdn)
-        # guessing that the domain of the k8s and kubeadmin are the same
-        k8s_control_node_fqdn = f"{k8s_control_node_hostname}.{kubeadm.get_nodes_domain()}"
+
+        k8s_control_node_fqdn = get_control_nodes(self.cluster_name)[0]
         kubectl = KubernetesController(remote=self.spicerack.remote(), controlling_node_fqdn=k8s_control_node_fqdn)
+
         LOGGER.info("Joining the cluster...")
         kubeadm.join(kubernetes_controller=kubectl, wait_for_ready=True)
 

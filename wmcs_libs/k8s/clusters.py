@@ -3,12 +3,19 @@ from __future__ import annotations
 
 import argparse
 from functools import partial
-from typing import Callable
+from typing import Callable, cast
 
 from spicerack import Spicerack
 
 from wmcs_libs.common import CommonOpts, add_common_opts
-from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName, get_nodes_by_role
+from wmcs_libs.inventory import (
+    ClusterType,
+    ToolforgeKubernetesCluster,
+    ToolforgeKubernetesClusterName,
+    ToolforgeKubernetesNodeRoleName,
+    get_inventory,
+    get_nodes_by_role,
+)
 
 
 def add_toolforge_kubernetes_cluster_opts(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -39,3 +46,23 @@ def with_toolforge_kubernetes_cluster_opts(
 def get_control_nodes(cluster_name: ToolforgeKubernetesClusterName) -> list[str]:
     """Get the list of control nodes given a cluster."""
     return get_nodes_by_role(cluster_name, role_name=ToolforgeKubernetesNodeRoleName.CONTROL)
+
+
+def _get_cluster(cluster_name: ToolforgeKubernetesClusterName) -> ToolforgeKubernetesCluster:
+    site = cluster_name.get_site()
+    inventory = get_inventory()
+    return cast(
+        ToolforgeKubernetesCluster, inventory[site].clusters_by_type[ClusterType.TOOLFORGE_KUBERNETES][cluster_name]
+    )
+
+
+def get_cluster_security_group_name(cluster_name: ToolforgeKubernetesClusterName):
+    """Gets the name of the OpenStack security group that is used between all the members of a given cluster."""
+    cluster = _get_cluster(cluster_name)
+    return cluster.security_group_name
+
+
+def get_cluster_node_prefix(cluster_name: ToolforgeKubernetesClusterName, role: ToolforgeKubernetesNodeRoleName) -> str:
+    """Gets the naming prefix for nodes with a given role in a given cluster."""
+    cluster = _get_cluster(cluster_name)
+    return f"{cluster.instance_prefix}-{role.name}"

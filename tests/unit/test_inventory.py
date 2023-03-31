@@ -156,7 +156,10 @@ def get_dummy_inventory(
                     cluster_name=ToolforgeKubernetesClusterName.TOOLSBETA,
                     role_name=ToolforgeKubernetesNodeRoleName.CONTROL,
                     cluster_class=ToolforgeKubernetesCluster,
-                    cluster_extra_args={"instance_prefix": "toolsbeta-test"},
+                    cluster_extra_args={
+                        "instance_prefix": "toolsbeta-test",
+                        "security_group_name": "toolsbeta-k8s-full-connectivity",
+                    },
                 ),
             },
             "Toolforge Kubernetes node in inventory": {
@@ -175,7 +178,10 @@ def get_dummy_inventory(
                     cluster_name=ToolforgeKubernetesClusterName.TOOLS,
                     role_name=ToolforgeKubernetesNodeRoleName.CONTROL,
                     cluster_class=ToolforgeKubernetesCluster,
-                    cluster_extra_args={"instance_prefix": "tools"},
+                    cluster_extra_args={
+                        "instance_prefix": "tools",
+                        "security_group_name": "tools-new-k8s-full-connectivity",
+                    },
                 ),
             },
         }

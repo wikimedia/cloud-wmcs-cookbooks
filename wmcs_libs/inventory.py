@@ -147,6 +147,19 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     """Toolforge Kubernetes node roles."""
 
     CONTROL = "control"
+    WORKER = "worker"
+    INGRESS = "ingress"
+    ETCD = "etcd"
+
+    @property
+    def runs_kubelet(self) -> bool:
+        """Check if this node type is a Kubernetes worker or control node."""
+        return self != ToolforgeKubernetesNodeRoleName.ETCD
+
+    @property
+    def is_worker(self) -> bool:
+        """Check if this is a worker (including specialized worker roles)."""
+        return self in (ToolforgeKubernetesNodeRoleName.WORKER, ToolforgeKubernetesNodeRoleName.INGRESS)
 
 
 @dataclass(frozen=True)
@@ -182,6 +195,7 @@ class ToolforgeKubernetesCluster(Cluster):
 
     name: ToolforgeKubernetesClusterName
     instance_prefix: str
+    security_group_name: str
     nodes_by_role: dict[ToolforgeKubernetesNodeRoleName, list[str]]
 
 
@@ -236,6 +250,7 @@ _INVENTORY = {
                 ToolforgeKubernetesClusterName.TOOLS: ToolforgeKubernetesCluster(
                     name=ToolforgeKubernetesClusterName.TOOLS,
                     instance_prefix="tools",
+                    security_group_name="tools-new-k8s-full-connectivity",
                     nodes_by_role={
                         ToolforgeKubernetesNodeRoleName.CONTROL: [
                             "tools-k8s-control-1.tools.eqiad1.wikimedia.cloud",
@@ -247,6 +262,7 @@ _INVENTORY = {
                 ToolforgeKubernetesClusterName.TOOLSBETA: ToolforgeKubernetesCluster(
                     name=ToolforgeKubernetesClusterName.TOOLSBETA,
                     instance_prefix="toolsbeta-test",
+                    security_group_name="toolsbeta-k8s-full-connectivity",
                     nodes_by_role={
                         ToolforgeKubernetesNodeRoleName.CONTROL: [
                             "toolsbeta-test-k8s-control-4.toolsbeta.eqiad1.wikimedia.cloud",
