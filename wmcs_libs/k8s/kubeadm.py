@@ -2,14 +2,12 @@
 """Kubeadm deployment tool related code."""
 from __future__ import annotations
 
-import json
 import logging
-import time
 
 from spicerack.remote import Remote
 
 from wmcs_libs.common import run_one_raw
-from wmcs_libs.k8s.kubernetes import KubernetesController
+from wmcs_libs.k8s.kubernetes import KubernetesController, KubernetesTimeoutForNotReady
 
 LOGGER = logging.getLogger(__name__)
 
@@ -103,22 +101,10 @@ class KubeadmController:
                 return
 
             new_node_hostname = self._controlling_node_fqdn.split(".", 1)[0]
-            check_interval_seconds = 10
-            start_time = time.time()
-            cur_time = start_time
-            while cur_time - start_time < timeout_seconds:
-                if kubernetes_controller.is_node_ready(node_hostname=new_node_hostname):
-                    return
-
-                time.sleep(check_interval_seconds)
-                cur_time = time.time()
-
-            cur_conditions = kubernetes_controller.get_node(node_hostname=new_node_hostname)[0]["conditions"]
-            raise KubeadmTimeoutForNodeReady(
-                f"Waited {timeout_seconds} for the node {new_node_hostname} to "
-                "become healthy, but it never did. Current conditions:\n"
-                f"{json.dumps(cur_conditions, indent=4)}"
-            )
+            try:
+                kubernetes_controller.wait_for_ready(node_hostname=new_node_hostname, timeout_seconds=timeout_seconds)
+            except KubernetesTimeoutForNotReady as e:
+                raise KubeadmTimeoutForNodeReady(str(e)) from e
 
         finally:
             control_kubeadm.delete_token(token=new_token)

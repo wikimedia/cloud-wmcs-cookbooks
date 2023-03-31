@@ -2,7 +2,9 @@
 """Generic kubernetes managing code."""
 from __future__ import annotations
 
+import json
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,6 +29,10 @@ class KubernetesNodeNotFound(KubernetesError):
 
 class KubernetesNodeStatusError(KubernetesError):
     """Risen when the given node status is not recognized."""
+
+
+class KubernetesTimeoutForNotReady(KubernetesError):
+    """Risen when there is a timeout waiting for a node to become READY."""
 
 
 @dataclass(frozen=True)
@@ -156,3 +162,23 @@ class KubernetesController:
                 f"Unable to get 'Ready' condition of node {node_hostname}, got conditions:\n"
                 f"{node_info[0]['conditions']}"
             ) from error
+
+    def wait_for_ready(self, node_hostname: str, check_interval_seconds: int = 10, timeout_seconds: int = 600) -> None:
+        """Wait for a given k8s node to be in READY status."""
+        start_time = time.time()
+        cur_time = start_time
+
+        while cur_time - start_time < timeout_seconds:
+            if self.is_node_ready(node_hostname):
+                return
+
+            time.sleep(check_interval_seconds)
+            cur_time = time.time()
+
+        # timed out!
+        cur_conditions = self.get_node(node_hostname)[0]["conditions"]
+        raise KubernetesTimeoutForNotReady(
+            f"Waited {timeout_seconds} for node {node_hostname} to "
+            "become healthy, but it never did. Current conditions:\n"
+            f"{json.dumps(cur_conditions, indent=4)}"
+        )
