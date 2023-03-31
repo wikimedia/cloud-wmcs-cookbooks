@@ -50,11 +50,15 @@ class ShowInfo(CookbookBase):
 
 def _print_nested_nodes(node: OSDTreeNode, cur_indent: str = ""):
     if isinstance(node, OSDTreeOSDNode):
-        print(f"{cur_indent}{node.name}({node.type}/{node.device_class}) {node.status} weight:{node.crush_weight}")
+        print(
+            f"{cur_indent}{node.name}({node.type}/{node.device_class}):: "
+            f"status={node.status} "
+            f"weight={node.crush_weight}"
+        )
     else:
-        print(f"{cur_indent}{node.name}({node.type})")
+        print(f"{cur_indent}{node.name}({node.type})::")
     for child in node.children:
-        _print_nested_nodes(node=child, cur_indent=cur_indent + "    ")
+        _print_nested_nodes(node=child, cur_indent=cur_indent + f"{node.name}:")
 
 
 def _print_stray(stray_nodes: list[dict[str, Any]]) -> None:
