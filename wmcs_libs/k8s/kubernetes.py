@@ -6,7 +6,9 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any
+from datetime import datetime
+from enum import Enum, auto
+from typing import Any, Generator
 
 from spicerack.remote import Remote
 
@@ -41,6 +43,21 @@ class KubernetesTimeoutForNotReady(KubernetesError):
 
 class KubernetesTimeoutForDrain(KubernetesError):
     """Risen when there is a timeout waiting for a node to drain."""
+
+
+class KubernetesRebootNodePhase(Enum):
+    """Enum to represent a k8s node reboot phase/stage."""
+
+    DRAIN = auto()
+    WAIT_DRAIN = auto()
+    VM_REBOOT = auto()
+    UNCORDON = auto()
+    WAIT_READY = auto()
+    DONE = auto()
+
+    def __str__(self):
+        """String representation."""
+        return self.name.lower()
 
 
 @dataclass(frozen=True)
@@ -120,6 +137,14 @@ class KubernetesController:
         )
         return output["items"]
 
+    def get_nodes_hostnames(self, selector: str | None = None) -> list[str]:
+        """Get the list of nodes currently in the cluster, in hostname list fashion."""
+        hostname_list = []
+        for item in self.get_nodes(selector):
+            hostname_list.append(item["metadata"]["name"])
+
+        return hostname_list
+
     def get_node(self, node_hostname: str) -> list[dict[str, Any]]:
         """Get only info for the the given node."""
         return self.get_nodes(selector=f"kubernetes.io/hostname={node_hostname}")
@@ -191,6 +216,18 @@ class KubernetesController:
 
         run_one_raw(command=["kubectl", "delete", "node", node_hostname], node=self._controlling_node)
 
+    def uncordon_node(self, node_hostname: str) -> None:
+        """Uncordon a node."""
+        current_nodes = self.get_nodes(selector=f"kubernetes.io/hostname={node_hostname}")
+        if not current_nodes:
+            raise KubernetesNodeNotFound("Unable to find node {node_hostname} in the cluster.")
+
+        run_one_raw(
+            command=["kubectl", "uncordon", node_hostname],
+            node=self._controlling_node,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False),
+        )
+
     def is_node_ready(self, node_hostname: str) -> bool:
         """Ready means in 'Ready' status."""
         node_info = self.get_node(node_hostname=node_hostname)
@@ -228,3 +265,28 @@ class KubernetesController:
             "become healthy, but it never did. Current conditions:\n"
             f"{json.dumps(cur_conditions, indent=4)}"
         )
+
+    def reboot_node(
+        self, node_hostname: str, domain: str
+    ) -> Generator[KubernetesRebootNodePhase, KubernetesRebootNodePhase, KubernetesRebootNodePhase]:
+        """Reboot k8s node."""
+        yield KubernetesRebootNodePhase.DRAIN
+        self.drain_node(node_hostname)
+
+        yield KubernetesRebootNodePhase.WAIT_DRAIN
+        self.wait_for_drain(node_hostname)
+
+        yield KubernetesRebootNodePhase.VM_REBOOT
+        node_fqdn = f"{node_hostname}.{domain}"
+        node = self._remote.query(f"D{{{node_fqdn}}}", use_sudo=True)
+        reboot_time = datetime.utcnow()
+        node.reboot()
+        node.wait_reboot_since(since=reboot_time)
+
+        yield KubernetesRebootNodePhase.UNCORDON
+        self.uncordon_node(node_hostname)
+
+        yield KubernetesRebootNodePhase.WAIT_READY
+        self.wait_for_ready(node_hostname)
+
+        return KubernetesRebootNodePhase.DONE
