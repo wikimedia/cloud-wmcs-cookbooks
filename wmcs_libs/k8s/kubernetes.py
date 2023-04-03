@@ -16,10 +16,6 @@ from wmcs_libs.common import CuminParams, run_one_as_dict, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 
-# TODO: the semantic of this is not clear. Namespaces with DaemonSets?
-# TODO: (cont) or perhaps just namespaces which can be ignored in drain ops?
-K8S_SYSTEM_NAMESPACES = ["kube-system", "metrics"]
-
 
 class KubernetesError(Exception):
     """Parent class for all kubernetes related errors."""
@@ -167,10 +163,22 @@ class KubernetesController:
         """Get pods for node."""
         return self.get_pods(field_selector=f"spec.nodeName={node_hostname}")
 
-    def get_non_system_pods_for_node(self, node_hostname: str) -> list[dict[str, Any]]:
-        """Get all non-system pods in a node."""
+    def get_evictable_pods_for_node(self, node_hostname: str) -> list[dict[str, Any]]:
+        """Get all pods in a node which will be evicted when draining the node."""
         pods = self.get_pods_for_node(node_hostname=node_hostname)
-        return [pod for pod in pods if pod["metadata"]["namespace"] not in K8S_SYSTEM_NAMESPACES]
+        return [
+            pod
+            for pod in pods
+            if not any(
+                # DaemonSets run on every node so they can't be evicted from individual nodes.
+                # The control plane components (api-server, controller-manager, scheduler) run
+                # with static manifests that are read by Kubelet, and marked as owned by the Node
+                # resource. They can't be evicted either.
+                # We assume that everything else can be evicted.
+                ref["kind"] == "Node" or ref["kind"] == "DaemonSet"
+                for ref in pod["metadata"]["ownerReferences"]
+            )
+        ]
 
     def drain_node(self, node_hostname: str) -> None:
         """Drain a node, it does not wait for the containers to be stopped though."""
@@ -188,14 +196,14 @@ class KubernetesController:
         start_time = time.time()
         cur_time = start_time
         while cur_time - start_time < timeout_seconds:
-            non_system_pods = self.get_non_system_pods_for_node(node_hostname)
-            if not non_system_pods:
+            evictable_pods = self.get_evictable_pods_for_node(node_hostname)
+            if not evictable_pods:
                 return
 
             LOGGER.debug(
                 "Waiting for node %s to stop all it's pods, still %d running ...",
                 node_hostname,
-                len(non_system_pods),
+                len(evictable_pods),
             )
 
             time.sleep(check_interval_seconds)
@@ -204,8 +212,8 @@ class KubernetesController:
         # timed out!
         raise KubernetesTimeoutForDrain(
             f"Waited {timeout_seconds} for node {node_hostname} to drain, but it never did. "
-            f"Still has {len(non_system_pods)} pods running. Running pods:\n"
-            f"{json.dumps(non_system_pods, indent=4)}"
+            f"Still has {len(evictable_pods)} pods running. Running pods:\n"
+            f"{json.dumps(evictable_pods, indent=4)}"
         )
 
     def delete_node(self, node_hostname: str) -> None:
