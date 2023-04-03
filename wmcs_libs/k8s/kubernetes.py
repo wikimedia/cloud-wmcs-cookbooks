@@ -112,7 +112,7 @@ class KubernetesController:
         output = run_one_as_dict(
             command=["kubectl", "get", "nodes", "--output=json", selector_cli],
             node=self._controlling_node,
-            cumin_params=CuminParams(is_safe=True),
+            cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
         )
         return output["items"]
 
@@ -130,7 +130,7 @@ class KubernetesController:
         output = run_one_as_dict(
             command=["kubectl", "get", "pods", "--output=json", field_selector_cli],
             node=self._controlling_node,
-            cumin_params=CuminParams(is_safe=True),
+            cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
         )
         return output["items"]
 
