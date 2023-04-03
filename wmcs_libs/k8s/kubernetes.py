@@ -136,6 +136,10 @@ class KubernetesController:
 
     def drain_node(self, node_hostname: str) -> None:
         """Drain a node, it does not wait for the containers to be stopped though."""
+        node_info = self.get_node(node_hostname=node_hostname)
+        if not node_info:
+            raise KubernetesNodeNotFound("Unable to find node {node_hostname} in the cluster.")
+
         run_one_raw(
             command=["kubectl", "drain", "--ignore-daemonsets", "--delete-local-data", node_hostname],
             node=self._controlling_node,
@@ -143,9 +147,9 @@ class KubernetesController:
 
     def delete_node(self, node_hostname: str) -> None:
         """Delete a node, it does not drain it, see drain_node for that."""
-        current_nodes = self.get_nodes(selector=f"kubernetes.io/hostname={node_hostname}")
-        if not current_nodes:
-            LOGGER.info("Node %s was not part of this kubernetes cluster, ignoring", node_hostname)
+        node_info = self.get_node(node_hostname=node_hostname)
+        if not node_info:
+            raise KubernetesNodeNotFound(f"Unable to find node {node_hostname} in the cluster.")
 
         run_one_raw(command=["kubectl", "delete", "node", node_hostname], node=self._controlling_node)
 

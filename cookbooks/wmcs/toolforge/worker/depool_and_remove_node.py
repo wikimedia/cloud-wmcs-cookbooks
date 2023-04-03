@@ -27,7 +27,7 @@ from wmcs_libs.common import (
     with_common_opts,
 )
 from wmcs_libs.inventory import OpenstackClusterName
-from wmcs_libs.k8s.kubernetes import KubernetesController
+from wmcs_libs.k8s.kubernetes import KubernetesController, KubernetesNodeNotFound
 from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
@@ -186,7 +186,11 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         drain_cookbook.get_runner(args=drain_cookbook.argument_parser().parse_args(args=drain_args)).run()
 
         kubectl = KubernetesController(remote=remote, controlling_node_fqdn=control_node_fqdn)
-        kubectl.delete_node(fqdn_to_remove.split(".", 1)[0])
+        try:
+            kubectl.delete_node(fqdn_to_remove.split(".", 1)[0])
+        except KubernetesNodeNotFound:
+            # ignore! this is OK
+            pass
 
         LOGGER.info("Removing k8s worker member %s...", fqdn_to_remove)
         remove_instance_cookbook = RemoveInstance(spicerack=self.spicerack)
