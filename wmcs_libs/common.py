@@ -31,7 +31,6 @@ from wmcs_libs.test_helpers import WMCSCookbookRecorder
 
 LOGGER = logging.getLogger(__name__)
 PHABRICATOR_BOT_CONFIG_FILE = "/etc/phabricator_ops-monitoring-bot.conf"
-K8S_SYSTEM_NAMESPACES = ["kube-system", "metrics"]
 DIGIT_RE = re.compile("([0-9]+)")
 
 

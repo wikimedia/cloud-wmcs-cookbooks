@@ -15,15 +15,8 @@ import time
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import (
-    K8S_SYSTEM_NAMESPACES,
-    CommonOpts,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    with_common_opts,
-)
-from wmcs_libs.k8s.kubernetes import KubernetesController
+from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.k8s.kubernetes import K8S_SYSTEM_NAMESPACES, KubernetesController
 
 LOGGER = logging.getLogger(__name__)
 

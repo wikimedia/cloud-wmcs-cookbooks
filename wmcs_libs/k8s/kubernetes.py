@@ -14,6 +14,10 @@ from wmcs_libs.common import CuminParams, run_one_as_dict, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 
+# TODO: the semantic of this is not clear. Namespaces with DaemonSets?
+# TODO: (cont) or perhaps just namespaces which can be ignored in drain ops?
+K8S_SYSTEM_NAMESPACES = ["kube-system", "metrics"]
+
 
 class KubernetesError(Exception):
     """Parent class for all kubernetes related errors."""
