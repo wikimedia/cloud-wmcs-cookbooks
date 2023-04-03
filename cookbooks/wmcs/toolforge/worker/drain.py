@@ -8,15 +8,13 @@ Usage example:
 from __future__ import annotations
 
 import argparse
-import json
 import logging
-import time
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.k8s.kubernetes import K8S_SYSTEM_NAMESPACES, KubernetesController
+from wmcs_libs.k8s.kubernetes import KubernetesController
 
 LOGGER = logging.getLogger(__name__)
 
@@ -77,33 +75,7 @@ class DrainRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
         """Main entry point"""
         remote = self.spicerack.remote()
-        self.sallogger.log(message=f"Draining node {self.hostname_to_drain}...")
         kubectl = KubernetesController(remote=remote, controlling_node_fqdn=self.control_node_fqdn)
         kubectl.drain_node(node_hostname=self.hostname_to_drain)
-
-        def _get_non_system_pods():
-            pods = kubectl.get_pods_for_node(node_hostname=self.hostname_to_drain)
-            return [pod for pod in pods if pod["metadata"]["namespace"] in K8S_SYSTEM_NAMESPACES]
-
-        tries = 0
-        max_tries = 10
-        while True:
-            non_system_pods = _get_non_system_pods()
-            if not non_system_pods:
-                break
-
-            tries += 1
-            if tries > max_tries:
-                raise Exception(
-                    f"Unable to drain node {self.hostname_to_drain}, still has {len(non_system_pods)} pods running, "
-                    f"please check manually. Running pods:\n{json.dumps(non_system_pods, indent=4)}"
-                )
-
-            LOGGER.debug(
-                "Waiting for node %s to stop all it's pods, still %d running ...",
-                self.hostname_to_drain,
-                len(non_system_pods),
-            )
-            time.sleep(30)
-
-        self.sallogger.log(message=f"Drained node {self.hostname_to_drain}")
+        kubectl.wait_for_drain(node_hostname=self.hostname_to_drain)
+        self.sallogger.log(message=f"drained node {self.hostname_to_drain}")

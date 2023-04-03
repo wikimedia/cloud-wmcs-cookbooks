@@ -39,6 +39,10 @@ class KubernetesTimeoutForNotReady(KubernetesError):
     """Risen when there is a timeout waiting for a node to become READY."""
 
 
+class KubernetesTimeoutForDrain(KubernetesError):
+    """Risen when there is a timeout waiting for a node to drain."""
+
+
 @dataclass(frozen=True)
 class KubernetesClusterInfo:
     """Kubernetes cluster info."""
@@ -120,7 +124,7 @@ class KubernetesController:
         """Get only info for the the given node."""
         return self.get_nodes(selector=f"kubernetes.io/hostname={node_hostname}")
 
-    def get_pods(self, field_selector: str | None = None) -> dict[str, Any]:
+    def get_pods(self, field_selector: str | None = None) -> list[dict[str, Any]]:
         """Get pods."""
         if field_selector:
             field_selector_cli = f"--field-selector='{field_selector}'"
@@ -134,9 +138,14 @@ class KubernetesController:
         )
         return output["items"]
 
-    def get_pods_for_node(self, node_hostname: str) -> dict[str, Any]:
+    def get_pods_for_node(self, node_hostname: str) -> list[dict[str, Any]]:
         """Get pods for node."""
         return self.get_pods(field_selector=f"spec.nodeName={node_hostname}")
+
+    def get_non_system_pods_for_node(self, node_hostname: str) -> list[dict[str, Any]]:
+        """Get all non-system pods in a node."""
+        pods = self.get_pods_for_node(node_hostname=node_hostname)
+        return [pod for pod in pods if pod["metadata"]["namespace"] not in K8S_SYSTEM_NAMESPACES]
 
     def drain_node(self, node_hostname: str) -> None:
         """Drain a node, it does not wait for the containers to be stopped though."""
@@ -147,6 +156,31 @@ class KubernetesController:
         run_one_raw(
             command=["kubectl", "drain", "--ignore-daemonsets", "--delete-local-data", node_hostname],
             node=self._controlling_node,
+        )
+
+    def wait_for_drain(self, node_hostname: str, check_interval_seconds: int = 10, timeout_seconds: int = 300) -> None:
+        """Wait for a given node to be completely drained of pods."""
+        start_time = time.time()
+        cur_time = start_time
+        while cur_time - start_time < timeout_seconds:
+            non_system_pods = self.get_non_system_pods_for_node(node_hostname)
+            if not non_system_pods:
+                return
+
+            LOGGER.debug(
+                "Waiting for node %s to stop all it's pods, still %d running ...",
+                node_hostname,
+                len(non_system_pods),
+            )
+
+            time.sleep(check_interval_seconds)
+            cur_time = time.time()
+
+        # timed out!
+        raise KubernetesTimeoutForDrain(
+            f"Waited {timeout_seconds} for node {node_hostname} to drain, but it never did. "
+            f"Still has {len(non_system_pods)} pods running. Running pods:\n"
+            f"{json.dumps(non_system_pods, indent=4)}"
         )
 
     def delete_node(self, node_hostname: str) -> None:
