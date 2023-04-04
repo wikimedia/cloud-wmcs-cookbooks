@@ -337,7 +337,13 @@ def run_one_formatted(
     raise Exception(f"Unrecognized format {try_format}")
 
 
-def simple_create_file(dst_node: RemoteHosts, contents: str, remote_path: str, use_root: bool = True) -> None:
+def simple_create_file(
+    dst_node: RemoteHosts,
+    contents: str,
+    remote_path: str,
+    use_root: bool = True,
+    cumin_params: CuminParams | None = None,
+) -> None:
     """Creates a file on the remote host/hosts with the given content."""
     # this makes it easier to get away with quotes or similar
     base64_content = base64.b64encode(contents.encode("utf8"))
@@ -347,7 +353,7 @@ def simple_create_file(dst_node: RemoteHosts, contents: str, remote_path: str, u
 
     full_command.extend(["tee", remote_path])
 
-    run_one_raw(node=dst_node, command=full_command)
+    run_one_raw(node=dst_node, command=full_command, cumin_params=cumin_params)
 
 
 def natural_sort_key(element: str) -> list[str | int]:

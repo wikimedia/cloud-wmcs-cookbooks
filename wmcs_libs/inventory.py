@@ -151,6 +151,15 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     INGRESS = "ingress"
     ETCD = "etcd"
 
+    def __str__(self) -> str:
+        """Needed to show the nice string values and for argparse to use those to call the `type` parameter."""
+        return self.name.lower()
+
+    @classmethod
+    def from_str(cls, arg: str) -> "ToolforgeKubernetesNodeRoleName":
+        """Helps when passing ToolforgeKubernetesNodeRoleName to argparse as type."""
+        return cls[arg.upper()]
+
     @property
     def runs_kubelet(self) -> bool:
         """Check if this node type is a Kubernetes worker or control node."""
@@ -160,6 +169,11 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     def is_worker(self) -> bool:
         """Check if this is a worker (including specialized worker roles)."""
         return self in (ToolforgeKubernetesNodeRoleName.WORKER, ToolforgeKubernetesNodeRoleName.INGRESS)
+
+    @property
+    def has_extra_image_storage(self) -> bool:
+        """Check if nodes in this role have an extra partition for container image storage."""
+        return self == ToolforgeKubernetesNodeRoleName.WORKER
 
 
 @dataclass(frozen=True)
