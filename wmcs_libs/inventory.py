@@ -267,9 +267,9 @@ _INVENTORY = {
                     security_group_name="tools-new-k8s-full-connectivity",
                     nodes_by_role={
                         ToolforgeKubernetesNodeRoleName.CONTROL: [
-                            "tools-k8s-control-1.tools.eqiad1.wikimedia.cloud",
-                            "tools-k8s-control-2.tools.eqiad1.wikimedia.cloud",
-                            "tools-k8s-control-3.tools.eqiad1.wikimedia.cloud",
+                            "tools-k8s-control-4.tools.eqiad1.wikimedia.cloud",
+                            "tools-k8s-control-5.tools.eqiad1.wikimedia.cloud",
+                            "tools-k8s-control-6.tools.eqiad1.wikimedia.cloud",
                         ],
                     },
                 ),
