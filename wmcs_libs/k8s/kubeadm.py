@@ -55,7 +55,9 @@ class KubeadmController:
 
     def get_new_token(self) -> str:
         """Creates a new bootstrap token."""
-        raw_output = run_one_raw(command=["kubeadm", "token", "create"], node=self._target_node)
+        raw_output = run_one_raw(
+            command=["kubeadm", "token", "create"], node=self._target_node, cumin_params=CuminParams(print_output=False)
+        )
         output = raw_output.splitlines()[-1].strip()
         if not output:
             raise KubeadmCreateTokenError(f"Error creating a new token:\nOutput:{raw_output}")
@@ -64,7 +66,11 @@ class KubeadmController:
 
     def delete_token(self, token: str) -> str:
         """Removes the given bootstrap token."""
-        raw_output = run_one_raw(command=["kubeadm", "token", "delete", token], node=self._target_node)
+        raw_output = run_one_raw(
+            command=["kubeadm", "token", "delete", token],
+            node=self._target_node,
+            cumin_params=CuminParams(print_output=False),
+        )
         if "deleted" not in raw_output:
             raise KubeadmDeleteTokenError(f"Error deleting token {token}:\nOutput:{raw_output}")
 
