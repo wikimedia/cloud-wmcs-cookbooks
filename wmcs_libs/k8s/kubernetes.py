@@ -189,16 +189,25 @@ class KubernetesController:
             )
         ]
 
-    def drain_node(self, node_hostname: str) -> None:
+    def drain_node(self, node_hostname: str, timeout_seconds: int = 60) -> None:
         """Drain a node, it does not wait for the containers to be stopped though."""
         node_info = self.get_node(node_hostname=node_hostname)
         if not node_info:
             raise KubernetesNodeNotFound("Unable to find node {node_hostname} in the cluster.")
 
-        run_one_raw(
-            command=["kubectl", "drain", "--ignore-daemonsets", "--delete-local-data", node_hostname],
-            node=self._controlling_node,
-        )
+        command = [
+            "kubectl",
+            "drain",
+            "--ignore-daemonsets",
+            "--delete-emptydir-data",
+            "--grace-period=1",
+            "--skip-wait-for-delete-timeout=1",
+            f"--timeout={timeout_seconds}s",
+            "--force",
+            node_hostname,
+        ]
+
+        run_one_raw(command=command, node=self._controlling_node)
 
     def wait_for_drain(self, node_hostname: str, check_interval_seconds: int = 10, timeout_seconds: int = 300) -> None:
         """Wait for a given node to be completely drained of pods."""
