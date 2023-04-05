@@ -16,6 +16,7 @@ from cumin.transports import Command
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
+from spicerack.remote import RemoteHosts
 
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
@@ -110,6 +111,25 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
         )
 
+    def _prepare_storage(self, node: RemoteHosts):
+        if not self.role.has_extra_image_storage:
+            return
+
+        device = "/dev/sdb"
+        LOGGER.info("Making sure %s is ext4, docker overlay storage needs it", device)
+        run_one_raw(
+            node=node,
+            # we have to remove the mount from fstab as the fstype will be wrong
+            command=Command(
+                f"grep '{device}.*ext4' /proc/mounts "
+                "|| { "
+                f"    sudo umount {device} 2>/dev/null; "
+                f"    sudo -i mkfs.ext4 {device}; "
+                f"    sudo sed -i -e '\\|^.*/var/lib/docker\\s.*|d' /etc/fstab; "
+                "}"
+            ),
+        )
+
     def run(self) -> None:
         """Main entry point"""
         self.sallogger.log(message=f"Adding a new k8s {self.role} node")
@@ -140,21 +160,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         ).create_instance()
         node = self.spicerack.remote().query(f"D{{{new_member.server_fqdn}}}", use_sudo=True)
 
-        if self.role.has_extra_image_storage:
-            device = "/dev/sdb"
-            LOGGER.info("Making sure %s is ext4, docker overlay storage needs it", device)
-            run_one_raw(
-                node=node,
-                # we have to remove the mount from fstab as the fstype will be wrong
-                command=Command(
-                    f"grep '{device}.*ext4' /proc/mounts "
-                    "|| { "
-                    f"    sudo umount {device} 2>/dev/null; "
-                    f"    sudo -i mkfs.ext4 {device}; "
-                    f"    sudo sed -i -e '\\|^.*/var/lib/docker\\s.*|d' /etc/fstab; "
-                    "}"
-                ),
-            )
+        self._prepare_storage(node)
 
         LOGGER.info("Making sure that the proper puppetmaster is setup for the new node %s", new_member.server_fqdn)
         LOGGER.info("It might fail before rebooting, will make sure it runs after too.")
