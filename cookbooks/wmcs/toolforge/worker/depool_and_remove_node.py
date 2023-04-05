@@ -2,9 +2,8 @@ r"""WMCS Toolforge - Depool and delete the given k8s worker node from a toolforg
 
 Usage example:
     cookbook wmcs.toolforge.worker.depool_and_remove_node \
-        --project toolsbeta \
-        --control-node-fqdn toolsbeta-test-control-5.toolsbeta.eqiad1.wikimedia.cloud \
-        --hostname-to-drain toolsbeta-test-worker-4
+        --cluster toolsbeta \
+        --hostname-to-remove toolsbeta-test-worker-4
 
 """
 from __future__ import annotations
@@ -18,15 +17,14 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from cookbooks.wmcs.toolforge.worker.drain import Drain
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
-from wmcs_libs.common import (
-    CommonOpts,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    natural_sort_key,
-    with_common_opts,
+from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, natural_sort_key
+from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
+from wmcs_libs.k8s.clusters import (
+    add_toolforge_kubernetes_cluster_opts,
+    get_cluster_node_prefix,
+    get_control_nodes,
+    with_toolforge_kubernetes_cluster_opts,
 )
-from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.k8s.kubernetes import KubernetesController, KubernetesNodeNotFound
 from wmcs_libs.openstack.common import OpenstackAPI
 
@@ -45,34 +43,29 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        add_common_opts(parser, project_default="toolsbeta")
+        add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
-            "--fqdn-to-remove",
+            "--hostname-to-remove",
             required=False,
             default=None,
-            help="FQDN of the node to remove, if none passed will remove the instance with the lower index.",
+            help="Host name of the node to remove, if none passed will remove the instance with the lower index.",
         )
         parser.add_argument(
-            "--control-node-fqdn",
-            required=False,
-            default=None,
-            help="FQDN of the k8s control node, if none passed will try to get one from openstack.",
-        )
-        parser.add_argument(
-            "--k8s-worker-prefix",
-            required=False,
-            default=None,
-            help=("Prefix for the k8s worker nodes, default is <project>-k8s-worker"),
+            "--role",
+            required=True,
+            choices=[role for role in ToolforgeKubernetesNodeRoleName if role.runs_kubelet],
+            type=ToolforgeKubernetesNodeRoleName.from_str,
+            default=ToolforgeKubernetesNodeRoleName.WORKER,
+            help="Role of the node to remove",
         )
 
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, ToolforgeDepoolAndRemoveNodeRunner,)(
-            k8s_worker_prefix=args.k8s_worker_prefix,
-            fqdn_to_remove=args.fqdn_to_remove,
-            control_node_fqdn=args.control_node_fqdn,
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeDepoolAndRemoveNodeRunner,)(
+            hostname_to_remove=args.hostname_to_remove,
+            role=args.role,
             spicerack=self.spicerack,
         )
 
@@ -83,33 +76,29 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        k8s_worker_prefix: str,
-        control_node_fqdn: str,
-        fqdn_to_remove: str,
+        cluster_name: ToolforgeKubernetesClusterName,
         spicerack: Spicerack,
+        hostname_to_remove: str,
+        role: ToolforgeKubernetesNodeRoleName,
     ):
         """Init"""
         self.common_opts = common_opts
-        self.fqdn_to_remove = fqdn_to_remove
-        self.control_node_fqdn = control_node_fqdn
+        self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack)
+        self.hostname_to_remove = hostname_to_remove
+        self.role = role
+
         self.openstack_api = OpenstackAPI(
-            remote=spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.common_opts.project
+            remote=spicerack.remote(),
+            cluster_name=self.cluster_name.get_openstack_cluster_name(),
+            project=self.cluster_name.get_project(),
         )
         self._all_project_servers: list[dict[str, Any]] | None = None
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
         )
 
-        if k8s_worker_prefix:
-            self.k8s_worker_prefix = k8s_worker_prefix
-        else:
-            if self.common_opts.project == "toolsbeta":
-                self.k8s_worker_prefix = f"{self.common_opts.project}-test-k8s-worker"
-            else:
-                self.k8s_worker_prefix = f"{self.common_opts.project}-k8s-worker"
-
-    def _get_oldest_worker(self, k8s_worker_prefix: str) -> str:
+    def _get_oldest_node(self, name_prefix: str) -> str:
         if not self._all_project_servers:
             self._all_project_servers = self.openstack_api.server_list()
 
@@ -118,66 +107,51 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
                 (
                     server
                     for server in self._all_project_servers
-                    if server.get("Name", "noname").startswith(k8s_worker_prefix)
+                    if server.get("Name", "noname").startswith(name_prefix)
                 ),
                 key=lambda server: natural_sort_key(server.get("Name", "noname-0")),
             )
         )
         if not prefix_members:
             raise Exception(
-                f"No servers in project {self.common_opts.project} with prefix {k8s_worker_prefix}, nothing to remove."
+                f"No servers in project {self.cluster_name.get_project()} with prefix {name_prefix}, nothing to remove."
             )
 
-        # TODO: find a way to not hardcode the domain
-        return f"{prefix_members[0]['Name']}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
+        return f"{prefix_members[0]['Name']}"
 
-    def _pick_a_control_node(self, k8s_worker_prefix: str) -> str:
-        if not self._all_project_servers:
-            self._all_project_servers = self.openstack_api.server_list()
-
-        guessed_control_prefix = k8s_worker_prefix.rsplit("-", 1)[0] + "-control"
-
-        prefix_members = list(
-            sorted(
-                (
-                    server
-                    for server in self._all_project_servers
-                    if server.get("Name", "noname").startswith(guessed_control_prefix)
-                ),
-                key=lambda server: natural_sort_key(server.get("Name", "noname-0")),
-            )
+    def _pick_a_control_node(self) -> str:
+        domain = f"{self.cluster_name.get_openstack_cluster_name()}.wikimedia.cloud"
+        fqdn_to_remove = f"{self.hostname_to_remove}.{self.cluster_name.get_project()}.{domain}"
+        LOGGER.debug("Finding next control node that is not %s", fqdn_to_remove)
+        return next(
+            control_node for control_node in get_control_nodes(self.cluster_name) if control_node != fqdn_to_remove
         )
-
-        if not prefix_members:
-            raise Exception(
-                f"Unable to guess a control node (looking for prefix {guessed_control_prefix}). Make sure that the "
-                "given worker prefix is correct or pass explicitly a control node."
-            )
-
-        return f"{prefix_members[0]['Name']}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
 
     def run(self) -> None:
         """Main entry point"""
         remote = self.spicerack.remote()
 
-        if not self.fqdn_to_remove:
-            fqdn_to_remove = self._get_oldest_worker(k8s_worker_prefix=self.k8s_worker_prefix)
-            LOGGER.info("Picked node %s to remove.", fqdn_to_remove)
-
+        name_prefix = get_cluster_node_prefix(self.cluster_name, self.role)
+        if self.hostname_to_remove:
+            if not self.hostname_to_remove.startswith(name_prefix):
+                raise Exception(
+                    f"Host name {self.hostname_to_remove} does not start with prefix {name_prefix} as expected"
+                    f" for {self.role} nodes"
+                )
         else:
-            fqdn_to_remove = self.fqdn_to_remove
+            self.hostname_to_remove = self._get_oldest_node(name_prefix)
+            LOGGER.info("Picked node %s to remove.", self.hostname_to_remove)
 
-        hostname_to_remove = fqdn_to_remove.split(".", 1)[0]
+        control_node_fqdn = self._pick_a_control_node()
+        LOGGER.info("Found control node %s", control_node_fqdn)
 
-        if not self.control_node_fqdn:
-            control_node_fqdn = self._pick_a_control_node(k8s_worker_prefix=self.k8s_worker_prefix)
-        else:
-            control_node_fqdn = self.control_node_fqdn
+        # TODO: if removing a control or ingress node, remove
+        # it from haproxy hieradata and run puppet there
 
         drain_cookbook = Drain(spicerack=self.spicerack)
         drain_args = [
             "--hostname-to-drain",
-            hostname_to_remove,
+            self.hostname_to_remove,
             "--control-node-fqdn",
             control_node_fqdn,
             "--no-dologmsg",  # not interested in the inner SAL entries
@@ -187,18 +161,18 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
 
         kubectl = KubernetesController(remote=remote, controlling_node_fqdn=control_node_fqdn)
         try:
-            kubectl.delete_node(fqdn_to_remove.split(".", 1)[0])
+            kubectl.delete_node(self.hostname_to_remove)
         except KubernetesNodeNotFound:
             # ignore! this is OK
             pass
 
-        LOGGER.info("Removing k8s worker member %s...", fqdn_to_remove)
+        LOGGER.info("Removing k8s %s node %s...", self.role, self.hostname_to_remove)
         remove_instance_cookbook = RemoveInstance(spicerack=self.spicerack)
         remove_instance_cookbook.get_runner(
             args=remove_instance_cookbook.argument_parser().parse_args(
                 [
                     "--server-name",
-                    hostname_to_remove,
+                    self.hostname_to_remove,
                     "--no-dologmsg",  # not interested in the inner SAL entry
                     "--revoke-puppet-certs",  # so it will also be removed from puppetdb
                 ]
@@ -206,4 +180,4 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             ),
         ).run()
 
-        self.sallogger.log(message=f"drained, depooled and removed worker {hostname_to_remove}")
+        self.sallogger.log(message=f"drained, depooled and removed k8s {self.role} node {self.hostname_to_remove}")
