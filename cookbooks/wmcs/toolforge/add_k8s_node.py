@@ -25,6 +25,7 @@ from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKuberne
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
     get_cluster_node_prefix,
+    get_cluster_node_server_group_name,
     get_cluster_security_group_name,
     get_control_nodes,
     with_toolforge_kubernetes_cluster_opts,
@@ -136,6 +137,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
 
         node_prefix = get_cluster_node_prefix(self.cluster_name, self.role)
         security_group = get_cluster_security_group_name(self.cluster_name)
+        server_group = get_cluster_node_server_group_name(self.cluster_name, self.role)
 
         start_args = [
             "--prefix",
@@ -143,7 +145,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
             "--security-group",
             security_group,
             "--server-group",
-            node_prefix,
+            server_group,
             "--server-group-policy",
             OpenstackServerGroupPolicy.SOFT_ANTI_AFFINITY.value,
         ] + self.common_opts.to_cli_args()
