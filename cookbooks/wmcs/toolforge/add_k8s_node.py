@@ -199,10 +199,10 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         is_control = self.role == ToolforgeKubernetesNodeRoleName.CONTROL
 
         if is_control:
-            # TODO: adjust firewall rules on etcd hosts
-            # Easiest way probably is to make the etcd profile load
-            # control nodes from PuppetDB and here just run Puppet
-            # on all of them
+            etcd_nodes = kubeadm.get_etcd_nodes(existing_control_node_fqdn=k8s_control_node_fqdn)
+            etcd_remote = self.spicerack.remote().query(f"D{{{','.join(etcd_nodes)}}}", use_sudo=True)
+            LOGGER.info("Running Puppet on %s etcd nodes to pick up firewall changes", len(etcd_nodes))
+            PuppetHosts(remote_hosts=etcd_remote).run()
 
             LOGGER.info("Copying CA data to the new server")
             kubeadm.copy_certificates_from(existing_node_fqdn=k8s_control_node_fqdn)

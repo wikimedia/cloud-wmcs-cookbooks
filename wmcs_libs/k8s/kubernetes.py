@@ -119,6 +119,15 @@ class KubernetesController:
         )
         return KubernetesClusterInfo.form_cluster_info_output(raw_output=raw_output)
 
+    def get_object(self, kind: str, name: str, namespace: str | None = None) -> dict[str, Any]:
+        """Get data for a single object in the cluster."""
+        namespace_args = [f"--namespace={namespace}"] if namespace else []
+        return run_one_as_dict(
+            command=["kubectl", "get", kind, name, *namespace_args, "--output=json"],
+            node=self._controlling_node,
+            cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
+        )
+
     def get_nodes(self, selector: str | None = None) -> list[dict[str, Any]]:
         """Get the nodes currently in the cluster."""
         if selector:

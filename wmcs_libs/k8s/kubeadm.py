@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+import yaml
 from spicerack.remote import Remote
 
 from wmcs_libs.common import CuminParams, run_one_raw, simple_create_file
@@ -158,9 +159,17 @@ class KubeadmController:
                 )
 
             simple_create_file(
-                dst_node=existing_node,
+                dst_node=self._target_node,
                 contents=file_content,
                 remote_path=file_full_path,
                 use_root=True,
                 cumin_params=CuminParams(print_output=False),
             )
+
+    def get_etcd_nodes(self, existing_control_node_fqdn: str) -> list[str]:
+        """Get list of etcd nodes currently known to kubeadm."""
+        kubectl = KubernetesController(self._remote, existing_control_node_fqdn)
+        kubeadm_config = kubectl.get_object("configmaps", "kubeadm-config", namespace="kube-system")
+        config = yaml.safe_load(kubeadm_config["data"]["ClusterConfiguration"])
+
+        return [endpoint.split("//", 1)[1].split(":")[0] for endpoint in config["etcd"]["external"]["endpoints"]]
