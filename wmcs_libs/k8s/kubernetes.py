@@ -193,7 +193,7 @@ class KubernetesController:
         """Drain a node, it does not wait for the containers to be stopped though."""
         node_info = self.get_node(node_hostname=node_hostname)
         if not node_info:
-            raise KubernetesNodeNotFound("Unable to find node {node_hostname} in the cluster.")
+            raise KubernetesNodeNotFound(f"Unable to find node {node_hostname} in the cluster.")
 
         command = [
             "kubectl",
