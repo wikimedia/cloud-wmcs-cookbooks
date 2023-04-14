@@ -206,7 +206,8 @@ def calculate_changelist(
     host_to_canary_vms: dict[str, list[dict[str, Any]]] = {}
     for canary_vm in existing_canary_vms:
         host = canary_vm["Host"]
-        host_to_canary_vms[host] = host_to_canary_vms.get(host, []) + [canary_vm]
+        if host in hypervisors:
+            host_to_canary_vms[host] = host_to_canary_vms.get(host, []) + [canary_vm]
 
     for hypervisor in hypervisors:
         if hypervisor not in host_to_canary_vms:
