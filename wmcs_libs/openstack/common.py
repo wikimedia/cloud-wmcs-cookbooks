@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from enum import Enum, auto
 from typing import Any, Callable, NamedTuple, Type, Union, cast
@@ -215,13 +216,19 @@ class OpenstackQuotaEntry(NamedTuple):
 
         try:
             int(human_spec[-1:])
-            # expect that if no unit passed, it's using the one openstack expects
+            # if no unit passed use the openstack default one
             cur_unit = dst_unit
             cur_value = int(human_spec)
 
-        except ValueError:
-            cur_unit = Unit(human_spec[-1:])
-            cur_value = int(human_spec[:-1])
+        except ValueError as error:
+            unit_match = re.match("([0-9]+)([^0-9]+)$", human_spec)
+            if not unit_match:
+                raise ValueError(f"Unable to parse human spec '{human_spec}'") from error
+
+            value_str, unit_str = unit_match.groups()
+            # we only care about the first char, ex. GB -> G
+            cur_unit = Unit(unit_str[0].upper())
+            cur_value = int(value_str)
 
         while dst_unit != cur_unit:
             cur_value *= 1024
