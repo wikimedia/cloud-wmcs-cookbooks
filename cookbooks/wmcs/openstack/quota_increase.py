@@ -16,6 +16,7 @@ import logging
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory import OpenstackClusterName
@@ -54,6 +55,9 @@ class QuotaIncrease(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
+        if args.project == "admin":
+            ask_confirmation("Are you sure you want to increase the quota of the admin project?")
+
         increases = [
             OpenstackQuotaEntry.from_human_spec(
                 name=quota_name,
