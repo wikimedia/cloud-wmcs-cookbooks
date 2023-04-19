@@ -2,7 +2,7 @@ r"""WMCS Toolforge - Add a new k8s node to a Toolforge cluster.
 
 Usage example:
     cookbook wmcs.toolforge.add_k8s_node \
-        --cluster toolsbeta \
+        --cluster-name toolsbeta \
         --role worker
 """
 # pylint: disable=too-many-arguments
