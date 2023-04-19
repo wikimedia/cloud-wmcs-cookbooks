@@ -1,7 +1,7 @@
 r"""WMCS Toolforge - Add a new etcd node to a toolforge installation.
 
 Usage example:
-    cookbook wmcs.toolforge.add_etcd_node \
+    cookbook wmcs.toolforge.add_k8s_etcd_node \
         --project toolsbeta \
         --etcd-prefix toolsbeta-k8s-test-etcd
 
@@ -15,15 +15,15 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.toolforge.etcd.add_node_to_cluster import AddNodeToCluster
+from cookbooks.wmcs.toolforge.k8s.etcd.add_node_to_cluster import AddNodeToCluster
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
 from wmcs_libs.common import WMCSCookbookRunnerBase
 
 LOGGER = logging.getLogger(__name__)
 
 
-class ToolforgeAddEtcdNode(CookbookBase):
-    """WMCS Toolforge cookbook to add a new etcd node"""
+class ToolforgeAddK8sEtcdNode(CookbookBase):
+    """WMCS Toolforge cookbook to add a new K8s etcd node"""
 
     title = __doc__
 
@@ -76,7 +76,7 @@ class ToolforgeAddEtcdNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return ToolforgeAddEtcdNodeRunner(
+        return ToolforgeAddK8sEtcdNodeRunner(
             etcd_prefix=args.etcd_prefix,
             skip_puppet_bootstrap=args.skip_puppet_bootstrap,
             project=args.project,
@@ -86,8 +86,8 @@ class ToolforgeAddEtcdNode(CookbookBase):
         )
 
 
-class ToolforgeAddEtcdNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeAddEtcdNode"""
+class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
+    """Runner for ToolforgeAddK8sEtcdNode"""
 
     def __init__(
         self,

@@ -2,12 +2,12 @@ r"""WMCS Toolforge - Add a new etcd node to hiera
 
 Usage examples:
     # Add a node using the default node prefix
-    cookbook wmcs.toolforge.etcd.add_node_to_hiera \
+    cookbook wmcs.toolforge.k8s.etcd.add_node_to_hiera \
         --project toolsbeta \
         --fqdn-to-add toolsbeta-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
 
     # Add a node using a custom prefix (ex. with the -test- after the project)
-    cookbook wmcs.toolforge.etcd.add_node_to_hiera \
+    cookbook wmcs.toolforge.k8s.etcd.add_node_to_hiera \
         --project toolsbeta \
         --prefix toolsbeta-test-k8s-etcd \
         --fqdn-to-add toolsbeta-test-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud

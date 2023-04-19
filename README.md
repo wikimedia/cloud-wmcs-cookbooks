@@ -28,8 +28,8 @@ cookbooks
     |   |   `-- wmcs.ceph.osd.bootstrap_and_add
     |   |-- wmcs.ceph.reboot_node
 ...
-    |       |-- wmcs.toolforge.worker.depool_and_remove_node
-    |       `-- wmcs.toolforge.worker.drain
+    |       |-- wmcs.toolforge.k8s.worker.depool_and_remove_node
+    |       `-- wmcs.toolforge.k8s.worker.drain
     `-- wmcs.vps
         |-- wmcs.vps.create_instance_with_prefix
         |-- wmcs.vps.refresh_puppet_certs

@@ -1,7 +1,7 @@
 r"""WMCS Toolforge - Depool and delete the given k8s worker node from a toolforge installation
 
 Usage example:
-    cookbook wmcs.toolforge.worker.depool_and_remove_node \
+    cookbook wmcs.toolforge.k8s.worker.depool_and_remove_node \
         --cluster toolsbeta \
         --hostname-to-remove toolsbeta-test-worker-4
 
@@ -15,7 +15,7 @@ from typing import Any
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.toolforge.worker.drain import Drain
+from cookbooks.wmcs.toolforge.k8s.worker.drain import Drain
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, natural_sort_key
 from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName

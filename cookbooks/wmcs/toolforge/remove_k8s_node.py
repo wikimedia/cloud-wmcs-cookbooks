@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 
-from cookbooks.wmcs.toolforge.worker.depool_and_remove_node import ToolforgeDepoolAndRemoveNode
+from cookbooks.wmcs.toolforge.k8s.worker.depool_and_remove_node import ToolforgeDepoolAndRemoveNode
 
 LOGGER = logging.getLogger(__name__)
 

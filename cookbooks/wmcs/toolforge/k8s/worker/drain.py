@@ -1,7 +1,7 @@
 r"""WMCS Toolforge - Drain a k8s worker node
 
 Usage example:
-    cookbook wmcs.toolforge.worker.drain \
+    cookbook wmcs.toolforge.k8s.worker.drain \
         --control-node-fqdn toolsbeta-test-control-5.toolsbeta.eqiad1.wikimedia.cloud \
         --hostname-to-drain toolsbeta-test-worker-4
 """
