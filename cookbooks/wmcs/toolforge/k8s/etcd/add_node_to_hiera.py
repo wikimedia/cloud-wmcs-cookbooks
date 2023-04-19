@@ -1,16 +1,9 @@
 r"""WMCS Toolforge - Add a new etcd node to hiera
 
 Usage examples:
-    # Add a node using the default node prefix
     cookbook wmcs.toolforge.k8s.etcd.add_node_to_hiera \
-        --project toolsbeta \
+        --cluster-name toolsbeta \
         --fqdn-to-add toolsbeta-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
-
-    # Add a node using a custom prefix (ex. with the -test- after the project)
-    cookbook wmcs.toolforge.k8s.etcd.add_node_to_hiera \
-        --project toolsbeta \
-        --prefix toolsbeta-test-k8s-etcd \
-        --fqdn-to-add toolsbeta-test-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
 
 """
 from __future__ import annotations
@@ -24,7 +17,14 @@ import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CuminParams, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict
+from wmcs_libs.common import CommonOpts, CuminParams, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict
+from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
+from wmcs_libs.k8s.clusters import (
+    add_toolforge_kubernetes_cluster_opts,
+    get_cluster_node_prefix,
+    with_toolforge_kubernetes_cluster_opts,
+)
+from wmcs_libs.openstack.common import get_control_nodes
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,23 +41,15 @@ class AddNodeToHiera(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        parser.add_argument("--project", required=True, help="Openstack project to manage.")
-        parser.add_argument(
-            "--prefix",
-            required=False,
-            default=None,
-            help=("Prefix for etcd nodes in this project, will autogenerate by " "default (<project>-k8s-etcd)"),
-        )
+        add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument("--fqdn-to-add", required=True, help="FQDN of the node to add")
 
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> "AddNodeToHieraRunner":
         """Get Runner"""
-        return AddNodeToHieraRunner(
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, AddNodeToHieraRunner,)(
             fqdn_to_add=args.fqdn_to_add,
-            prefix=args.prefix,
-            project=args.project,
             spicerack=self.spicerack,
         )
 
@@ -67,15 +59,15 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
-        fqdn_to_add: str,
-        prefix: str,
-        project: str,
+        common_opts: CommonOpts,
+        cluster_name: ToolforgeKubernetesClusterName,
         spicerack: Spicerack,
+        fqdn_to_add: str,
     ):
         """Init"""
+        self.common_opts = common_opts
+        self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack)
-        self.project = project
-        self.prefix = prefix
         self.fqdn_to_add = fqdn_to_add
 
     def run(self) -> None:
@@ -84,12 +76,14 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
 
     def add_node_to_hiera(self) -> dict[str, Any]:
         """Needed to be able to change the return type."""
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        openstack_control_node_fqdn = get_control_nodes(self.cluster_name.get_openstack_cluster_name())[1]
+        control_node = self.spicerack.remote().query(f"D{{{openstack_control_node_fqdn}}}", use_sudo=True)
 
-        etcd_prefix = self.prefix if self.prefix is not None else f"{self.project}-k8s-etcd"
+        etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
+
         response = run_one_as_dict(
             node=control_node,
-            command=["wmcs-enc-cli", "--openstack-project", self.project, "get_prefix_hiera", etcd_prefix],
+            command=["wmcs-enc-cli", "--openstack-project", self.common_opts.project, "get_prefix_hiera", etcd_prefix],
             cumin_params=CuminParams(is_safe=True),
             try_format=OutputFormat.YAML,
         )
@@ -104,12 +98,12 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
 
         current_hiera_config["profile::toolforge::k8s::etcd_nodes"] = nodes
 
-        alt_names = current_hiera_config.get("profile::base::puppet::dns_alt_names", [])
+        alt_names = current_hiera_config.get("profile::puppet::agent::dns_alt_names", [])
         if self.fqdn_to_add not in alt_names:
             alt_names.append(self.fqdn_to_add)
             changed = True
 
-        current_hiera_config["profile::base::puppet::dns_alt_names"] = alt_names
+        current_hiera_config["profile::puppet::agent::dns_alt_names"] = alt_names
 
         if changed:
             # json is a one-line string, with only double quotes, nicer for
@@ -122,7 +116,7 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
                 command=(
                     "wmcs-enc-cli",
                     "--openstack-project",
-                    self.project,
+                    self.common_opts.project,
                     "set_prefix_hiera",
                     etcd_prefix,
                     f"'{current_hiera_config_str}'",

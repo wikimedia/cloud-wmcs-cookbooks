@@ -2,9 +2,8 @@ r"""WMCS Toolforge - Depool and delete the given etcd node from a toolforge inst
 
 Usage example:
     cookbook wmcs.toolforge.remove_k8s_etcd_node \
-        --project toolsbeta \
-        --node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud \
-        --etcd-prefix toolsbeta-test-etcd
+        --cluster-name toolsbeta \
+        --node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud
 
 """
 from __future__ import annotations

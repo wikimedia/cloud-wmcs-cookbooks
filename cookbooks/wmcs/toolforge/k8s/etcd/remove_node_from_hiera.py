@@ -1,16 +1,9 @@
 r"""WMCS Toolforge - Remove an exsting etcd node from hiera
 
 Usage examples:
-    # Remove a node using the default node prefix
     cookbook wmcs.toolforge.remove_etcd_node_from_hiera \
-        --project toolsbeta \
+        --cluster-name toolsbeta \
         --fqdn-to-remove toolsbeta-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
-
-    # Remove a node using a custom prefix (with the -test- after the project)
-    cookbook wmcs.toolforge.remove_etcd_node_from_hiera \
-        --project toolsbeta \
-        --prefix toolsbeta-test-k8s-etcd \
-        --fqdn-to-remove toolsbeta-test-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
 
 """
 from __future__ import annotations
@@ -24,7 +17,14 @@ import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CuminParams, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
+from wmcs_libs.common import CommonOpts, CuminParams, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
+from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
+from wmcs_libs.k8s.clusters import (
+    add_toolforge_kubernetes_cluster_opts,
+    get_cluster_node_prefix,
+    with_toolforge_kubernetes_cluster_opts,
+)
+from wmcs_libs.openstack.common import get_control_nodes
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,23 +41,15 @@ class RemoveNodeFromHiera(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        parser.add_argument("--project", required=True, help="Openstack project to manage.")
-        parser.add_argument(
-            "--prefix",
-            required=False,
-            default=None,
-            help=("Prefix for etcd nodes in this project, will autogenerate by " "default (<project>-k8s-etcd)"),
-        )
+        add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument("--fqdn-to-remove", required=True, help="FQDN of the node to remove")
 
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> "RemoveNodeFromHieraRunner":
         """Get Runner"""
-        return RemoveNodeFromHieraRunner(
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, RemoveNodeFromHieraRunner,)(
             fqdn_to_remove=args.fqdn_to_remove,
-            prefix=args.prefix,
-            project=args.project,
             spicerack=self.spicerack,
         )
 
@@ -67,15 +59,15 @@ class RemoveNodeFromHieraRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
-        fqdn_to_remove: str,
-        prefix: str,
-        project: str,
+        common_opts: CommonOpts,
+        cluster_name: ToolforgeKubernetesClusterName,
         spicerack: Spicerack,
+        fqdn_to_remove: str,
     ):
         """Init"""
+        self.common_opts = common_opts
+        self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack)
-        self.project = project
-        self.prefix = prefix
         self.fqdn_to_remove = fqdn_to_remove
 
     def run(self) -> None:
@@ -84,12 +76,14 @@ class RemoveNodeFromHieraRunner(WMCSCookbookRunnerBase):
 
     def remove_node_from_hiera(self) -> dict[str, Any]:
         """Needed as we can't change the return type for the inherited run method."""
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        openstack_control_node_fqdn = get_control_nodes(self.cluster_name.get_openstack_cluster_name())[1]
+        control_node = self.spicerack.remote().query(f"D{{{openstack_control_node_fqdn}}}", use_sudo=True)
 
-        etcd_prefix = self.prefix if self.prefix is not None else f"{self.project}-k8s-etcd"
+        etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
+
         response = run_one_as_dict(
             node=control_node,
-            command=["wmcs-enc-cli", "--openstack-project", self.project, "get_prefix_hiera", etcd_prefix],
+            command=["wmcs-enc-cli", "--openstack-project", self.common_opts.project, "get_prefix_hiera", etcd_prefix],
             try_format=OutputFormat.YAML,
             cumin_params=CuminParams(is_safe=True),
         )
@@ -104,12 +98,12 @@ class RemoveNodeFromHieraRunner(WMCSCookbookRunnerBase):
 
         current_hiera_config["profile::toolforge::k8s::etcd_nodes"] = nodes
 
-        alt_names = current_hiera_config.get("profile::base::puppet::dns_alt_names", [])
+        alt_names = current_hiera_config.get("profile::puppet::agent::dns_alt_names", [])
         if self.fqdn_to_remove in alt_names:
             alt_names.pop(alt_names.index(self.fqdn_to_remove))
             changed = True
 
-        current_hiera_config["profile::base::puppet::dns_alt_names"] = alt_names
+        current_hiera_config["profile::puppet::agent::dns_alt_names"] = alt_names
 
         if changed:
             # json is a one-line string, with only double quotes, nicer for
@@ -121,7 +115,7 @@ class RemoveNodeFromHieraRunner(WMCSCookbookRunnerBase):
                 command=[
                     "wmcs-enc-cli",
                     "--openstack-project",
-                    self.project,
+                    self.common_opts.project,
                     "set_prefix_hiera",
                     etcd_prefix,
                     f"'{current_hiera_config_str}'",

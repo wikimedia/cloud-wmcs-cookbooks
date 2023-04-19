@@ -2,9 +2,8 @@ r"""WMCS Toolforge - Depool and delete the given etcd node from a toolforge inst
 
 Usage example:
     cookbook wmcs.toolforge.k8s.etcd.depool_and_remove_node \
-        --project toolsbeta \
-        --node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud \
-        --etcd-prefix toolsbeta-test-etcd
+        --cluster-name toolsbeta \
+        --node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud
 
 """
 from __future__ import annotations
@@ -23,6 +22,7 @@ from cookbooks.wmcs.toolforge.k8s.etcd.remove_node_from_hiera import RemoveNodeF
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import (
+    CommonOpts,
     OutputFormat,
     WMCSCookbookRunnerBase,
     natural_sort_key,
@@ -30,7 +30,13 @@ from wmcs_libs.common import (
     run_one_raw,
     simple_create_file,
 )
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
+from wmcs_libs.k8s.clusters import (
+    add_toolforge_kubernetes_cluster_opts,
+    get_cluster_node_prefix,
+    get_control_nodes,
+    with_toolforge_kubernetes_cluster_opts,
+)
 from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
@@ -48,17 +54,11 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        parser.add_argument("--project", required=True, help="Openstack project to manage.")
+        add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--fqdn-to-remove",
             required=False,
             help="FQDN of the node to remove, if none passed will remove the instance with the lower index.",
-        )
-        parser.add_argument(
-            "--etcd-prefix",
-            required=False,
-            default=None,
-            help=("Prefix for the k8s etcd nodes, default is <project>-k8s-etcd"),
         )
         parser.add_argument(
             "--skip-etcd-certs-refresh",
@@ -72,13 +72,11 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
 
         return parser
 
-    def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
+    def get_runner(self, args: argparse.Namespace) -> "ToolforgeDepoolAndRemoveNodeRunner":
         """Get runner"""
-        return ToolforgeDepoolAndRemoveNodeRunner(
-            etcd_prefix=args.etcd_prefix,
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeDepoolAndRemoveNodeRunner,)(
             fqdn_to_remove=args.fqdn_to_remove,
             skip_etcd_certs_refresh=args.skip_etcd_certs_refresh,
-            project=args.project,
             spicerack=self.spicerack,
         )
 
@@ -175,26 +173,30 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
-        etcd_prefix: str,
+        common_opts: CommonOpts,
+        cluster_name: ToolforgeKubernetesClusterName,
+        spicerack: Spicerack,
         fqdn_to_remove: str,
         skip_etcd_certs_refresh: bool,
-        project: str,
-        spicerack: Spicerack,
     ):
         """Init"""
-        self.etcd_prefix = etcd_prefix
+        self.common_opts = common_opts
+        self.cluster_name = cluster_name
+        super().__init__(spicerack=spicerack)
         self.fqdn_to_remove = fqdn_to_remove
         self.skip_etcd_certs_refresh = skip_etcd_certs_refresh
-        self.project = project
-        super().__init__(spicerack=spicerack)
         self.openstack_api = OpenstackAPI(
-            remote=spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.project
+            remote=spicerack.remote(),
+            cluster_name=self.cluster_name.get_openstack_cluster_name(),
+            project=self.common_opts.project,
         )
 
     def run(self) -> None:
         """Main entry point"""
         remote = self.spicerack.remote()
-        etcd_prefix = self.etcd_prefix if self.etcd_prefix is not None else f"{self.project}-k8s-etcd"
+
+        etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
+
         if not self.fqdn_to_remove:
             all_project_servers = self.openstack_api.server_list()
             prefix_members = list(
@@ -204,11 +206,13 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
                 )
             )
             if not prefix_members:
-                raise Exception(f"No servers in project {self.project} with prefix {etcd_prefix}, nothing to remove.")
+                raise Exception(
+                    f"No servers in project {self.common_opts.project} with prefix {etcd_prefix}, nothing to remove."
+                )
 
             # TODO: find a way to not hardcode the domain
-            fqdn_to_remove = f"{prefix_members[0]['Name']}.{self.project}.eqiad1.wikimedia.cloud"
-
+            domain = f"{self.cluster_name.get_openstack_cluster_name()}.wikimedia.cloud"
+            fqdn_to_remove = f"{prefix_members[0]['Name']}.{self.cluster_name.get_project()}.{domain}"
         else:
             fqdn_to_remove = self.fqdn_to_remove
 
@@ -217,10 +221,8 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         hiera_data = remove_node_from_hiera_cookbook.get_runner(
             args=remove_node_from_hiera_cookbook.argument_parser().parse_args(
                 [
-                    "--project",
-                    self.project,
-                    "--prefix",
-                    etcd_prefix,
+                    "--cluster",
+                    self.cluster_name.value,
                     "--fqdn-to-remove",
                     fqdn_to_remove,
                 ]
@@ -239,10 +241,10 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         else:
             self._refresh_etcd_certs(etcd_members=etcd_members)
 
-        k8s_control_members = list(sorted(hiera_data["profile::toolforge::k8s::control_nodes"], key=natural_sort_key))
+        k8s_control_nodes = get_control_nodes(self.cluster_name)
         _fix_kubeadm(
             remote=remote,
-            k8s_control_members=k8s_control_members,
+            k8s_control_members=k8s_control_nodes,
             etcd_fqdn_to_remove=fqdn_to_remove,
             etcd_members=etcd_members,
         )
@@ -252,7 +254,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             args=remove_instance_cookbook.argument_parser().parse_args(
                 [
                     "--project",
-                    self.project,
+                    self.common_opts.project,
                     "--server-name",
                     fqdn_to_remove.split(".", 1)[0],
                 ],

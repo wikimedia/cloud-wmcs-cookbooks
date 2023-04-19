@@ -5,8 +5,7 @@ work (might refresh puppet certs though, and restart services).
 
 Usage example:
     cookbook wmcs.toolforge.k8s.etcd.add_node_to_cluster \
-        --project toolsbeta \
-        --fqdn-to-add toolsbeta-k8s-
+        --cluster-name toolsbeta
 
 """
 from __future__ import annotations
@@ -24,12 +23,19 @@ from spicerack.remote import Remote, RemoteHosts
 from cookbooks.wmcs.toolforge.k8s.etcd.add_node_to_hiera import AddNodeToHiera
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 from wmcs_libs.common import (
+    CommonOpts,
     OutputFormat,
     WMCSCookbookRunnerBase,
     natural_sort_key,
     run_one_as_dict,
     run_one_raw,
     simple_create_file,
+)
+from wmcs_libs.inventory import ToolforgeKubernetesClusterName
+from wmcs_libs.k8s.clusters import (
+    add_toolforge_kubernetes_cluster_opts,
+    get_control_nodes,
+    with_toolforge_kubernetes_cluster_opts,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -47,13 +53,7 @@ class AddNodeToCluster(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        parser.add_argument("--project", required=True, help="Openstack project to manage.")
-        parser.add_argument(
-            "--etcd-prefix",
-            required=False,
-            default=None,
-            help=("Prefix for the k8s etcd nodes, default is <project>-k8s-etcd"),
-        )
+        add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--new-member-fqdn",
             required=True,
@@ -73,11 +73,9 @@ class AddNodeToCluster(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return AddNodeToClusterRunner(
-            etcd_prefix=args.etcd_prefix,
+        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, AddNodeToClusterRunner,)(
             new_member_fqdn=args.new_member_fqdn,
             skip_puppet_bootstrap=args.skip_puppet_bootstrap,
-            project=args.project,
             spicerack=self.spicerack,
         )
 
@@ -87,7 +85,7 @@ def _fix_apiserver_yaml(node: RemoteHosts, etcd_members: list[str]):
     new_etcd_members_arg = "--etcd-servers=" + ",".join(sorted(members_urls, key=natural_sort_key))
     apiserver_config_file = "/etc/kubernetes/manifests/kube-apiserver.yaml"
     apiserver_config = run_one_as_dict(
-        node=node, command=["cat", "{apiserver_config_file}"], try_format=OutputFormat.YAML
+        node=node, command=["cat", f"{apiserver_config_file}"], try_format=OutputFormat.YAML
     )
     # we expect the container to be the first and only in the spec
     command_args = apiserver_config["spec"]["containers"][0]["command"]
@@ -118,7 +116,7 @@ def _add_node_to_kubeadm_configmap(k8s_control_node: RemoteHosts, new_etcd_membe
         try_format=OutputFormat.YAML,
     )
     # double yaml yep xd
-    cluster_config = kubeadm_config["data"]["ClusterConfiguration"]
+    cluster_config = yaml.safe_load(kubeadm_config["data"]["ClusterConfiguration"])
 
     new_endpoint = f"https://{new_etcd_member_fqdn}:2379"
     if new_endpoint not in cluster_config["etcd"]["external"]["endpoints"]:
@@ -179,23 +177,22 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
-        etcd_prefix: str,
+        common_opts: CommonOpts,
+        cluster_name: ToolforgeKubernetesClusterName,
+        spicerack: Spicerack,
         new_member_fqdn: str,
         skip_puppet_bootstrap: bool,
-        project: str,
-        spicerack: Spicerack,
     ):
         """Init"""
-        self.etcd_prefix = etcd_prefix
+        self.common_opts = common_opts
+        self.cluster_name = cluster_name
+        super().__init__(spicerack=spicerack)
         self.new_member_fqdn = new_member_fqdn
         self.skip_puppet_bootstrap = skip_puppet_bootstrap
-        self.project = project
-        super().__init__(spicerack=spicerack)
 
     def run(self) -> None:
         """Main entry point"""
         remote = self.spicerack.remote()
-        etcd_prefix = self.etcd_prefix if self.etcd_prefix is not None else f"{self.project}-k8s-etcd"
 
         if not self.skip_puppet_bootstrap:
             LOGGER.info("Bootstrapping puppet on the new member. Note that etcd will not be able to start yet.")
@@ -211,10 +208,8 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         hiera_data = add_node_to_hiera_cookbook.get_runner(
             args=add_node_to_hiera_cookbook.argument_parser().parse_args(
                 [
-                    "--project",
-                    self.project,
-                    "--prefix",
-                    etcd_prefix,
+                    "--cluster",
+                    self.cluster_name.value,
                     "--fqdn-to-add",
                     self.new_member_fqdn,
                 ]
@@ -252,10 +247,10 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         new_etcd_member_puppet.run()
 
         LOGGER.info("Updating the kubernetes configs to let the control nodes know about the new etcd member.")
-        k8s_control_members = list(sorted(hiera_data["profile::toolforge::k8s::control_nodes"], key=natural_sort_key))
+        k8s_control_nodes = get_control_nodes(self.cluster_name)
         _fix_kubeadm(
             remote=remote,
-            k8s_control_members=k8s_control_members,
+            k8s_control_members=k8s_control_nodes,
             new_etcd_member_fqdn=self.new_member_fqdn,
             existing_etcd_members=etcd_members,
         )
