@@ -309,9 +309,9 @@ _INVENTORY = {
                     name=OpenstackClusterName.CODFW1DEV,
                     nodes_by_role={
                         OpenstackNodeRoleName.CONTROL: [
-                            "cloudcontrol2001-dev.wikimedia.org",
-                            "cloudcontrol2003-dev.wikimedia.org",
                             "cloudcontrol2004-dev.wikimedia.org",
+                            "cloudcontrol2005-dev.wikimedia.org",
+                            "cloudcontrol2001-dev.codfw.wmnet",
                         ],
                         OpenstackNodeRoleName.GATEWAY: [
                             "cloudgw2001-dev.codfw.wmnet",
