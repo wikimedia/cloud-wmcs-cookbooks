@@ -248,7 +248,7 @@ def test_OpenstackAPI_quota_set_happy_path():
         OpenstackQuotaEntry(name=OpenstackQuotaName.FLOATING_IPS, value=30),
     )
     expected_command = cumin.transports.Command(
-        ("wmcs-openstack quota set --cores=10 --gigabytes=20 --floating-ips=30 admin-monitoring"),
+        ("wmcs-openstack quota set --cores=10 --gigabytes=20 --floating-ips=30 admin-monitoring --os-cloud novaadmin"),
         ok_codes=[0],
     )
     fake_control_host = fake_remote.query.return_value
@@ -413,12 +413,12 @@ def test_OpenstackAPI_quota_increase_happy_path():
     )
 
     expected_show_command = cumin.transports.Command(
-        ("wmcs-openstack quota show admin-monitoring -f json"),
+        ("wmcs-openstack quota show admin-monitoring -f json --os-cloud novaadmin"),
         ok_codes=[0],
     )
 
     expected_set_command = cumin.transports.Command(
-        ("wmcs-openstack quota set --cores=25 --gigabytes=100 --floating-ips=30 admin-monitoring"),
+        ("wmcs-openstack quota set --cores=25 --gigabytes=100 --floating-ips=30 admin-monitoring --os-cloud novaadmin"),
         ok_codes=[0],
     )
 

@@ -277,11 +277,16 @@ class OpenstackAPI(CommandRunnerMixin):
         if "delete" in command:
             format_args = []
 
+        if "--os-cloud" not in command:
+            oscloud_args = ["--os-cloud", "novaadmin"]
+        else:
+            oscloud_args = []
+
         # some commands require passing the project as an argument and cannot use OS_PROJECT_ID
         if project_as_arg:
-            return ["wmcs-openstack", *command, self.project, *format_args]
+            return ["wmcs-openstack", *command, self.project, *format_args, *oscloud_args]
 
-        return ["env", f"OS_PROJECT_ID={self.project}", "wmcs-openstack", *command, *format_args]
+        return ["env", f"OS_PROJECT_ID={self.project}", "wmcs-openstack", *command, *format_args, *oscloud_args]
 
     def hypervisor_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Returns a list of hypervisors."""
