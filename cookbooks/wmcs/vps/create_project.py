@@ -16,7 +16,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory import OpenstackClusterName
-from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.common import OpenstackAPI, OpenstackQuotaEntry, OpenstackQuotaName
 
 LOGGER = logging.getLogger(__name__)
 
@@ -55,6 +55,12 @@ class CreateProject(CookbookBase):
             type=str,
             help="Description for the new CloudVps project",
         )
+        parser.add_argument(
+            "--trove-only",
+            action="store_true",
+            help="If set, the new project will have quotas that prevent "
+            "creation of VMs or volumes and elevated DB quotas.",
+        )
 
         return parser
 
@@ -63,6 +69,7 @@ class CreateProject(CookbookBase):
         return with_common_opts(self.spicerack, args, CreateProjectRunner,)(
             description=args.description,
             cluster_name=args.cluster_name,
+            trove_only=args.trove_only,
             spicerack=self.spicerack,
         )
 
@@ -74,6 +81,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         description: str,
+        trove_only: bool,
         cluster_name: OpenstackClusterName,
         spicerack: Spicerack,
     ):
@@ -84,6 +92,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
             cluster_name=cluster_name,
         )
         self.description = description
+        self.trove_only = trove_only
 
         self.common_opts = common_opts
         super().__init__(spicerack=spicerack)
@@ -95,3 +104,22 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
             project=self.common_opts.project, task_id=self.common_opts.task_id, dry_run=self.common_opts.no_dologmsg
         )
         sallogger.log("created project with default quotas")
+        if self.trove_only:
+            self.openstack_api.quota_set(
+                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.INSTANCES, human_spec="0")
+            )
+            self.openstack_api.quota_set(
+                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.CORES, human_spec="0")
+            )
+            self.openstack_api.quota_set(
+                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.RAM, human_spec="0")
+            )
+            self.openstack_api.quota_set(
+                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.GIGABYTES, human_spec="0")
+            )
+            self.openstack_api.quota_set(
+                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.VOLUMES, human_spec="0")
+            )
+            # confusingly, 'volumes' here refers to GB of database storage. It defaults to '2' so we need
+            # to increase it for trove-only projects.
+            self.openstack_api.trove_quota_set("volumes", "80")

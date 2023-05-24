@@ -712,6 +712,13 @@ class OpenstackAPI(CommandRunnerMixin):
 
         self.run_raw("quota", "set", *quotas_cli, json_output=False, project_as_arg=True)
 
+    def trove_quota_set(self, resource, value) -> None:
+        """Set a quota to the given value.
+
+        Note that this sets the final value, not an increase.
+        """
+        self.run_raw("database", "quota", "update", self.project, resource, value)
+
     def quota_increase(self, *quota_increases: OpenstackQuotaEntry) -> None:
         """Set a quota to the given value.
 
@@ -798,6 +805,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def project_create(self, project: OpenstackName, description: str) -> None:
         """Creates a new project."""
+        self.project = project
         self.run_raw("project", "create", "--enable", f"'--description={description}'", project, json_output=False)
 
 
