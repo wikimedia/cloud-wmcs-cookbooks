@@ -483,17 +483,16 @@ class UtilsForTesting:
         return {"argnames": ",".join(_param_names), "argvalues": argvalues, "ids": list(test_cases.keys())}
 
     @staticmethod
-    def get_fake_remote(responses: list[str] | None = None, side_effect: list[Any] | None = None) -> mock.MagicMock:
-        """Create a fake remote.
+    def get_fake_remote_hosts(
+        responses: list[str] | None = None, side_effect: list[Any] | None = None
+    ) -> mock.MagicMock:
+        """Create a fake RemoteHosts object.
 
         It will return a RemoteHosts that will return the given responses when run_sync is called in them.
         If side_effect is passed, it will override the responses and set that as side_effect of the mock on run_sync.
         """
         responses = responses if responses is not None else []
         fake_hosts = mock.create_autospec(spec=RemoteHosts, spec_set=True)
-        fake_remote = mock.create_autospec(spec=Remote, spec_set=True)
-
-        fake_remote.query.return_value = fake_hosts
 
         def _get_fake_msg_tree(msg_tree_response: str):
             fake_msg_tree = mock.create_autospec(spec=MsgTreeElem, spec_set=True)
@@ -507,6 +506,20 @@ class UtilsForTesting:
             fake_hosts.run_sync.return_value = (
                 (None, _get_fake_msg_tree(msg_tree_response=response)) for response in responses
             )
+
+        return fake_hosts
+
+    @staticmethod
+    def get_fake_remote(responses: list[str] | None = None, side_effect: list[Any] | None = None) -> mock.MagicMock:
+        """Create a fake remote.
+
+        It will return a RemoteHosts that will return the given responses when run_sync is called in them.
+        If side_effect is passed, it will override the responses and set that as side_effect of the mock on run_sync.
+        """
+        fake_hosts = UtilsForTesting.get_fake_remote_hosts(responses=responses, side_effect=side_effect)
+        fake_remote = mock.create_autospec(spec=Remote, spec_set=True)
+
+        fake_remote.query.return_value = fake_hosts
 
         return fake_remote
 
