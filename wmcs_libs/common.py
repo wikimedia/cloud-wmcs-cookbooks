@@ -18,6 +18,7 @@ from functools import partial
 from itertools import chain
 from typing import Any, Callable, Pattern
 from unittest import mock
+from urllib.parse import urlparse
 
 import yaml
 from ClusterShell.MsgTree import MsgTreeElem
@@ -400,6 +401,7 @@ class SALLogger:
     host: str = "wm-bot.wm-bot.wmcloud.org"
     port: int = 64835
     dry_run: bool = False
+    proxy: str | None = None
 
     @classmethod
     def from_common_opts(cls, common_opts: CommonOpts) -> "SALLogger":
@@ -425,19 +427,24 @@ class SALLogger:
             LOGGER.info("[DOLOGMSG - would have sent]: %s", payload)
             return
 
-        # try all the possible addresses for that host (ip4/ip6/etc.)
-        for family, s_type, proto, _, sockaddr in socket.getaddrinfo(self.host, self.port, proto=socket.IPPROTO_TCP):
-            my_socket = socket.socket(family, s_type, proto)
-            my_socket.connect(sockaddr)
-            try:
-                my_socket.send(payload.encode("utf-8"))
-                LOGGER.info("[DOLOGMSG]: %s", message)
-                return
-            # pylint: disable=broad-except
-            except Exception as error:
-                LOGGER.warning("Error trying to send a message to %s: %s", str(sockaddr), str(error))
-            finally:
-                my_socket.close()
+        my_socket = socket.socket()
+        if self.proxy:
+            LOGGER.debug("DOLOGMSG - using proxy '%s'", self.proxy)
+            proxy_parsed = urlparse(self.proxy)
+            my_socket.connect((proxy_parsed.hostname, proxy_parsed.port))
+        else:
+            my_socket.connect((self.host, self.port))
+        try:
+            if self.proxy:
+                my_socket.send(f"CONNECT {self.host}:{self.port} HTTP/1.1\n\n".encode())
+            my_socket.send(payload.encode("utf-8"))
+            LOGGER.info("[DOLOGMSG]: %s", message)
+            return
+        # pylint: disable=broad-except
+        except Exception as error:
+            LOGGER.warning("Error trying to send a message to %s: %s", self.host, str(error))
+        finally:
+            my_socket.close()
 
         raise Exception(f"Unable to send log message to {self.host}:{self.port}, see previous logs for details")
 

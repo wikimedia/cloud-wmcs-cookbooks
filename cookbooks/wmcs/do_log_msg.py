@@ -60,7 +60,10 @@ class DologmsgRunner(WMCSCookbookRunnerBase):
         self.msg = msg
         super().__init__(spicerack=spicerack)
         self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
+            project=common_opts.project,
+            task_id=common_opts.task_id,
+            dry_run=common_opts.no_dologmsg,
+            proxy=spicerack.http_proxy,
         )
 
     def run(self) -> None:
