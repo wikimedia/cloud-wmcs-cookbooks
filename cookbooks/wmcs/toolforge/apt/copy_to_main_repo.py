@@ -115,6 +115,9 @@ class ToolforgeCopyAptPackageToMainRepoRunner(WMCSCookbookRunnerBase):
                 aptly.copy(package, repository, target_repository)
             aptly.publish(target_repository)
 
+        if not distros:
+            return
+
         self.sallogger.log(
             message=f"Copied Apt package {self.package} {self.version} to the tools Apt repo on {', '.join(distros)}"
         )
