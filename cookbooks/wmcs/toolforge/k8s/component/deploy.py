@@ -2,7 +2,8 @@ r"""WMCS Toolforge Kubernetes - deploy a kubernetes custom component
 
 Usage example:
     cookbook wmcs.toolforge.k8s.component.deploy \
-        --git-url https://gerrit.wikimedia.org/r/cloud/toolforge/jobs-framework-api
+        --cluster-name toolsbeta \
+        --component jobs-api
 """
 from __future__ import annotations
 
@@ -38,9 +39,10 @@ class ToolforgeComponentDeploy(CookbookBase):
             formatter_class=ArgparseFormatter,
         )
         add_toolforge_kubernetes_cluster_opts(parser)
-        parser.add_argument(
+        target_group = parser.add_mutually_exclusive_group(required=True)
+        target_group.add_argument("--component", help="component to deploy from the toolforge-deploy repo")
+        target_group.add_argument(
             "--git-url",
-            required=True,
             help="git URL for the source code",
         )
         parser.add_argument(
@@ -65,6 +67,7 @@ class ToolforgeComponentDeploy(CookbookBase):
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
         return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeComponentDeployRunner)(
+            component=args.component,
             git_url=args.git_url,
             git_name=args.git_name,
             git_branch=args.git_branch,
@@ -89,7 +92,8 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         cluster_name: ToolforgeKubernetesClusterName,
-        git_url: str,
+        component: str | None,
+        git_url: str | None,
         git_name: str,
         git_branch: str,
         deployment_command: str,
@@ -98,6 +102,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         """Init"""
         self.common_opts = common_opts
         self.cluster_name = cluster_name
+        self.component = component
         self.git_url = git_url
         self.git_name = git_name
         self.git_branch = git_branch
@@ -107,6 +112,13 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
         )
+
+        if self.component:
+            # GitLab will issue a redirect if you don't include the .git
+            self.git_url = "https://gitlab.wikimedia.org/repos/cloud/toolforge/toolforge-deploy.git"
+            self.deployment_command = f"{self.deployment_command} {self.component}"
+        elif not self.git_url:
+            raise Exception("Either component or git_url must be specified")
 
         if not self.git_name:
             self.git_name = self.git_url.split("/")[-1]
@@ -154,4 +166,4 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         LOGGER.info("INFO: cleaning up temp dir %s", self.random_dir)
         run_one_raw(node=deploy_node, command=cmd.split(), cumin_params=no_output)
 
-        self.sallogger.log(message=f"deployed kubernetes component {self.git_url} ({git_hash})")
+        self.sallogger.log(message=f"deployed kubernetes component {self.component or self.git_url} ({git_hash})")
