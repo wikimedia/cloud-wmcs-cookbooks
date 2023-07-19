@@ -11,7 +11,6 @@ Usage example:
 from __future__ import annotations
 
 import argparse
-import re
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -58,6 +57,12 @@ class UploadImagesToRepo(CookbookBase):
             help="Tag for the buildpacks lifecycle image to use.",
         )
         parser.add_argument(
+            "--upload-distroless",
+            required=False,
+            action="store_true",
+            help="Upload the distroless image.",
+        )
+        parser.add_argument(
             "--image-repo-url",
             required=False,
             default="docker-registry.tools.wmflabs.org",
@@ -81,6 +86,7 @@ class UploadImagesToRepo(CookbookBase):
             bash_version=args.bash_version,
             image_repo_url=args.image_repo_url,
             uploader_node=args.uploader_node,
+            upload_distroless=args.upload_distroless,
             spicerack=self.spicerack,
         )
 
@@ -115,6 +121,7 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         tekton_version: str | None,
         lifecycle_version: str | None,
         bash_version: str | None,
+        upload_distroless,
         spicerack: Spicerack,
     ):
         """Init"""
@@ -123,6 +130,7 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         self.bash_version = bash_version
         self.image_repo_url = image_repo_url
         self.uploader_node = uploader_node
+        self.upload_distroless = upload_distroless
         super().__init__(spicerack=spicerack)
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
@@ -156,18 +164,12 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
             push_url = f"{self.image_repo_url}/toolforge-buildpacksio-lifecycle:{self.lifecycle_version}"
             _update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
 
-        # this image should not be pulled with a tag, so CRI-O can run it, so we update it always.
-        output = _update_image(
-            uploader_node=uploader_node,
-            pull_url="gcr.io/distroless/base",
-            push_url=f"{self.image_repo_url}/toolforge-distroless-base",
-        )
-        image_hash = re.findall(r"([a-fA-F\d]{64})", output)
-        self.sallogger.log(message=f"updating {self.image_repo_url}/toolforge-distroless-base@sha256:{image_hash[0]}")
-        if image_hash:
-            print("Remember to update the file ")
-            print("buildservice/deploy/base-tekton/tekton-pipelines-controller-patch.json ")
-            print("in the buildservice repo with the contents: ")
-            print(f"docker-registry.tools.wmflabs.org/toolforge-distroless-base@sha256:{image_hash[0]}")
-        else:
-            print(f"unable to find image hash in output: {output}")
+        if self.upload_distroless:
+            pull_url = "gcr.io/distroless/base:debug"
+            push_url = f"{self.image_repo_url}/toolforge-distroless-base:latest"
+            self.sallogger.log(message=f"updating {push_url}")
+            _update_image(
+                uploader_node=uploader_node,
+                pull_url=pull_url,
+                push_url=push_url,
+            )
