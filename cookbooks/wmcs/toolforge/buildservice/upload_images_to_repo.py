@@ -134,32 +134,36 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         uploader_node = remote.query(f"D{{{self.uploader_node}}}", use_sudo=True)
 
         if self.tekton_version:
-            self.sallogger.log(message=f"Updating the tekton related images on {self.image_repo_url}")
+            self.sallogger.log(
+                message=f"updating {self.image_repo_url}/toolforge-tektoncd-pipeline-cmd-*:{self.tekton_version}"
+            )
             for image_name in self.TEKTON_IMAGES:
                 pull_url = f"{self.TEKTON_COMMON_PATH}/{image_name}:{self.tekton_version}"
                 push_url = f"{self.image_repo_url}/toolforge-tektoncd-pipeline-cmd-{image_name}:{self.tekton_version}"
                 _update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
 
         if self.bash_version:
-            self.sallogger.log(message=f"Updating the bash image on {self.image_repo_url}")
+            self.sallogger.log(message=f"updating {self.image_repo_url}/toolforge-library-bash:{self.bash_version}")
             pull_url = f"docker.io/library/bash:{self.bash_version}"
             push_url = f"{self.image_repo_url}/toolforge-library-bash:{self.bash_version}"
             _update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
 
         if self.lifecycle_version:
-            self.sallogger.log(message=f"Updating the lifecycle image on {self.image_repo_url}")
+            self.sallogger.log(
+                message=f"updating {self.image_repo_url}/toolforge-buildpacksio-lifecycle:{self.lifecycle_version}"
+            )
             pull_url = f"docker.io/buildpacksio/lifecycle:{self.lifecycle_version}"
             push_url = f"{self.image_repo_url}/toolforge-buildpacksio-lifecycle:{self.lifecycle_version}"
             _update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
 
         # this image should not be pulled with a tag, so CRI-O can run it, so we update it always.
-        self.sallogger.log(message=f"Updating the distroless/base image on {self.image_repo_url}")
         output = _update_image(
             uploader_node=uploader_node,
             pull_url="gcr.io/distroless/base",
             push_url=f"{self.image_repo_url}/toolforge-distroless-base",
         )
         image_hash = re.findall(r"([a-fA-F\d]{64})", output)
+        self.sallogger.log(message=f"updating {self.image_repo_url}/toolforge-distroless-base@sha256:{image_hash[0]}")
         if image_hash:
             print("Remember to update the file ")
             print("buildservice/deploy/base-tekton/tekton-pipelines-controller-patch.json ")
