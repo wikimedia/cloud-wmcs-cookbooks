@@ -165,8 +165,10 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
             _update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
 
         if self.upload_distroless:
+            # the distroless/base:debug image contains sh entrypoint which is required
+            # for the tekton pipeline to work. Only the :debug one contains it
             pull_url = "gcr.io/distroless/base:debug"
-            push_url = f"{self.image_repo_url}/toolforge-distroless-base:latest"
+            push_url = f"{self.image_repo_url}/toolforge-distroless-base-debug:latest"
             self.sallogger.log(message=f"updating {push_url}")
             _update_image(
                 uploader_node=uploader_node,
