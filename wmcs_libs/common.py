@@ -738,9 +738,12 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
 
     recorder: WMCSCookbookRecorder | None = None
 
-    def __init__(self, spicerack: Spicerack):
+    def __init__(self, spicerack: Spicerack, common_opts: CommonOpts | None = None):
         """Init"""
         self.spicerack = spicerack
+        if common_opts and spicerack.sal_logger.handlers:
+            project = common_opts.project
+            spicerack.sal_logger.handlers[0].setFormatter(logging.Formatter(f"{project} %(message)s"))
         self.nested = bool(WMCSCookbookRunnerBase.recorder)
         LOGGER.debug("Starting %s recorder", "nested" if self.nested else "not nested")
         if not self.nested:
