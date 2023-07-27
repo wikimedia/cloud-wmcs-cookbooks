@@ -248,7 +248,7 @@ _INVENTORY = {
                     name=OpenstackClusterName.EQIAD1,
                     nodes_by_role={
                         OpenstackNodeRoleName.CONTROL: [
-                            "cloudcontrol1005.wikimedia.org",
+                            "cloudcontrol1005.eqiad.wmnet",
                             "cloudcontrol1006.wikimedia.org",
                             "cloudcontrol1007.wikimedia.org",
                         ],

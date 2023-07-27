@@ -111,7 +111,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         to_node = self.spicerack.remote().query(f"D{{{self.to_fqdn}}}", use_sudo=True)
 
         # Verify that puppet/hiera config agrees between the two hosts
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        control_node = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
         response = run_one_as_dict(
             node=control_node,
             command=["wmcs-enc-cli", "--openstack-project", self.project, "get_node_consolidated_info", self.from_fqdn],
@@ -138,7 +138,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
 
         mount_name = from_hiera["profile::wmcs::nfs::standalone::volumes"][0]
 
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        control_node = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
         response = run_one_as_dict(
             node=control_node,
             command=["wmcs-enc-cli", "--openstack-project", self.project, "get_node_consolidated_info", self.to_fqdn],
@@ -241,7 +241,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         from_hiera["profile::wmcs::nfs::standalone::cinder_attached"] = False
         from_hiera_str = json.dumps(from_hiera)
 
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        control_node = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
         response = run_one_as_dict(
             node=control_node,
             command=[
@@ -258,7 +258,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
 
         to_hiera["profile::wmcs::nfs::standalone::cinder_attached"] = True
         to_hiera_str = json.dumps(to_hiera)
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+        control_node = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
         response = run_one_as_dict(
             node=control_node,
             command=[

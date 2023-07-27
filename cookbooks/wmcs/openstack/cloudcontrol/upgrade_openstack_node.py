@@ -131,7 +131,7 @@ class UpgradeRunner(CookbookRunnerBase):
                     ]
                 )
                 if "control" not in self.fqdn_to_upgrade:
-                    backupnode = self.spicerack.remote().query("D{cloudcontrol1005.wikimedia.org}", use_sudo=True)
+                    backupnode = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
             elif "-dev" in self.fqdn_to_upgrade:
                 # codfw1dev
                 dblist.extend(
