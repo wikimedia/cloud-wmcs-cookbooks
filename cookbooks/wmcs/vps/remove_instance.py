@@ -95,9 +95,7 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         self.revoke_puppet_certs = revoke_puppet_certs
         self.already_off = already_off
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def _guess_puppet_cert_hostname(self, remote: RemoteHosts | None, node_fqdn: str) -> str:
         if not remote:

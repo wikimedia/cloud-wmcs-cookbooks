@@ -141,6 +141,7 @@ class CommonOpts:
     project: str = "admin"
     task_id: str | None = None
     no_dologmsg: bool = False
+    http_proxy: str | None = None
 
     def to_cli_args(self) -> list[str]:
         """Helper to unwrap the options for use with argument parsers."""
@@ -185,8 +186,10 @@ def add_common_opts(parser: argparse.ArgumentParser, project_default: str | None
 def with_common_opts(spicerack: Spicerack, args: argparse.Namespace, runner: Callable) -> Callable:
     """Helper to add CommonOpts to a cookbook instantiation."""
     no_dologmsg = bool(spicerack.dry_run or args.no_dologmsg)
+    # when a proxy is not set, spicerack.http_proxy returns an empty string
+    http_proxy = spicerack.http_proxy if spicerack.http_proxy else None
 
-    common_opts = CommonOpts(project=args.project, task_id=args.task_id, no_dologmsg=no_dologmsg)
+    common_opts = CommonOpts(project=args.project, task_id=args.task_id, no_dologmsg=no_dologmsg, http_proxy=http_proxy)
 
     return partial(runner, common_opts=common_opts)
 
@@ -410,6 +413,7 @@ class SALLogger:
             project=common_opts.project,
             task_id=common_opts.task_id,
             dry_run=common_opts.no_dologmsg,
+            proxy=common_opts.http_proxy,
         )
 
     def log(

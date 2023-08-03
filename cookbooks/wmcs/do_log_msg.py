@@ -59,12 +59,7 @@ class DologmsgRunner(WMCSCookbookRunnerBase):
         """Init."""
         self.msg = msg
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger(
-            project=common_opts.project,
-            task_id=common_opts.task_id,
-            dry_run=common_opts.no_dologmsg,
-            proxy=spicerack.http_proxy,
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point."""

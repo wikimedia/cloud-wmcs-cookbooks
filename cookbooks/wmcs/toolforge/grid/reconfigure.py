@@ -66,9 +66,7 @@ class ToolforgeGridReconfigureRunner(WMCSCookbookRunnerBase):
         self.common_opts = common_opts
         self.master_node_fqdn = master_node_fqdn
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point"""

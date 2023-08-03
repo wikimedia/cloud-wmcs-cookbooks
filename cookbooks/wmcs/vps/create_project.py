@@ -95,15 +95,13 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         self.trove_only = trove_only
 
         self.common_opts = common_opts
+        self.sallogger = SALLogger.from_common_opts(common_opts=self.common_opts)
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point"""
         self.openstack_api.project_create(project=self.common_opts.project, description=self.description)
-        sallogger = SALLogger(
-            project=self.common_opts.project, task_id=self.common_opts.task_id, dry_run=self.common_opts.no_dologmsg
-        )
-        sallogger.log("created project with default quotas")
+        self.sallogger.log("created project with default quotas")
         if self.trove_only:
             self.openstack_api.quota_set(
                 OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.INSTANCES, human_spec="0")

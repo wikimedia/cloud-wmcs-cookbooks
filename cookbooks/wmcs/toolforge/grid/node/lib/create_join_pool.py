@@ -111,9 +111,7 @@ class ToolforgeGridNodeCreateJoinPoolRunner(WMCSCookbookRunnerBase):
         self.debian_version = debian_version
         self.instance_creation_opts = instance_creation_opts
         self.nodetype = nodetype
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point"""

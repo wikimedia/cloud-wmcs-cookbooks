@@ -94,9 +94,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             project=self.cluster_name.get_project(),
         )
         self._all_project_servers: list[dict[str, Any]] | None = None
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def _get_oldest_node(self, name_prefix: str) -> str:
         if not self._all_project_servers:

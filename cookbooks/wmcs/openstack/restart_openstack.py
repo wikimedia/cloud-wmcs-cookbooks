@@ -73,7 +73,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
     ):
         """Init"""
         self.common_opts = common_opts
-        self.sallogger = SALLogger(project="admin", task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg)
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.cluster_name = cluster_name
         self.args = args
         self.nova_services = None

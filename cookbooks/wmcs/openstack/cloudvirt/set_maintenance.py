@@ -64,9 +64,7 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
             cluster_name=get_node_cluster_name(node=self.fqdn),
         )
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
         """Main entry point."""

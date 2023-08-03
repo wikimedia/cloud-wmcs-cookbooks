@@ -66,9 +66,7 @@ class SafeRebootRunner(WMCSCookbookRunnerBase):
         self.fqdn = fqdn
         self.control_node_fqdn = get_control_nodes_from_node(node=self.fqdn)[0]
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
         """Main entry point"""

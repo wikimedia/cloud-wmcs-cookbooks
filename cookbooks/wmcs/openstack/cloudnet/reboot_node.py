@@ -73,9 +73,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         self.fqdn_to_reboot = fqdn_to_reboot
         self.force = force
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         cluster_name = get_node_cluster_name(node=self.fqdn_to_reboot)
         self.openstack_api = OpenstackAPI(
             remote=self.spicerack.remote(),

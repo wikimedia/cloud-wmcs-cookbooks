@@ -108,9 +108,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         self.image = image
         self.flavor = flavor
         self.role = role
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def _prepare_storage(self, node: RemoteHosts):
         if not self.role.has_extra_image_storage:

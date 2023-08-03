@@ -95,9 +95,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
         self.do_all = do_all
         self.do_all_workers = do_all_workers
         self.domain = f"{self.common_opts.project}.eqiad1.wikimedia.cloud"
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
             cluster_name=OpenstackClusterName.EQIAD1,

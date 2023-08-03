@@ -90,9 +90,7 @@ class UpgradeRunner(CookbookRunnerBase):
         self.fqdn_to_upgrade = fqdn_to_upgrade
         self.spicerack = spicerack
         self.upgrade_dbs = upgrade_dbs
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.common_opts = common_opts
 
     def run(self) -> None:

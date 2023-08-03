@@ -96,9 +96,7 @@ class ToolforgeGridNodeJoinRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.nodes_query = nodes_query
         self.force = force
-        self.sallogger = SALLogger(
-            project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def _run(self, new_node_fqdn: str):
         # a puppet run is required to make sure grid config files are generated
