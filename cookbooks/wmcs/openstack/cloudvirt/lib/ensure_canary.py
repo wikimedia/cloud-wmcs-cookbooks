@@ -243,7 +243,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
         self.control_node_fqdn = get_control_nodes(cluster_name=self.deployment)[0]
         self.disable_sal_log = False
         self.existing_canary_vms: list[dict[str, Any]] = []
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
 
         if deployment == OpenstackClusterName.CODFW1DEV:
             # the SAL we have for codfw1dev is the admin one

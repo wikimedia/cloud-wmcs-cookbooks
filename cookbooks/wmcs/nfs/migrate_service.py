@@ -22,7 +22,15 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
 
-from wmcs_libs.common import CUMIN_SAFE_WITH_OUTPUT, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
+from wmcs_libs.common import (
+    CUMIN_SAFE_WITH_OUTPUT,
+    CommonOpts,
+    OutputFormat,
+    WMCSCookbookRunnerBase,
+    run_one_as_dict,
+    run_one_raw,
+    with_common_opts,
+)
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 
@@ -66,7 +74,7 @@ class NFSServiceMigrateVolume(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return NFSServiceMigrateVolumeRunner(
+        return with_common_opts(self.spicerack, args, NFSServiceMigrateVolumeRunner)(
             project=args.project,
             from_id=args.from_host_id,
             to_id=args.to_host_id,
@@ -78,13 +86,20 @@ class NFSServiceMigrateVolume(CookbookBase):
 class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
     """Runner for NFSServiceMigrateVolume"""
 
-    def __init__(self, project, from_id: OpenstackID, to_id: OpenstackID, force: bool, spicerack: Spicerack):
+    def __init__(
+        self,
+        common_opts: CommonOpts,
+        from_id: OpenstackID,
+        to_id: OpenstackID,
+        force: bool,
+        spicerack: Spicerack,
+    ):
         """Init"""
         self.from_id = from_id
         self.to_id = to_id
-        self.project = project
+        self.project = common_opts.project
         self.force = force
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.openstack_api = OpenstackAPI(
             remote=self.spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.project
         )

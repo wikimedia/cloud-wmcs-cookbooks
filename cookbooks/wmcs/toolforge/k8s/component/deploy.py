@@ -107,7 +107,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self.git_name = git_name
         self.git_branch = git_branch
         self.deployment_command = deployment_command
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.random_dir = f"/tmp/cookbook-toolforge-k8s-component-deploy-{_randomword(10)}"  # nosec
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg

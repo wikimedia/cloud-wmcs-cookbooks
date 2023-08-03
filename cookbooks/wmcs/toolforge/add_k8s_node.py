@@ -104,7 +104,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         """Init"""
         self.common_opts = common_opts
         self.cluster_name = cluster_name
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.image = image
         self.flavor = flavor
         self.role = role

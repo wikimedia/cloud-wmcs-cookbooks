@@ -16,7 +16,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.alerts import downtime_host, uptime_host
 from wmcs_libs.ceph import CephClusterController, CephOSDFlag, get_node_cluster_name
-from wmcs_libs.common import WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ class UpgradeCephNode(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
+        add_common_opts(parser)
         parser.add_argument(
             "--to-upgrade-fqdn",
             required=True,
@@ -55,7 +56,7 @@ class UpgradeCephNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return UpgradeCephNodeRunner(
+        return with_common_opts(self.spicerack, args, UpgradeCephNodeRunner)(
             to_upgrade_fqdn=args.to_upgrade_fqdn,
             skip_maintenance=args.skip_maintenance,
             force=args.force,
@@ -68,6 +69,7 @@ class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
+        common_opts: CommonOpts,
         to_upgrade_fqdn: str,
         skip_maintenance: bool,
         force: bool,
@@ -77,7 +79,7 @@ class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
         self.to_upgrade_fqdn = to_upgrade_fqdn
         self.force = force
         self.skip_maintenance = skip_maintenance
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.controller = CephClusterController(
             remote=self.spicerack.remote(),
             cluster_name=get_node_cluster_name(to_upgrade_fqdn),

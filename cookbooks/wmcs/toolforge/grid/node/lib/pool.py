@@ -82,7 +82,7 @@ class ToolforgeGridNodePoolRunner(WMCSCookbookRunnerBase):
         """Init"""
         self.common_opts = common_opts
         self.grid_master_fqdn = grid_master_fqdn
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.nodes_query = nodes_query
         self.sallogger = SALLogger(
             project=common_opts.project, task_id=common_opts.task_id, dry_run=common_opts.no_dologmsg

@@ -95,7 +95,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         self.trove_only = trove_only
 
         self.common_opts = common_opts
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point"""

@@ -13,7 +13,7 @@ from cumin.transports import Command
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw, with_common_opts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class LiveUpgrade(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return LiveUpgradeRunner(
+        return with_common_opts(self.spicerack, args, LiveUpgradeRunner)(
             fqdn_to_upgrade=args.fqdn_to_upgrade,
             spicerack=self.spicerack,
         )
@@ -51,12 +51,13 @@ class LiveUpgradeRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
+        common_opts: CommonOpts,
         fqdn_to_upgrade: str,
         spicerack: Spicerack,
     ):
         """Init."""
         self.fqdn_to_upgrade = fqdn_to_upgrade
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
         """Main entry point."""

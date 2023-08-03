@@ -256,7 +256,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         self.image = instance_creation_opts.image
         self.server_group = server_group if server_group is not None else self.prefix
         self.server_group_policy = server_group_policy
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.security_group = security_group or f"{self.common_opts.project}-full-connectivity"
         self.ssh_retries = ssh_retries
 

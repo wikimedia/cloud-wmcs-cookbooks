@@ -85,7 +85,7 @@ class ToolforgeScaleGridWebgenRunner(WMCSCookbookRunnerBase):
         """Init"""
         self.common_opts = common_opts
         self.grid_master_fqdn = grid_master_fqdn
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.debian_version = debian_version
         self.instance_creation_opts = instance_creation_opts
 

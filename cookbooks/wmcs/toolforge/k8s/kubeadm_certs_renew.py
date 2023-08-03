@@ -182,7 +182,7 @@ class ToolforgeK8sKubeadmCertRenewRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
     ):
         """Init"""
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.control_hostname_list = control_hostname_list
         self.sallogger = SALLogger(

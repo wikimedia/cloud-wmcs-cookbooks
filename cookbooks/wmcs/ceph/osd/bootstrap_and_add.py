@@ -142,7 +142,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         self.force = force
         self.yes_i_know = yes_i_know
         self.skip_reboot = skip_reboot
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.wait_for_rebalance = wait_for_rebalance
         self.only_check = only_check
         self.sallogger = SALLogger(

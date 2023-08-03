@@ -93,7 +93,7 @@ class ToolforgeGridNodeJoinRunner(WMCSCookbookRunnerBase):
         """Init"""
         self.common_opts = common_opts
         self.grid_master_fqdn = grid_master_fqdn
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.nodes_query = nodes_query
         self.force = force
         self.sallogger = SALLogger(

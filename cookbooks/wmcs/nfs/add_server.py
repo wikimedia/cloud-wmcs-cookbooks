@@ -99,7 +99,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
         self.create_storage_volume_size = create_storage_volume_size
         self.volume = volume
         self.project = common_opts.project
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.prefix = prefix
         self.service_ip = service_ip
         self.instance_creation_opts = instance_creation_opts

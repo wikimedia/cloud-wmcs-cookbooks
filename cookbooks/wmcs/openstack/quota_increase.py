@@ -92,7 +92,7 @@ class QuotaIncreaseRunner(WMCSCookbookRunnerBase):
     ):
         """Init"""
         self.common_opts = common_opts
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(), cluster_name=cluster_name, project=self.common_opts.project
         )

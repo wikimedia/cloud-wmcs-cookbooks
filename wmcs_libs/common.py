@@ -738,7 +738,7 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
 
     recorder: WMCSCookbookRecorder | None = None
 
-    def __init__(self, spicerack: Spicerack, common_opts: CommonOpts | None = None):
+    def __init__(self, spicerack: Spicerack, common_opts: CommonOpts):
         """Init"""
         self.spicerack = spicerack
         if common_opts and spicerack.sal_logger.handlers:

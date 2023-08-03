@@ -88,7 +88,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
         """Init"""
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         self.hostname_list = hostname_list

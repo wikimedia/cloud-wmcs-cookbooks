@@ -13,7 +13,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from wmcs_libs.common import WMCSCookbookRunnerBase
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, with_common_opts
 from wmcs_libs.grid import GridController, GridNodeNotFound
 
 LOGGER = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class ToolforgeGridNodeGetInfo(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return ToolforgeGridNodeGetInfoRunner(
+        return with_common_opts(self.spicerack, args, ToolforgeGridNodeGetInfoRunner)(
             master_node_fqdn=args.master_node_fqdn
             or f"{args.project}-sgegrid-master.{args.project}.eqiad1.wikimedia.cloud",
             project=args.project,
@@ -61,6 +61,7 @@ class ToolforgeGridNodeGetInfoRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
+        common_opts: CommonOpts,
         master_node_fqdn: str,
         project: str,
         spicerack: Spicerack,
@@ -69,7 +70,7 @@ class ToolforgeGridNodeGetInfoRunner(WMCSCookbookRunnerBase):
         """Init"""
         self.master_node_fqdn = master_node_fqdn
         self.project = project
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.node_hostname = node_hostname
 
     def run(self) -> int | None:

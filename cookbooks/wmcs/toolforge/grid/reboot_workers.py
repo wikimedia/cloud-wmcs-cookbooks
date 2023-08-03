@@ -93,7 +93,7 @@ class ToolforgeGridRebootWorkersRunner(WMCSCookbookRunnerBase):
         self.queue = queue
         self.debian_version = debian_version
         self.master_node_fqdn = master_node_fqdn
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger(
             project=common_opts.project,
             task_id=common_opts.task_id,

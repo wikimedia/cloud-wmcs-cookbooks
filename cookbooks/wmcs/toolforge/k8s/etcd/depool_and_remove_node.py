@@ -182,7 +182,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         """Init"""
         self.common_opts = common_opts
         self.cluster_name = cluster_name
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.fqdn_to_remove = fqdn_to_remove
         self.skip_etcd_certs_refresh = skip_etcd_certs_refresh
         self.openstack_api = OpenstackAPI(

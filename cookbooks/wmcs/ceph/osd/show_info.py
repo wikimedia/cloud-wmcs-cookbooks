@@ -15,7 +15,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.ceph import CephClusterController
-from wmcs_libs.common import WMCSCookbookRunnerBase
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class ShowInfo(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
+        add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
             required=True,
@@ -44,7 +45,7 @@ class ShowInfo(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return ShowInfoRunner(
+        return with_common_opts(self.spicerack, args, ShowInfoRunner)(
             cluster_name=args.cluster_name,
             spicerack=self.spicerack,
         )
@@ -69,6 +70,7 @@ class ShowInfoRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
+        common_opts: CommonOpts,
         cluster_name: CephClusterName,
         spicerack: Spicerack,
     ):
@@ -76,7 +78,7 @@ class ShowInfoRunner(WMCSCookbookRunnerBase):
         self.cluster_controller = CephClusterController(
             remote=spicerack.remote(), cluster_name=cluster_name, spicerack=spicerack
         )
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point"""

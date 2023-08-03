@@ -77,7 +77,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         self.cluster_name = cluster_name
         self.args = args
         self.nova_services = None
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=cluster_name)
 
     # OpenStack services will give us info about hosts and services, but in a different format

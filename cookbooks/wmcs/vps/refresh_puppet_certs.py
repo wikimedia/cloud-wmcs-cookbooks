@@ -15,7 +15,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts, PuppetMaster
 from spicerack.remote import RemoteExecutionError
 
-from wmcs_libs.common import WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw, with_common_opts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class RefreshPuppetCerts(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return RefreshPuppetCertsRunner(
+        return with_common_opts(self.spicerack, args, RefreshPuppetCertsRunner)(
             fqdn=args.fqdn,
             pre_run_puppet=args.pre_run_puppet,
             ignore_failures=args.ignore_failures,
@@ -109,6 +109,7 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
 
     def __init__(
         self,
+        common_opts: CommonOpts,
         fqdn: str,
         pre_run_puppet: bool,
         ignore_failures: bool,
@@ -118,7 +119,7 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
         self.fqdn = fqdn
         self.pre_run_puppet = pre_run_puppet
         self.ignore_failures = ignore_failures
-        super().__init__(spicerack=spicerack)
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point.
