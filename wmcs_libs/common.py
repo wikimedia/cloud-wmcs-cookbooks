@@ -10,12 +10,14 @@ import json
 import logging
 import re
 import socket
+import uuid
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from dataclasses import replace as replace_in_dataclass
 from enum import Enum, auto
 from functools import partial
 from itertools import chain
-from typing import Any, Callable, Pattern
+from typing import Any, Callable, Generator, Pattern
 from unittest import mock
 from urllib.parse import urlparse
 
@@ -358,6 +360,23 @@ def simple_create_file(
     full_command.extend(["tee", remote_path])
 
     run_one_raw(node=dst_node, command=full_command, cumin_params=cumin_params)
+
+
+@contextmanager
+def with_temporary_file(
+    dst_node: RemoteHosts, contents: str, use_root: bool = True, cumin_params: CuminParams | None = None
+) -> Generator[str, None, None]:
+    """Context manager to do something with on a remote system with a temporary file."""
+    file_path = f"/tmp/{str(uuid.uuid4())}"  # nosec B108
+
+    try:
+        simple_create_file(
+            dst_node=dst_node, contents=contents, remote_path=file_path, use_root=use_root, cumin_params=cumin_params
+        )
+
+        yield file_path
+    finally:
+        run_one_raw(node=dst_node, command=["rm", "-v", file_path], cumin_params=cumin_params)
 
 
 def natural_sort_key(element: str) -> list[str | int]:
