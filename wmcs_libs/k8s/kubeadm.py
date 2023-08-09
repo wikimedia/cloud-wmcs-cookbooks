@@ -24,6 +24,9 @@ PKI_FILES_TO_TRANSFER = [
     "front-proxy-client.key",
 ]
 
+KUBEADM_VERSION_COMPONENT_HIERA_KEY = "profile::wmcs::kubeadm::component"
+KUBERNETES_VERSION_HIERA_KEY = "profile::wmcs::kubeadm::kubernetes_version"
+
 
 class KubeadmError(Exception):
     """Parent class for all kubeadm related errors."""
