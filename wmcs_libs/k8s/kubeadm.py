@@ -6,6 +6,7 @@ import logging
 
 import yaml
 from spicerack.remote import Remote
+from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.common import CuminParams, run_one_raw, simple_create_file
 from wmcs_libs.k8s.kubernetes import KubernetesController, KubernetesTimeoutForNotReady
@@ -176,3 +177,22 @@ class KubeadmController:
         config = yaml.safe_load(kubeadm_config["data"]["ClusterConfiguration"])
 
         return [endpoint.split("//", 1)[1].split(":")[0] for endpoint in config["etcd"]["external"]["endpoints"]]
+
+    def upgrade_first(self, target_version: str):
+        """Upgrades the first control node to a new Kubernetes version."""
+        run_one_raw(
+            command=["kubeadm", "upgrade", "plan", target_version],
+            node=self._target_node,
+        )
+        ask_confirmation("Confirm above plan looks good?")
+        run_one_raw(
+            command=["kubeadm", "upgrade", "apply", target_version, "-y"],
+            node=self._target_node,
+        )
+
+    def upgrade(self):
+        """Run the upgrade command on the node."""
+        run_one_raw(
+            command=["kubeadm", "upgrade", "node"],
+            node=self._target_node,
+        )

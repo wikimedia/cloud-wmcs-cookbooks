@@ -8,9 +8,9 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Generator
+from typing import Any, Generator, Literal, overload
 
-from spicerack.remote import Remote
+from spicerack.remote import Remote, RemoteExecutionError
 
 from wmcs_libs.common import CuminParams, run_one_as_dict, run_one_raw
 
@@ -96,6 +96,18 @@ class KubernetesClusterInfo:
         return cls(master_url=master_url, dns_url=dns_url, metrics_url=metrics_url)
 
 
+@dataclass(frozen=True)
+class KubernetesNodeInfo:
+    """Kubernetes node information."""
+
+    kubelet_version: str
+
+    @classmethod
+    def from_node_status(cls, status: dict[str, Any]) -> "KubernetesNodeInfo":
+        """Constructor."""
+        return cls(kubelet_version=status["nodeInfo"]["kubeletVersion"].removeprefix("v"))
+
+
 class KubernetesController:
     """Controller for a kubernetes cluster."""
 
@@ -119,14 +131,29 @@ class KubernetesController:
         )
         return KubernetesClusterInfo.form_cluster_info_output(raw_output=raw_output)
 
-    def get_object(self, kind: str, name: str, namespace: str | None = None) -> dict[str, Any]:
+    @overload
+    def get_object(self, kind: str, name: str, namespace: str, *, missing_ok: Literal[False] = False) -> dict[str, Any]:
+        pass
+
+    @overload
+    def get_object(
+        self, kind: str, name: str, namespace: str, *, missing_ok: Literal[True] = True
+    ) -> dict[str, Any] | None:
+        pass
+
+    def get_object(self, kind: str, name: str, namespace: str, *, missing_ok: bool = False) -> dict[str, Any] | None:
         """Get data for a single object in the cluster."""
         namespace_args = [f"--namespace={namespace}"] if namespace else []
-        return run_one_as_dict(
-            command=["kubectl", "get", kind, name, *namespace_args, "--output=json"],
-            node=self._controlling_node,
-            cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
-        )
+        try:
+            return run_one_as_dict(
+                command=["kubectl", "get", kind, name, *namespace_args, "--output=json"],
+                node=self._controlling_node,
+                cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
+            )
+        except RemoteExecutionError:
+            if missing_ok:
+                return None
+            raise
 
     def get_nodes(self, selector: str | None = None) -> list[dict[str, Any]]:
         """Get the nodes currently in the cluster."""
@@ -153,6 +180,14 @@ class KubernetesController:
     def get_node(self, node_hostname: str) -> list[dict[str, Any]]:
         """Get only info for the the given node."""
         return self.get_nodes(selector=f"kubernetes.io/hostname={node_hostname}")
+
+    def get_node_info(self, node_hostname: str) -> KubernetesNodeInfo:
+        """Get parsed metadata about the given node."""
+        node_data = self.get_node(node_hostname=node_hostname)
+        if not node_data:
+            raise KubernetesNodeNotFound(f"Unable to find node {node_hostname} in the cluster.")
+
+        return KubernetesNodeInfo.from_node_status(node_data[0]["status"])
 
     def get_pods(self, field_selector: str | None = None) -> list[dict[str, Any]]:
         """Get pods."""
