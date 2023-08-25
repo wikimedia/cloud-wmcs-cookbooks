@@ -258,7 +258,7 @@ class KubernetesController:
         """Ready means in 'Ready' status."""
         node_info = self.get_node(node_hostname=node_hostname)
         if not node_info:
-            raise KubernetesNodeNotFound("Unable to find node {node_hostname} in the cluster.")
+            raise KubernetesNodeNotFound(f"Unable to find node {node_hostname} in the cluster.")
 
         try:
             return next(
