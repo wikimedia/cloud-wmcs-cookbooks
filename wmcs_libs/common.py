@@ -6,7 +6,6 @@ from __future__ import annotations
 __title__ = __doc__
 import argparse
 import base64
-import getpass
 import json
 import logging
 import re
@@ -26,6 +25,7 @@ from cumin.transports import Command
 from spicerack import ICINGA_DOMAIN, Spicerack
 from spicerack.cookbook import CookbookRunnerBase
 from spicerack.remote import Remote, RemoteHosts
+from wmflib.interactive import get_username
 
 from wmcs_libs.proxy import with_proxy
 from wmcs_libs.test_helpers import WMCSCookbookRecorder
@@ -421,7 +421,7 @@ class SALLogger:
         message: str,
     ):
         """Log a message to the given irc channel for stashbot to pick up and register in SAL."""
-        postfix = f"- cookbook ran by {getpass.getuser()}@{socket.gethostname()}"
+        postfix = f"- cookbook ran by {get_username()}@{socket.gethostname()}"
         if self.task_id is not None:
             postfix = f"({self.task_id}) {postfix}"
 

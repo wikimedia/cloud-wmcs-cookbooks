@@ -2,7 +2,6 @@
 """Alert and downtime related library functions and classes."""
 from __future__ import annotations
 
-import getpass
 import logging
 import socket
 from dataclasses import dataclass
@@ -10,6 +9,7 @@ from typing import Any
 
 from spicerack import Spicerack
 from spicerack.remote import Remote, RemoteHosts
+from wmflib.interactive import get_username
 
 from wmcs_libs.common import run_one_formatted_as_list, run_one_raw, wrap_with_sudo_icinga
 
@@ -180,7 +180,7 @@ def downtime_host(
     * 1h -> one hour
     * 2d -> two days
     """
-    postfix = f"- from cookbook ran by {getpass.getuser()}@{socket.gethostname()}"
+    postfix = f"- from cookbook ran by {get_username()}@{socket.gethostname()}"
     if task_id:
         postfix = f" ({task_id}) {postfix}"
     if comment:
@@ -231,7 +231,7 @@ def downtime_alert(
     * 1h -> one hour
     * 2d -> two days
     """
-    postfix = f"- from cookbook ran by {getpass.getuser()}@{socket.gethostname()}"
+    postfix = f"- from cookbook ran by {get_username()}@{socket.gethostname()}"
     if task_id:
         postfix = f" ({task_id}) {postfix}"
     if comment:
