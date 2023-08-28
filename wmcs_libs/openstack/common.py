@@ -14,6 +14,7 @@ from cumin.transports import Command
 from spicerack.remote import Remote, RemoteHosts
 
 from wmcs_libs.common import (
+    CUMIN_SAFE_WITHOUT_OUTPUT,
     ArgparsableEnum,
     CommandRunnerMixin,
     CuminParams,
@@ -334,28 +335,28 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def get_nova_services(self) -> list[dict[str, Any]]:
         """Return nova's list of registered services"""
-        return self.run_formatted_as_list("compute", "service", "list")
+        return self.run_formatted_as_list("compute", "service", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def get_designate_services(self) -> list[dict[str, Any]]:
         """Return designate's list of registered services"""
-        return self.run_formatted_as_list("dns", "service", "list")
+        return self.run_formatted_as_list("dns", "service", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def get_neutron_services(self) -> list[dict[str, Any]]:
         """Return neutron's list of registered services"""
-        return self.run_formatted_as_list("network", "agent", "list")
+        return self.run_formatted_as_list("network", "agent", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def get_cinder_services(self) -> list[dict[str, Any]]:
         """Return cinder's list of registered services"""
-        return self.run_formatted_as_list("volume", "service", "list")
+        return self.run_formatted_as_list("volume", "service", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def port_get(self, ip_address) -> list[dict[str, Any]]:
         """Get port for specified IP address"""
         ip_filter = f'--fixed-ip="ip-address={ip_address}"'
-        return self.run_formatted_as_list("port", "list", ip_filter)
+        return self.run_formatted_as_list("port", "list", ip_filter, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def zone_get(self, name) -> list[dict[str, Any]]:
         """Get zone record for specified dns zone"""
-        return self.run_formatted_as_list("zone", "list", "--name", name)
+        return self.run_formatted_as_list("zone", "list", "--name", name, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def recordset_create(self, zone_id, record_type, name, record) -> dict[str, Any]:
         """Get zone record for specified dns zone"""
@@ -365,7 +366,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def server_show(self, vm_name: OpenstackIdentifier) -> dict[str, Any]:
         """Get the information for a VM."""
-        return self.run_formatted_as_dict("server", "show", vm_name, cumin_params=CuminParams(is_safe=True))
+        return self.run_formatted_as_dict("server", "show", vm_name, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def server_list(self, long: bool = False, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Retrieve the list of servers for the project."""
@@ -430,11 +431,11 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def server_from_id(self, server_id: OpenstackIdentifier) -> dict[str, Any]:
         """Given the ID of a server, return the server details"""
-        return self.run_formatted_as_dict("server", "show", server_id)
+        return self.run_formatted_as_dict("server", "show", server_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def volume_from_id(self, volume_id: OpenstackIdentifier) -> dict[str, Any]:
         """Given the ID of a volume, return the volume details"""
-        return self.run_formatted_as_dict("volume", "show", volume_id)
+        return self.run_formatted_as_dict("volume", "show", volume_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def server_create(
         self,
@@ -659,7 +660,7 @@ class OpenstackAPI(CommandRunnerMixin):
                 command=["cat", AGGREGATES_FILE_PATH],
                 node=host,
                 try_format=OutputFormat.YAML,
-                cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
+                cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
             )
 
         except Exception as error:
@@ -691,7 +692,9 @@ class OpenstackAPI(CommandRunnerMixin):
         """
         # OS_PROJECT_ID=PROJECT wmcs-openstack quota show displays the admin project!
         # This must be run as wmcs-openstack quota show PROJECT
-        raw_quotas = self.run_formatted_as_dict("quota", "show", project_as_arg=True)
+        raw_quotas = self.run_formatted_as_dict(
+            "quota", "show", project_as_arg=True, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
+        )
         final_quotas: dict[str | OpenstackQuotaName, Any] = {}
         for quota_name, quota_value in raw_quotas.items():
             try:
@@ -792,7 +795,12 @@ class OpenstackAPI(CommandRunnerMixin):
     def role_list_assignments(self, user_name: OpenstackName) -> list[dict[str, Any]]:
         """List the assignments for a user in the project."""
         return self.run_formatted_as_list(
-            "role", "assignment", "list", f"--project={self.project}", f"--user={user_name}"
+            "role",
+            "assignment",
+            "list",
+            f"--project={self.project}",
+            f"--user={user_name}",
+            cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
         )
 
     def role_add(self, role_name: OpenstackName, user_name: OpenstackName) -> None:

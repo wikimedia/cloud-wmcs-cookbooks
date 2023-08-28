@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from unittest import mock
 
 import cumin
 import pytest
 
-from wmcs_libs.common import UtilsForTesting
+from wmcs_libs.common import CUMIN_SAFE_WITHOUT_OUTPUT, UtilsForTesting
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackBadQuota, OpenstackQuotaEntry, OpenstackQuotaName, Unit
 
@@ -425,8 +426,8 @@ def test_OpenstackAPI_quota_increase_happy_path():
     fake_control_host = fake_remote.query.return_value
     assert fake_control_host.run_sync.call_count == 3
     calls = [
-        mock.call(expected_show_command),
+        mock.call(expected_show_command, **asdict(CUMIN_SAFE_WITHOUT_OUTPUT)),
         mock.call(expected_set_command),
-        mock.call(expected_show_command),
+        mock.call(expected_show_command, **asdict(CUMIN_SAFE_WITHOUT_OUTPUT)),
     ]
     fake_control_host.run_sync.assert_has_calls(calls)
