@@ -28,6 +28,7 @@ from spicerack import ICINGA_DOMAIN, Spicerack
 from spicerack.cookbook import CookbookRunnerBase
 from spicerack.remote import Remote, RemoteHosts
 from wmflib.interactive import get_username
+from wmflib.irc import SocketHandler
 
 from wmcs_libs.proxy import with_proxy
 from wmcs_libs.test_helpers import WMCSCookbookRecorder
@@ -751,6 +752,15 @@ class CommandRunnerMixin:
         )
 
 
+class WmBotSALSocketHandler(SocketHandler):
+    """Logging socket handler for wm-bot SAL use."""
+
+    def __init__(self, host: str, port: int, username: str, project: str) -> None:
+        """Init."""
+        super().__init__(host, port, username)
+        self.command = f"#wikimedia-cloud-feed !log {project}"
+
+
 class WMCSCookbookRunnerBase(CookbookRunnerBase):
     """WMCS tweaks to the base cookbook runner.
 
@@ -764,13 +774,32 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
     def __init__(self, spicerack: Spicerack, common_opts: CommonOpts):
         """Init"""
         self.spicerack = spicerack
-        if common_opts and spicerack.sal_logger.handlers:
-            project = common_opts.project
-            spicerack.sal_logger.handlers[0].setFormatter(logging.Formatter(f"{project} %(message)s"))
+        self._setup_logging(common_opts)
         self.nested = bool(WMCSCookbookRunnerBase.recorder)
         LOGGER.debug("Starting %s recorder", "nested" if self.nested else "not nested")
         if not self.nested:
             WMCSCookbookRunnerBase.recorder = WMCSCookbookRecorder()
+
+    def _setup_logging(self, common_opts: CommonOpts):
+        if common_opts.no_dologmsg:
+            self.spicerack.sal_logger.handlers.clear()
+            return
+
+        task_id = f" ({common_opts.task_id})" if common_opts.task_id else ""
+
+        if self.spicerack.sal_logger.handlers:
+            # If using the Spicerack configured logger, set a formatter to add the project name.
+            self.spicerack.sal_logger.handlers[0].setFormatter(
+                logging.Formatter(f"{common_opts.project} %(message)s{task_id}")
+            )
+        else:
+            # TODO: Update Spicerack to allow configuring wm-bot usage properly on local setups,
+            # so we don't need this kind of set up that hacks the channel in front.
+            handler = WmBotSALSocketHandler(
+                "wm-bot.wm-bot.wmcloud.org", 64835, self.spicerack.username, common_opts.project
+            )
+            handler.setFormatter(logging.Formatter(f"%(message)s{task_id}"))
+            self.spicerack.sal_logger.addHandler(handler)
 
     def __getattribute__(self, __name: str) -> Any:
         """Needed to be able to save the recordings if needed as the run function might get overwritten."""

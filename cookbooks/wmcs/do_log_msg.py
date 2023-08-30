@@ -13,7 +13,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,8 +59,7 @@ class DologmsgRunner(WMCSCookbookRunnerBase):
         """Init."""
         self.msg = msg
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point."""
-        self.sallogger.log(message=self.msg)
+        self.spicerack.sal_logger.info("%s", self.msg)
