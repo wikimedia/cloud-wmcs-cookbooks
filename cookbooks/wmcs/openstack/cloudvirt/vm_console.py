@@ -15,7 +15,7 @@ import sys
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 
@@ -34,11 +34,7 @@ class VMConsole(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        parser.add_argument(
-            "--project",
-            required=True,
-            help="Name of the project the vm is running in.",
-        )
+        add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
             required=False,
@@ -57,7 +53,6 @@ class VMConsole(CookbookBase):
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
         return with_common_opts(self.spicerack, args, VMConsoleRunner)(
-            project=args.project,
             cluster_name=args.cluster_name,
             vm_name=args.vm_name,
             spicerack=self.spicerack,
@@ -79,16 +74,15 @@ class VMConsoleRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        project: str,
         cluster_name: OpenstackClusterName,
         vm_name: str,
         spicerack: Spicerack,
     ):
         """Init"""
-        self.project = project
+        self.project = common_opts.project
         self.vm_name = vm_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=cluster_name, project=project)
+        self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=cluster_name, project=self.project)
 
     def run(self) -> None:
         """Main entry point"""

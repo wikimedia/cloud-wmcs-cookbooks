@@ -13,7 +13,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.grid import GridController, GridNodeNotFound
 
 LOGGER = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class ToolforgeGridNodeGetInfo(CookbookBase):
             description=__doc__,
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
-        parser.add_argument("--project", required=True, help="Openstack project to manage.")
+        add_common_opts(parser)
         parser.add_argument(
             "--master-node-fqdn",
             required=False,
@@ -50,7 +50,6 @@ class ToolforgeGridNodeGetInfo(CookbookBase):
         return with_common_opts(self.spicerack, args, ToolforgeGridNodeGetInfoRunner)(
             master_node_fqdn=args.master_node_fqdn
             or f"{args.project}-sgegrid-master.{args.project}.eqiad1.wikimedia.cloud",
-            project=args.project,
             spicerack=self.spicerack,
             node_hostname=args.node_hostname,
         )
@@ -63,13 +62,11 @@ class ToolforgeGridNodeGetInfoRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         master_node_fqdn: str,
-        project: str,
         spicerack: Spicerack,
         node_hostname: str,
     ):
         """Init"""
         self.master_node_fqdn = master_node_fqdn
-        self.project = project
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.node_hostname = node_hostname
 

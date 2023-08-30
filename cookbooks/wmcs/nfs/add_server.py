@@ -50,6 +50,7 @@ class NFSAddServer(CookbookBase):
         parser = argparse.ArgumentParser(
             prog=__name__, description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
         )
+        add_common_opts(parser, project_default="cloudinfra-nfs")
         parser.add_argument(
             "--service-ip",
             action="store_true",
@@ -64,7 +65,6 @@ class NFSAddServer(CookbookBase):
             "an existing volume can be attached later.",
         )
         add_instance_creation_options(parser)
-        add_common_opts(parser, project_default="cloudinfra-nfs")
         parser.add_argument("volume", help=("nfs volume to be provided and managed by this server"))
 
         return parser

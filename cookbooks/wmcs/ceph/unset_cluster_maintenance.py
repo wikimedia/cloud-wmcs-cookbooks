@@ -33,6 +33,7 @@ class UnSetClusterInMaintenance(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
+        add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
             required=True,
@@ -56,7 +57,6 @@ class UnSetClusterInMaintenance(CookbookBase):
                 "ceph cluster alerts."
             ),
         )
-        add_common_opts(parser)
 
         return parser
 

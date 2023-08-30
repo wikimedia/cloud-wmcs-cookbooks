@@ -12,11 +12,18 @@ from datetime import datetime
 
 from cumin.transports import Command
 from spicerack import RemoteHosts, Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase, CookbookRunnerBase
+from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from cookbooks.wmcs.openstack.network.tests import NetworkTests
 from wmcs_libs.alerts import downtime_host, uptime_host
-from wmcs_libs.common import CommonOpts, SALLogger, add_common_opts, run_one_raw, with_common_opts
+from wmcs_libs.common import (
+    CommonOpts,
+    SALLogger,
+    WMCSCookbookRunnerBase,
+    add_common_opts,
+    run_one_raw,
+    with_common_opts,
+)
 from wmcs_libs.inventory import OpenstackClusterName
 
 LOGGER = logging.getLogger(__name__)
@@ -67,7 +74,7 @@ class LiveUpgrade(CookbookBase):
 
         return parser
 
-    def get_runner(self, args: argparse.Namespace) -> CookbookRunnerBase:
+    def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
         return with_common_opts(
             self.spicerack,
@@ -76,7 +83,7 @@ class LiveUpgrade(CookbookBase):
         )(fqdn_to_upgrade=args.fqdn_to_upgrade, spicerack=self.spicerack, upgrade_dbs=args.skip_db_upgrades)
 
 
-class UpgradeRunner(CookbookRunnerBase):
+class UpgradeRunner(WMCSCookbookRunnerBase):
     """Runner for LiveUpgrade."""
 
     def __init__(
@@ -92,6 +99,7 @@ class UpgradeRunner(CookbookRunnerBase):
         self.upgrade_dbs = upgrade_dbs
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.common_opts = common_opts
+        super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point."""

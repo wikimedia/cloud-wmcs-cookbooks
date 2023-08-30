@@ -16,7 +16,14 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CmdChecklist, CommonOpts, CuminParams, WMCSCookbookRunnerBase, with_common_opts
+from wmcs_libs.common import (
+    CmdChecklist,
+    CommonOpts,
+    CuminParams,
+    WMCSCookbookRunnerBase,
+    add_common_opts,
+    with_common_opts,
+)
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import get_control_nodes
 
@@ -35,7 +42,7 @@ class NetworkTests(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-
+        add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
             help="openstack cluster_name where to run the tests",

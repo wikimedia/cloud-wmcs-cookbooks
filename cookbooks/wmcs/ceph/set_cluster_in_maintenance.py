@@ -33,6 +33,7 @@ class SetClusterInMaintenance(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
+        add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
             required=True,
@@ -51,7 +52,6 @@ class SetClusterInMaintenance(CookbookBase):
             action="store_true",
             help="If passed, will continue even if the cluster is not in a healthy state.",
         )
-        add_common_opts(parser)
 
         return parser
 

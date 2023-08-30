@@ -27,6 +27,7 @@ from wmcs_libs.common import (
     CommonOpts,
     OutputFormat,
     WMCSCookbookRunnerBase,
+    add_common_opts,
     run_one_as_dict,
     run_one_raw,
     with_common_opts,
@@ -59,9 +60,9 @@ class NFSServiceMigrateVolume(CookbookBase):
     def argument_parser(self):
         """Parse the command line arguments for this cookbook."""
         parser = argparse.ArgumentParser(prog=__name__, description=__doc__, formatter_class=ArgparseFormatter)
+        add_common_opts(parser)
         parser.add_argument("--from-host-id", required=True, help="old service host ID")
         parser.add_argument("--to-host-id", required=True, help="new service host ID")
-        parser.add_argument("--project", required=True, help="openstack project id containing both hosts")
         parser.add_argument(
             "--force",
             action="store_true",
@@ -75,7 +76,6 @@ class NFSServiceMigrateVolume(CookbookBase):
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
         return with_common_opts(self.spicerack, args, NFSServiceMigrateVolumeRunner)(
-            project=args.project,
             from_id=args.from_host_id,
             to_id=args.to_host_id,
             force=args.force,

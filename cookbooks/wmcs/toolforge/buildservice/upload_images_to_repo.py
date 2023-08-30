@@ -31,6 +31,7 @@ class UploadImagesToRepo(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
+        add_common_opts(parser, project_default="toolsbeta")
         parser.add_argument(
             "--tekton-version",
             required=False,
@@ -67,7 +68,6 @@ class UploadImagesToRepo(CookbookBase):
             default="tools-docker-imagebuilder-01.tools.eqiad1.wikimedia.cloud",
             help="Host to use to pull and push to the given repository.",
         )
-        add_common_opts(parser, project_default="toolsbeta")
 
         return parser
 

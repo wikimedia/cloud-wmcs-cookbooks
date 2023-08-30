@@ -14,7 +14,7 @@ import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.grid import GridController, GridQueueState, GridQueueStatesSet, GridQueueType, GridQueueTypesSet
 
 LOGGER = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ class ToolforgeGridGetClusterStatus(CookbookBase):
             description=__doc__,
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
-        parser.add_argument("--project", required=True, help="Openstack project to manage.")
+        add_common_opts(parser)
         parser.add_argument(
             "--only-failed",
             required=False,
@@ -64,7 +64,6 @@ class ToolforgeGridGetClusterStatus(CookbookBase):
         return with_common_opts(self.spicerack, args, ToolforgeGridGetClusterStatusRunner)(
             master_node_fqdn=args.master_node_fqdn
             or f"{args.project}-sgegrid-master.{args.project}.eqiad1.wikimedia.cloud",
-            project=args.project,
             only_failed=args.only_failed,
             spicerack=self.spicerack,
         )
@@ -77,13 +76,12 @@ class ToolforgeGridGetClusterStatusRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         master_node_fqdn: str,
-        project: str,
         only_failed: bool,
         spicerack: Spicerack,
     ):
         """Init"""
         self.master_node_fqdn = master_node_fqdn
-        self.project = project
+        self.project = common_opts.project
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.only_failed = only_failed
         self.grid_controller = GridController(remote=self.spicerack.remote(), master_node_fqdn=self.master_node_fqdn)

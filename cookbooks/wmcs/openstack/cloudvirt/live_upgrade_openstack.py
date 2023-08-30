@@ -13,7 +13,7 @@ from cumin.transports import Command
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class LiveUpgrade(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
+        add_common_opts(parser)
         parser.add_argument(
             "--fqdn-to-upgrade",
             required=True,

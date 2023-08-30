@@ -15,7 +15,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts, PuppetMaster
 from spicerack.remote import RemoteExecutionError
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +76,7 @@ class RefreshPuppetCerts(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
+        add_common_opts(parser)
         parser.add_argument(
             "--fqdn",
             required=True,
