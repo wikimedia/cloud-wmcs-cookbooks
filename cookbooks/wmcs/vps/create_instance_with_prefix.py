@@ -260,6 +260,11 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         self.security_group = security_group or f"{self.common_opts.project}-full-connectivity"
         self.ssh_retries = ssh_retries
 
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"with prefix '{self.prefix}'"
+
     def run(self) -> None:
         """Main entry point"""
         self.create_instance()

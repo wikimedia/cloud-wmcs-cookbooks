@@ -19,7 +19,6 @@ from spicerack.remote import RemoteHosts
 from wmcs_libs.common import (
     CommonOpts,
     CuminParams,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     run_one_raw,
@@ -95,7 +94,11 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         self.revoke_puppet_certs = revoke_puppet_certs
         self.already_off = already_off
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for instance {self.name_to_remove}"
 
     def _guess_puppet_cert_hostname(self, remote: RemoteHosts | None, node_fqdn: str) -> str:
         if not remote:
@@ -157,4 +160,3 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
                 puppet_master.delete(puppet_cert_hostname)
 
         self.openstack_api.server_delete(name_to_remove=self.name_to_remove)
-        self.sallogger.log(message=f"removed instance {self.name_to_remove}")

@@ -16,7 +16,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 
@@ -96,7 +96,11 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
 
         self.role_name = "member" if as_member else "reader"
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for user '{self.user}' in role '{self.role_name}'"
 
     def run(self) -> None:
         """Main entry point"""
@@ -105,6 +109,3 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
         if self.role_name == "member":
             # if we leave only the member role, users wont be able to SSH. Add 'reader' too.
             self.openstack_api.role_add(role_name="reader", user_name=self.user)
-            self.sallogger.log(f"added user {self.user} to the project as user")
-
-        self.sallogger.log(f"added user {self.user} to the project as {self.role_name}")

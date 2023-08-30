@@ -121,6 +121,11 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
         self.ignore_failures = ignore_failures
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f" on {self.fqdn}"
+
     def run(self) -> None:
         """Main entry point.
 

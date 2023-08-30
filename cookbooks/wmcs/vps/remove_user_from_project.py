@@ -15,7 +15,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 
@@ -79,10 +79,13 @@ class RemoveUserFromProjectRunner(WMCSCookbookRunnerBase):
 
         self.user = user
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for user '{self.user}'"
 
     def run(self) -> None:
         """Main entry point"""
         for role in self.openstack_api.role_list_assignments(user_name=self.user):
             self.openstack_api.role_remove(role=role["Role"], user_name=self.user)
-        self.sallogger.log(f"Removed user {self.user} from the project")
