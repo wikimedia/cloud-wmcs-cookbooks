@@ -177,7 +177,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
 
         LOGGER.info("Running Puppet on %s to pick up updated Apt components", self.hostname)
 
-        puppet.enable(self.spicerack.admin_reason(f"kubernetes upgrade to {self.dst_version}"))
+        puppet.enable(self.spicerack.admin_reason(f"kubernetes upgrade to {self.dst_version}"), verbatim_reason=True)
         puppet.run()
 
         if self.src_version.split(".")[:-1] == self.dst_version.split(".")[:-1]:

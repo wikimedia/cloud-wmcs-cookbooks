@@ -118,7 +118,7 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
 
         LOGGER.info("Disabling Puppet on all Kubernetes nodes")
         puppet = self.spicerack.puppet(hosts)
-        puppet.disable(self.spicerack.admin_reason(f"kubernetes upgrade to {self.dst_version}"))
+        puppet.disable(self.spicerack.admin_reason(f"kubernetes upgrade to {self.dst_version}"), verbatim_reason=True)
 
         LOGGER.info("Downtiming project on Alertmanager")
         LOGGER.info("The cookbook can't yet do this automatically, please manually add a downtime")
