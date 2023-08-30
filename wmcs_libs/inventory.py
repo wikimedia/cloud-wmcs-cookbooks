@@ -424,7 +424,7 @@ def _guess_cluster_name(
             if cluster.get_project() == openstack_project:
                 return cluster
 
-            raise InventoryError(f"No clusters with type {cluster_type} found in project {openstack_project}")
+        raise InventoryError(f"No clusters with type {cluster_type} found in project {openstack_project}")
 
     if len(clusters) == 1:
         return next(iter(clusters.values())).name
