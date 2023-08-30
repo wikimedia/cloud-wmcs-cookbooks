@@ -17,7 +17,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from cookbooks.wmcs.toolforge.k8s.worker.drain import Drain
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, natural_sort_key
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, natural_sort_key
 from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
@@ -94,7 +94,13 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             project=self.cluster_name.get_project(),
         )
         self._all_project_servers: list[dict[str, Any]] | None = None
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        if self.hostname_to_remove:
+            return f"for host {self.hostname_to_remove}"
+        return ""
 
     def _get_oldest_node(self, name_prefix: str) -> str:
         if not self._all_project_servers:
@@ -177,5 +183,3 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
                 + self.common_opts.to_cli_args(),
             ),
         ).run()
-
-        self.sallogger.log(message=f"drained, depooled and removed k8s {self.role} node {self.hostname_to_remove}")

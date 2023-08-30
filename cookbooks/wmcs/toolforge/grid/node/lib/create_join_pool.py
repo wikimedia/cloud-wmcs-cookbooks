@@ -24,14 +24,7 @@ from cookbooks.wmcs.vps.create_instance_with_prefix import (
     with_instance_creation_options,
 )
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
-from wmcs_libs.common import (
-    CommonOpts,
-    DebianVersion,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    with_common_opts,
-)
+from wmcs_libs.common import CommonOpts, DebianVersion, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.grid import GridController, GridNodeType
 
 LOGGER = logging.getLogger(__name__)
@@ -111,7 +104,6 @@ class ToolforgeGridNodeCreateJoinPoolRunner(WMCSCookbookRunnerBase):
         self.debian_version = debian_version
         self.instance_creation_opts = instance_creation_opts
         self.nodetype = nodetype
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run(self) -> None:
         """Main entry point"""
@@ -157,4 +149,4 @@ class ToolforgeGridNodeCreateJoinPoolRunner(WMCSCookbookRunnerBase):
         grid_controller = GridController(remote=self.spicerack.remote(), master_node_fqdn=self.grid_master_fqdn)
         grid_controller.add_node(host_fqdn=new_member_fqdn, is_tools_project=(self.common_opts.project == "tools"))
 
-        self.sallogger.log(message=f"created node {new_member_fqdn} and added it to the grid")
+        self.spicerack.sal_logger.info("created node %s and added it to the grid", new_member_fqdn)

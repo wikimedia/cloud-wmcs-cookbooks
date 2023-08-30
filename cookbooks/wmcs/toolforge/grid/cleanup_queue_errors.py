@@ -15,7 +15,6 @@ from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import (
     CommonOpts,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     parser_type_str_hostname,
@@ -68,7 +67,6 @@ class ToolforgeGridCleanupQRunner(WMCSCookbookRunnerBase):
         self.common_opts = common_opts
         self.master_hostname = master_hostname
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
         if not self.master_hostname:
             self.master_hostname = f"{self.common_opts.project}-sgegrid-master"
@@ -80,4 +78,3 @@ class ToolforgeGridCleanupQRunner(WMCSCookbookRunnerBase):
         grid_controller = GridController(self.spicerack.remote(), master_fqdn)
 
         grid_controller.cleanup_queue_errors()
-        self.sallogger.log(message=f"cleaned up grid queue errors on {self.master_hostname}")

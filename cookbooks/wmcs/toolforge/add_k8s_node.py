@@ -20,7 +20,7 @@ from spicerack.remote import RemoteHosts
 
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw
 from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
@@ -108,7 +108,11 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         self.image = image
         self.flavor = flavor
         self.role = role
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for a {self.role.value} role in the {self.cluster_name.value} cluster"
 
     def _prepare_storage(self, node: RemoteHosts):
         if not self.role.has_extra_image_storage:
@@ -131,8 +135,6 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
 
     def run(self) -> None:
         """Main entry point"""
-        self.sallogger.log(message=f"Adding a new k8s {self.role} node")
-
         node_prefix = get_cluster_node_prefix(self.cluster_name, self.role)
         security_group = get_cluster_security_group_name(self.cluster_name)
         server_group = get_cluster_node_server_group_name(self.cluster_name, self.role)
@@ -210,4 +212,4 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
 
         # TODO: for control or ingress nodes, add to the haproxy hiera key
 
-        self.sallogger.log(message=f"Added a new k8s {self.role} {new_member.server_fqdn} to the cluster")
+        self.spicerack.sal_logger.info("Added a new k8s %s %s to the cluster", self.role.value, new_member.server_fqdn)

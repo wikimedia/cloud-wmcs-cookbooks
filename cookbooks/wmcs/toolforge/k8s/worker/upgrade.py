@@ -18,7 +18,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.decorators import retry
 from wmflib.interactive import ask_confirmation
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw
 from wmcs_libs.inventory import (
     NodeInventoryInfo,
     ToolforgeKubernetesClusterName,
@@ -97,8 +97,6 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         self.hostname = hostname
         self.src_version = src_version
         self.dst_version = dst_version
-
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     @property
     def runtime_description(self) -> str:

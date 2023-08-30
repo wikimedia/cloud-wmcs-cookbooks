@@ -15,14 +15,7 @@ from datetime import datetime
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from wmcs_libs.common import (
-    CommonOpts,
-    DebianVersion,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    with_common_opts,
-)
+from wmcs_libs.common import CommonOpts, DebianVersion, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.grid import GridController, GridNodeType
 
 LOGGER = logging.getLogger(__name__)
@@ -94,13 +87,17 @@ class ToolforgeGridRebootWorkersRunner(WMCSCookbookRunnerBase):
         self.debian_version = debian_version
         self.master_node_fqdn = master_node_fqdn
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        if self.queue and self.queue.value:
+            return f"for {self.queue.value} nodes"
+        return "for all nodes"
 
     def run(self) -> None:
         """Main entry point"""
         grid_controller = GridController(remote=self.spicerack.remote(), master_node_fqdn=self.master_node_fqdn)
-
-        self.sallogger.log(message=f"rebooting {self.debian_version.name.lower()} {self.queue.value} grid workers")
 
         # stretch uses format -xxyy (where x is the debian version and y is the worker number),
         # but buster uses -xx-yy, filter on what's needed to match those reliably
@@ -127,5 +124,3 @@ class ToolforgeGridRebootWorkersRunner(WMCSCookbookRunnerBase):
 
                 remote_node.reboot()
                 remote_node.wait_reboot_since(reboot_time)
-
-        self.sallogger.log(message=f"rebooted {self.debian_version.name.lower()} {self.queue.value} grid workers")

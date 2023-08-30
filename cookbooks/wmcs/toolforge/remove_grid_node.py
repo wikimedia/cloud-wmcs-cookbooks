@@ -18,7 +18,6 @@ from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
     CommonOpts,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     parser_type_list_hostnames,
@@ -87,7 +86,11 @@ class ToolforgeRemoveGridNodeRunner(WMCSCookbookRunnerBase):
         self.node_hostnames = node_hostnames
         self.master_node_fqdn = master_node_fqdn
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for {', '.join(self.node_hostnames)}"
 
     def run(self) -> int | None:
         """Main entry point"""
@@ -102,8 +105,6 @@ class ToolforgeRemoveGridNodeRunner(WMCSCookbookRunnerBase):
             if not openstack_api.server_exists(node_name, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT):
                 LOGGER.warning("node %s is not a VM in project %s", node_fqdn, self.common_opts.project)
                 return 1
-
-            self.sallogger.log(f"removing grid node {node_fqdn}")
 
             LOGGER.info("Depooling the node from the grid")
             try:

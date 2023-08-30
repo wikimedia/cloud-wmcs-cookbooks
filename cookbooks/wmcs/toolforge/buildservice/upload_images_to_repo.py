@@ -16,14 +16,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.remote import RemoteHosts
 
-from wmcs_libs.common import (
-    CommonOpts,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    run_one_raw,
-    with_common_opts,
-)
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
 
 
 class UploadImagesToRepo(CookbookBase):
@@ -91,12 +84,6 @@ class UploadImagesToRepo(CookbookBase):
         )
 
 
-def _update_image(uploader_node: RemoteHosts, pull_url: str, push_url: str) -> str:
-    run_one_raw(command=["docker", "pull", pull_url], node=uploader_node)
-    run_one_raw(command=["docker", "tag", pull_url, push_url], node=uploader_node)
-    return run_one_raw(command=["docker", "push", push_url], node=uploader_node)
-
-
 class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
     """Runner for UploadImagesToRepo."""
 
@@ -132,7 +119,12 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         self.uploader_node = uploader_node
         self.upload_distroless = upload_distroless
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    def _update_image(self, uploader_node: RemoteHosts, pull_url: str, push_url: str) -> str:
+        self.spicerack.sal_logger.info("Updating %s", push_url)
+        run_one_raw(command=["docker", "pull", pull_url], node=uploader_node)
+        run_one_raw(command=["docker", "tag", pull_url, push_url], node=uploader_node)
+        return run_one_raw(command=["docker", "push", push_url], node=uploader_node)
 
     def run(self) -> None:
         """Main entry point"""
@@ -140,35 +132,27 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         uploader_node = remote.query(f"D{{{self.uploader_node}}}", use_sudo=True)
 
         if self.tekton_version:
-            self.sallogger.log(
-                message=f"updating {self.image_repo_url}/toolforge-tektoncd-pipeline-cmd-*:{self.tekton_version}"
-            )
             for image_name in self.TEKTON_IMAGES:
                 pull_url = f"{self.TEKTON_COMMON_PATH}/{image_name}:{self.tekton_version}"
                 push_url = f"{self.image_repo_url}/toolforge-tektoncd-pipeline-cmd-{image_name}:{self.tekton_version}"
-                _update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
+                self._update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
 
         if self.bash_version:
-            self.sallogger.log(message=f"updating {self.image_repo_url}/toolforge-library-bash:{self.bash_version}")
             pull_url = f"docker.io/library/bash:{self.bash_version}"
             push_url = f"{self.image_repo_url}/toolforge-library-bash:{self.bash_version}"
-            _update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
+            self._update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
 
         if self.lifecycle_version:
-            self.sallogger.log(
-                message=f"updating {self.image_repo_url}/toolforge-buildpacksio-lifecycle:{self.lifecycle_version}"
-            )
             pull_url = f"docker.io/buildpacksio/lifecycle:{self.lifecycle_version}"
             push_url = f"{self.image_repo_url}/toolforge-buildpacksio-lifecycle:{self.lifecycle_version}"
-            _update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
+            self._update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
 
         if self.upload_distroless:
             # the distroless/base:debug image contains sh entrypoint which is required
             # for the tekton pipeline to work. Only the :debug one contains it
             pull_url = "gcr.io/distroless/base:debug"
             push_url = f"{self.image_repo_url}/toolforge-distroless-base-debug:latest"
-            self.sallogger.log(message=f"updating {push_url}")
-            _update_image(
+            self._update_image(
                 uploader_node=uploader_node,
                 pull_url=pull_url,
                 push_url=push_url,

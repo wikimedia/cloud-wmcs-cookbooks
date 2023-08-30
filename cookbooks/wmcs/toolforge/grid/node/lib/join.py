@@ -20,7 +20,6 @@ from spicerack.remote import RemoteError
 from wmcs_libs.common import (
     CUMIN_SAFE_WITH_OUTPUT,
     CommonOpts,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     with_common_opts,
@@ -96,7 +95,11 @@ class ToolforgeGridNodeJoinRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.nodes_query = nodes_query
         self.force = force
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for hosts matching 'D{{{self.nodes_query}}}'"
 
     def _run(self, new_node_fqdn: str):
         # a puppet run is required to make sure grid config files are generated
@@ -142,8 +145,5 @@ class ToolforgeGridNodeJoinRunner(WMCSCookbookRunnerBase):
             return 0
 
         for hostname in actual_nodes:
-            self.sallogger.log(
-                message=f"trying to join node {hostname} to the grid cluster in {self.common_opts.project}.",
-            )
             self._run(f"{hostname}.{self.common_opts.project}.eqiad1.wikimedia.cloud")
         return 0

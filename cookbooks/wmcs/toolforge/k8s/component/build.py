@@ -17,7 +17,6 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmcs_libs.common import (
     CommonOpts,
     CuminParams,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     run_one_raw,
@@ -129,7 +128,6 @@ class ToolforgeComponentBuildRunner(WMCSCookbookRunnerBase):
         self.docker_image_name = docker_image_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.random_dir = f"/tmp/cookbook-toolforge-k8s-component-build-{_randomword(10)}"  # nosec
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
         if not self.git_name:
             self.git_name = self.git_url.split("/")[-1]
@@ -153,6 +151,12 @@ class ToolforgeComponentBuildRunner(WMCSCookbookRunnerBase):
             else:
                 self.docker_image_name = f"toolforge-{self.git_name}"
             LOGGER.info("INFO: guessed docker image name as %s", self.docker_image_name)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        tag = f":{self.docker_image_tag}" if self.docker_image_tag else ""
+        return f"from {self.git_url} to {self.registry_url}/{self.docker_image_name}{tag}"
 
     def run(self) -> None:
         """Main entry point"""
@@ -205,5 +209,3 @@ class ToolforgeComponentBuildRunner(WMCSCookbookRunnerBase):
         cmd = f"docker push {url}"
         LOGGER.info("INFO: pushing to the registry %s", url)
         run_one_raw(node=build_node, command=_sh_wrap(cmd), cumin_params=no_output)
-
-        self.sallogger.log(message=f"build & push docker image {url} from {self.git_url} ({git_hash})")

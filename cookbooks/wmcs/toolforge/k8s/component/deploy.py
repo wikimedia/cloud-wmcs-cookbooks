@@ -15,7 +15,7 @@ import string
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, CuminParams, SALLogger, WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CommonOpts, CuminParams, WMCSCookbookRunnerBase, run_one_raw
 from wmcs_libs.inventory import ToolforgeKubernetesClusterName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
@@ -88,6 +88,8 @@ def _sh_wrap(cmd: str) -> list[str]:
 class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
     """Runner for ToolforgeComponentDeploy."""
 
+    git_hash: str | None = None
+
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -109,7 +111,6 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self.deployment_command = deployment_command
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.random_dir = f"/tmp/cookbook-toolforge-k8s-component-deploy-{_randomword(10)}"  # nosec
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
         if self.component:
             # GitLab will issue a redirect if you don't include the .git
@@ -126,6 +127,12 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
                 self.git_name = self.git_name[:-4]
 
             LOGGER.info("INFO: guessed git tree name as %s", self.git_name)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        git_hash = f" ({self.git_hash})" if self.git_hash else None
+        return f"for component {self.component or self.git_url}{git_hash}"
 
     def run(self) -> None:
         """Main entry point"""
@@ -152,7 +159,9 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
 
         # get git hash for the SAL logger
         cmd = f"cd {repo_dir} ; git rev-parse --short HEAD"
-        git_hash = run_one_raw(node=deploy_node, command=_sh_wrap(cmd), last_line_only=True, cumin_params=no_output)
+        self.git_hash = run_one_raw(
+            node=deploy_node, command=_sh_wrap(cmd), last_line_only=True, cumin_params=no_output
+        )
 
         # deploy!
         cmd = f"cd {repo_dir} ; {self.deployment_command}"
@@ -163,5 +172,3 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         cmd = f"rm -rf --preserve-root=all {self.random_dir}"
         LOGGER.info("INFO: cleaning up temp dir %s", self.random_dir)
         run_one_raw(node=deploy_node, command=cmd.split(), cumin_params=no_output)
-
-        self.sallogger.log(message=f"deployed kubernetes component {self.component or self.git_url} ({git_hash})")

@@ -16,7 +16,6 @@ from spicerack.cookbook import CookbookBase
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
     CommonOpts,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     parser_type_list_hostnames,
@@ -81,7 +80,11 @@ class ToolforgeGridNodeDepoolRunner(WMCSCookbookRunnerBase):
         self.grid_master_fqdn = grid_master_fqdn
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.node_hostnames = node_hostnames
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for {', '.join(self.node_hostnames)}"
 
     def run(self) -> int | None:
         """Main entry point"""
@@ -103,7 +106,5 @@ class ToolforgeGridNodeDepoolRunner(WMCSCookbookRunnerBase):
             except GridNodeNotFound:
                 LOGGER.warning("node %s not found in the %s grid", node, self.common_opts.project)
                 return 1
-
-            self.sallogger.log(message=f"depooled grid node {node}")
 
         return 0

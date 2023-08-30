@@ -18,7 +18,6 @@ from spicerack.cookbook import CookbookBase
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
     CommonOpts,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     with_common_opts,
@@ -84,7 +83,11 @@ class ToolforgeGridNodePoolRunner(WMCSCookbookRunnerBase):
         self.grid_master_fqdn = grid_master_fqdn
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.nodes_query = nodes_query
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for hosts matching 'D{{{self.nodes_query}}}'"
 
     def run(self) -> int | None:
         """Main entry point"""
@@ -124,10 +127,6 @@ class ToolforgeGridNodePoolRunner(WMCSCookbookRunnerBase):
                 counter += 1
             except GridNodeNotFound:
                 LOGGER.warning("node %s not found in the %s grid, ignoring", hostname, self.common_opts.project)
-
-        if counter > 0:
-            self.sallogger.log(message=f"pooled {counter} grid nodes {self.nodes_query}")
-            return 0
 
         LOGGER.error("couldn't pool any node")
         return 1

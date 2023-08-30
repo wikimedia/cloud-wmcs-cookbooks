@@ -17,7 +17,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmflib.interactive import ask_confirmation
 from wmflib.requests import http_session
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
 from wmcs_libs.inventory import ToolforgeKubernetesClusterName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
@@ -82,8 +82,6 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
         self.cluster_name = cluster_name
         self.src_version = src_version
         self.dst_version = dst_version
-
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     @property
     def runtime_description(self) -> str:

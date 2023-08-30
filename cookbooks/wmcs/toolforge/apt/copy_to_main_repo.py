@@ -17,7 +17,6 @@ from spicerack.cookbook import CookbookBase
 from wmcs_libs.aptly import Aptly
 from wmcs_libs.common import (
     CommonOpts,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     parser_type_str_hostname,
@@ -86,7 +85,11 @@ class ToolforgeCopyAptPackageToMainRepoRunner(WMCSCookbookRunnerBase):
         self.version = version
 
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for package '{self.package}' version '{self.version}'"
 
     def run(self) -> None:
         """Main entry point"""
@@ -112,10 +115,3 @@ class ToolforgeCopyAptPackageToMainRepoRunner(WMCSCookbookRunnerBase):
                 LOGGER.info("Copying %s from %s to %s", package, repository, target_repository)
                 aptly.copy(package, repository, target_repository)
             aptly.publish(target_repository)
-
-        if not distros:
-            return
-
-        self.sallogger.log(
-            message=f"Copied Apt package {self.package} {self.version} to the tools Apt repo on {', '.join(distros)}"
-        )

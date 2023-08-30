@@ -20,7 +20,6 @@ from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import (
     CommonOpts,
     CuminParams,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     parser_type_str_hostname,
@@ -85,7 +84,11 @@ class ToolforgeGridNodeDepoolRemoveRunner(WMCSCookbookRunnerBase):
         self.grid_master_fqdn = grid_master_fqdn
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.node_hostname = node_hostname
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for {self.node_hostname}"
 
     def run(self) -> None:
         """Main entry point"""
@@ -97,11 +100,6 @@ class ToolforgeGridNodeDepoolRemoveRunner(WMCSCookbookRunnerBase):
         if not openstack_api.server_exists(self.node_hostname, cumin_params=CuminParams(print_output=False)):
             LOGGER.warning("%s is not an openstack VM in project %s", self.node_hostname, self.common_opts.project)
             return
-
-        # before we start, notify folks
-        self.sallogger.log(
-            message=f"removing grid node {self.node_hostname} (depool/drain, remove VM and reconfigure grid)",
-        )
 
         grid_controller = GridController(remote=self.spicerack.remote(), master_node_fqdn=self.grid_master_fqdn)
 

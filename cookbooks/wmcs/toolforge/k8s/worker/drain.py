@@ -13,7 +13,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.k8s.kubernetes import KubernetesController
 
 LOGGER = logging.getLogger(__name__)
@@ -68,7 +68,11 @@ class DrainRunner(WMCSCookbookRunnerBase):
         self.control_node_fqdn = control_node_fqdn
         self.hostname_to_drain = hostname_to_drain
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for node {self.hostname_to_drain}"
 
     def run(self) -> None:
         """Main entry point"""
@@ -76,4 +80,3 @@ class DrainRunner(WMCSCookbookRunnerBase):
         kubectl = KubernetesController(remote=remote, controlling_node_fqdn=self.control_node_fqdn)
         kubectl.drain_node(node_hostname=self.hostname_to_drain)
         kubectl.wait_for_drain(node_hostname=self.hostname_to_drain)
-        self.sallogger.log(message=f"drained node {self.hostname_to_drain}")

@@ -23,7 +23,6 @@ from wmcs_libs.common import (
     CommonOpts,
     CuminParams,
     OutputFormat,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     parser_type_list_hostnames,
@@ -185,7 +184,11 @@ class ToolforgeK8sKubeadmCertRenewRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.control_hostname_list = control_hostname_list
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"for {', '.join(self.control_hostname_list)}"
 
     def run(self) -> None:
         """Main entry point"""
@@ -204,5 +207,3 @@ class ToolforgeK8sKubeadmCertRenewRunner(WMCSCookbookRunnerBase):
 
             LOGGER.info("INFO: %s: step 2 -- restart control plane static pods", node)
             restart_control_plane_static_pods(node)
-
-            self.sallogger.log(message=f"renewed kubeadm certs on {node_hostname}")
