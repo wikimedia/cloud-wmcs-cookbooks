@@ -426,10 +426,10 @@ class SALLogger:
     proxy: str | None = None
 
     @classmethod
-    def from_common_opts(cls, common_opts: CommonOpts) -> "SALLogger":
+    def from_common_opts(cls, common_opts: CommonOpts, project: str | None = None) -> "SALLogger":
         """Get a SALLogger from some CommonOpts."""
         return cls(
-            project=common_opts.project,
+            project=project or common_opts.project,
             task_id=common_opts.task_id,
             dry_run=common_opts.no_dologmsg,
             proxy=common_opts.http_proxy,

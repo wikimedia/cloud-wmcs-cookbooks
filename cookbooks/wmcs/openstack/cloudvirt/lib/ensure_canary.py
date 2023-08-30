@@ -251,12 +251,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
         else:
             sal_project = common_opts.project
 
-        self.sallogger = SALLogger(
-            project=sal_project,
-            task_id=common_opts.task_id,
-            dry_run=common_opts.no_dologmsg,
-            proxy=common_opts.http_proxy,
-        )
+        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts, project=sal_project)
 
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(), cluster_name=self.deployment, project=self.common_opts.project
