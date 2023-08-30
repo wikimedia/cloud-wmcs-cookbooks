@@ -9,7 +9,6 @@ import base64
 import json
 import logging
 import re
-import socket
 import uuid
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -19,7 +18,6 @@ from functools import partial
 from itertools import chain
 from typing import Any, Callable, Generator, Pattern
 from unittest import mock
-from urllib.parse import urlparse
 
 import yaml
 from ClusterShell.MsgTree import MsgTreeElem
@@ -27,7 +25,6 @@ from cumin.transports import Command
 from spicerack import ICINGA_DOMAIN, Spicerack
 from spicerack.cookbook import CookbookRunnerBase
 from spicerack.remote import Remote, RemoteHosts
-from wmflib.interactive import get_username
 from wmflib.irc import SocketHandler
 
 from wmcs_libs.proxy import with_proxy
@@ -416,61 +413,20 @@ def wrap_with_sudo_icinga(my_spicerack: Spicerack) -> Spicerack:
 
 @dataclass(frozen=True)
 class SALLogger:
-    """Class to log messages to sal."""
-
-    project: str
-    task_id: str | None = None
-    channel: str = "#wikimedia-cloud-feed"
-    host: str = "wm-bot.wm-bot.wmcloud.org"
-    port: int = 64835
-    dry_run: bool = False
-    proxy: str | None = None
+    """Deprecated, use spicerack.sal_logger instead."""
 
     @classmethod
     def from_common_opts(cls, common_opts: CommonOpts, project: str | None = None) -> "SALLogger":
         """Get a SALLogger from some CommonOpts."""
-        return cls(
-            project=project or common_opts.project,
-            task_id=common_opts.task_id,
-            dry_run=common_opts.no_dologmsg,
-            proxy=common_opts.http_proxy,
-        )
+        # pylint: disable=unused-argument
+        return cls()
 
     def log(
         self,
         message: str,
     ):
         """Log a message to the given irc channel for stashbot to pick up and register in SAL."""
-        postfix = f"- cookbook ran by {get_username()}@{socket.gethostname()}"
-        if self.task_id is not None:
-            postfix = f"({self.task_id}) {postfix}"
-
-        payload = f"{self.channel} !log {self.project} {message} {postfix}\n"
-
-        if self.dry_run:
-            LOGGER.info("[DOLOGMSG - would have sent]: %s", payload)
-            return
-
-        my_socket = socket.socket()
-        if self.proxy:
-            LOGGER.debug("DOLOGMSG - using proxy '%s'", self.proxy)
-            proxy_parsed = urlparse(self.proxy)
-            my_socket.connect((proxy_parsed.hostname, proxy_parsed.port))
-        else:
-            my_socket.connect((self.host, self.port))
-        try:
-            if self.proxy:
-                my_socket.send(f"CONNECT {self.host}:{self.port} HTTP/1.1\n\n".encode())
-            my_socket.send(payload.encode("utf-8"))
-            LOGGER.info("[DOLOGMSG]: %s", message)
-            return
-        # pylint: disable=broad-except
-        except Exception as error:
-            LOGGER.warning("Error trying to send a message to %s: %s", self.host, str(error))
-        finally:
-            my_socket.close()
-
-        raise Exception(f"Unable to send log message to {self.host}:{self.port}, see previous logs for details")
+        logging.getLogger("spicerack_sal_logger").info("%s", message)
 
 
 # Poor man's namespace to compensate for the restriction to not create modules
