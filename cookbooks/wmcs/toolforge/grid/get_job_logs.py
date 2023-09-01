@@ -49,6 +49,8 @@ class ToolforgeGridGetJobLogs(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
+        # This is a read-only cookbook, we don't want to log to SAL
+        args.no_dologmsg = True
         return with_common_opts(self.spicerack, args, ToolforgeGridGetJobLogsRunner)(
             master_node_fqdn=args.master_node_fqdn
             or f"{args.project}-sgegrid-master.{args.project}.eqiad1.wikimedia.cloud",
