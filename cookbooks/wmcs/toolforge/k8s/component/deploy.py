@@ -131,7 +131,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
     @property
     def runtime_description(self) -> str:
         """Return a nicely formatted string that represents the cookbook action."""
-        git_hash = f" ({self.git_hash})" if self.git_hash else None
+        git_hash = f" ({self.git_hash})" if self.git_hash else ""
         return f"for component {self.component or self.git_url}{git_hash}"
 
     def run(self) -> None:
