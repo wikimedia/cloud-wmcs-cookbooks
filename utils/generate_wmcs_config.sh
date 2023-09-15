@@ -167,8 +167,8 @@ default_backend: direct
 #    SSH_AUTH_SOCK: /run/keyholder/proxy.sock
 
 #puppetdb:
-#    host: puppetdb1002.eqiad.wmnet
-#    port: 443
+#    host: puppetdb-api.discovery.wmnet
+#    port: 8090
 #    api_version: 4
 #    urllib3_disable_warnings:
 #      - SubjectAltNameWarning  # Temporary fix for T158757

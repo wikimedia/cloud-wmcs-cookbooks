@@ -17,7 +17,7 @@ from wmflib.config import load_yaml_config
 BASE64_PUPPET_CA_URL = (
     "https://gerrit.wikimedia.org/r/plugins/gitiles/operations/puppet/"
     "+/refs/heads/production"
-    "/modules/profile/files/puppet/ca.production.pem"
+    "/modules/profile/files/pki/ROOT/Wikimedia_Internal_Root_CA.pem"
     "?format=TEXT"
 )
 LOGGER = logging.getLogger(__name__)
