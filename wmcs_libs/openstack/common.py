@@ -300,10 +300,7 @@ class OpenstackAPI(CommandRunnerMixin):
         )
 
     def get_nodes_domain(self) -> str:
-        """Return the domain of the cluster handled by this controller.
-
-        Note: the cloudcontrols usually use the wikimedia.org domain, not taken into account here.
-        """
+        """Return the domain of the cluster handled by this controller."""
         info = get_node_inventory_info(node=self.control_node_fqdn)
         return f"{info.site_name.value}.wmnet"
 
