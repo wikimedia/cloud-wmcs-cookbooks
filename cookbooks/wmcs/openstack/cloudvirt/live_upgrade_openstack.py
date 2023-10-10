@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class LiveUpgrade(CookbookBase):
-    """WMCS Openstack cookbook to set a cloudvirt node in maintenance."""
+    """WMCS Openstack cookbook to upgrade the OpenStack packages on a cloudvirt node."""
 
     __title__ = __doc__
 
@@ -59,6 +59,11 @@ class LiveUpgradeRunner(WMCSCookbookRunnerBase):
         """Init."""
         self.fqdn_to_upgrade = fqdn_to_upgrade
         super().__init__(spicerack=spicerack, common_opts=common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"on host '{self.fqdn_to_upgrade}'"
 
     def run_with_proxy(self) -> None:
         """Main entry point."""
