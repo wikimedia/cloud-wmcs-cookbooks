@@ -810,7 +810,6 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def project_create(self, project: OpenstackName, description: str) -> None:
         """Creates a new project."""
-        self.project = project
         self.run_raw("project", "create", "--enable", f"'--description={description}'", project, json_output=False)
 
 
