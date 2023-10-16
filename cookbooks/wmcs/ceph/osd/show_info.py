@@ -14,7 +14,7 @@ from typing import Any
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.ceph import CephClusterController
+from wmcs_libs.ceph import CephClusterController, OSDTreeNode, OSDTreeOSDNode
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory import CephClusterName
 
@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 class ShowInfo(CookbookBase):
     """WMCS Ceph cookbook to show some information on the osds in the cluster."""
 
-    title = __doc__
+    title = __doc__  # type: ignore
 
     def argument_parser(self):
         """Parse the command line arguments for this cookbook."""
@@ -53,13 +53,13 @@ class ShowInfo(CookbookBase):
         )
 
 
-def _print_nodes(nodes_tree: dict[str, Any]) -> None:
-    # we expect a tree with one single root node from ceph
-    print("root:")
-    for node in sorted(nodes_tree["children"], key=lambda x: x["name"]):
-        print(f"  {node['name']}(type:{node['type']})")
-        for osd in sorted(node["children"], key=lambda x: x.osd_id):
-            print(f"    {osd.name}(class:{osd.device_class}) {osd.status} weight:{osd.crush_weight}")
+def _print_nested_nodes(node: OSDTreeNode, cur_indent: str = ""):
+    if isinstance(node, OSDTreeOSDNode):
+        print(f"{cur_indent}{node.name}({node.type}/{node.device_class}) {node.status} weight:{node.crush_weight}")
+    else:
+        print(f"{cur_indent}{node.name}({node.type})")
+    for child in node.children:
+        _print_nested_nodes(node=child, cur_indent=cur_indent + "    ")
 
 
 def _print_stray(stray_nodes: list[dict[str, Any]]) -> None:
@@ -68,7 +68,7 @@ def _print_stray(stray_nodes: list[dict[str, Any]]) -> None:
 
 
 class ShowInfoRunner(WMCSCookbookRunnerBase):
-    """Runner for BootstrapAndAdd"""
+    """Runner for ShowInfo"""
 
     def __init__(
         self,
@@ -85,5 +85,5 @@ class ShowInfoRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
         """Main entry point"""
         osd_tree = self.cluster_controller.get_osd_tree()
-        _print_nodes(osd_tree.get("nodes", {}))
-        _print_stray(osd_tree.get("stray", {}))
+        _print_nested_nodes(node=osd_tree.root_node)
+        _print_stray(osd_tree.stray)

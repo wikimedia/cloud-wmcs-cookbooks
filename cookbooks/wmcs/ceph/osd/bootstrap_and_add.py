@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import logging
 import time
+from typing import cast
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -23,7 +24,7 @@ from wmcs_libs.ceph import (
     CephOSDFlag,
     CephOSDNodeController,
     OSDClass,
-    OSDTreeEntry,
+    OSDTreeOSDNode,
     get_node_cluster_name,
 )
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
@@ -34,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 class BootstrapAndAdd(CookbookBase):
     """WMCS Ceph cookbook to bootstrap and add a new OSD."""
 
-    title = __doc__
+    title = __doc__  # type: ignore
 
     def argument_parser(self):
         """Parse the command line arguments for this cookbook."""
@@ -107,9 +108,9 @@ class BootstrapAndAdd(CookbookBase):
         )
 
 
-def _wait_for_osds_to_show_up(cluster_controller: CephClusterController, ceph_hostname: str) -> list[OSDTreeEntry]:
+def _wait_for_osds_to_show_up(cluster_controller: CephClusterController, ceph_hostname: str) -> list[OSDTreeOSDNode]:
     osd_tree = cluster_controller.get_osd_tree()
-    retries = 0
+    retries: int = 0
     while not cluster_controller.is_osd_host_valid(osd_tree=osd_tree, hostname=ceph_hostname):
         time.sleep(5)
         retries += 1
@@ -118,8 +119,11 @@ def _wait_for_osds_to_show_up(cluster_controller: CephClusterController, ceph_ho
         osd_tree = cluster_controller.get_osd_tree()
 
     LOGGER.info("All OSDs are showing up in the cluster, continuing.")
-    host_node = next(node for node in osd_tree["nodes"]["children"] if node["name"] == ceph_hostname)
-    return host_node["children"]
+    for host in osd_tree.get_nodes_by_type(wanted_type="host"):
+        if host.name == ceph_hostname:
+            return cast(list[OSDTreeOSDNode], host.children)
+
+    raise Exception(f"Something went wrong, unable to find host {ceph_hostname} in the osd tree {osd_tree}")
 
 
 class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
@@ -242,6 +246,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
             wait_hours = 12
             LOGGER.info("Waiting for the cluster to rebalance all the data (timeout of {%d} hours)...", wait_hours)
             self.cluster_controller.wait_for_in_progress_events(timeout_seconds=wait_hours * 60 * 60)
+            self.cluster_controller.wait_for_rebalance(timeout_seconds=wait_hours * 60 * 60)
             LOGGER.info("Rebalancing done.")
             self.sallogger.log(
                 message=f"The cluster is now rebalanced after adding the new OSDs {self.new_osd_fqdns}",

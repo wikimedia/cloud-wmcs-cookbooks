@@ -30,7 +30,7 @@ from wmcs_libs.ceph import (
     CephException,
     CephOSDFlag,
     CephOSDNodeController,
-    OSDTreeEntry,
+    OSDTreeOSDNode,
     get_node_cluster_name,
 )
 from wmcs_libs.common import (
@@ -48,7 +48,7 @@ LOGGER = logging.getLogger(__name__)
 class DepoolAndDestroy(CookbookBase):
     """WMCS Ceph cookbook to destroy an OSD daemon with a new one."""
 
-    title = __doc__
+    title = __doc__  # type: ignore
 
     def argument_parser(self):
         """Parse the command line arguments for this cookbook."""
@@ -119,18 +119,12 @@ def check_that_osds_belong_to_host(osd_ids: list[int], hostname: str, ceph_contr
 
     Will raise an exception if they are not.
     """
-    osd_tree = ceph_controller.get_osd_tree()
-    for host_entry in osd_tree["nodes"]["children"]:
-        if host_entry["type"] != "host":
-            raise Exception(
-                "I was expecting all the first level nodes in the CRUSH map to be hosts, but they are not, maybe "
-                f"the CRUSH map changed?\n{osd_tree}"
-            )
-
-        if host_entry["name"] != hostname:
+    host_tree_nodes = ceph_controller.get_osd_tree().get_nodes_by_type(wanted_type="host")
+    for host_entry in host_tree_nodes:
+        if host_entry.name != hostname:
             continue
 
-        gotten_osds_ids = set(cast(OSDTreeEntry, osd_data).osd_id for osd_data in host_entry["children"])
+        gotten_osds_ids = set(cast(OSDTreeOSDNode, osd_data).osd_id for osd_data in host_entry.children)
         if set(osd_ids).issubset(gotten_osds_ids):
             return
 
@@ -225,6 +219,7 @@ class DestroyRunner(WMCSCookbookRunnerBase):
             # first sleep to allow the cluster to start rebalancing
             time.sleep(60)
             self.cluster_controller.wait_for_in_progress_events(timeout_seconds=wait_hours * 60 * 60)
+            self.cluster_controller.wait_for_rebalance(timeout_seconds=wait_hours * 60 * 60)
             LOGGER.info("Rebalancing done, will stop the OSD daemons service.")
 
             osd_fqdn = f"{self.osd_hostname}.{self.cluster_controller.cluster_name.get_site().value}.wmnet"

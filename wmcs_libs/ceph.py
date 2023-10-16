@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Ceph related library functions and classes."""
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import json
 import logging
 import re
 import time
-from copy import copy, deepcopy
+from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Iterable, cast
+from itertools import chain
+from typing import Any, Iterable, Literal, cast
 
-from spicerack import Remote, Spicerack
-from spicerack.remote import RemoteExecutionError
+from spicerack import Spicerack
+from spicerack.remote import Remote, RemoteExecutionError
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.alerts import SilenceID, downtime_alert, uptime_alert
@@ -36,6 +38,8 @@ from wmcs_libs.inventory import (
 LOGGER = logging.getLogger(__name__)
 # list of alerts that are triggered by the cluster aside from the specifics for each node
 OSD_EXPECTED_OS_DRIVES = 2
+
+OSDTreeNodeType = Literal["host", "rack", "root", "osd"]
 
 
 class CephException(Exception):
@@ -130,25 +134,99 @@ class OSDStatus(ArgparsableEnum):
 
 
 @dataclass(frozen=True)
-class OSDTreeEntry:
-    """Class to bundle OSD data together."""
+class OSDTreeNode:
+    """Generic osd tree node.
+
+    Example of an entry:
+    {
+      "id": -65,
+      "name": "cloudcephosd1033",
+      "type": "host",
+      "type_id": 1,
+      "crush_weight": 0.87779,
+      "pool_weights": {},
+      "children": [
+        262,
+        261,
+        260,
+        259,
+        258,
+        257,
+        256,
+        255
+      ]
+    }
+    """
+
+    node_id: int
+    name: str
+    crush_weight: float
+    type: OSDTreeNodeType
+    children: list[OSDTreeNode]
+
+
+@dataclass(frozen=True)
+class OSDTreeOSDNode(OSDTreeNode):
+    """Class to bundle OSD data together.
+
+    Example of source data:
+    {
+      "id": 238,
+      "device_class": "ssd",
+      "name": "osd.238",
+      "type": "osd",
+      "type_id": 0,
+      "crush_weight": 1.7469940185546875,
+      "depth": 3,
+      "pool_weights": {},
+      "exists": 1,
+      "status": "up",
+      "reweight": 1,
+      "primary_affinity": 1
+    }
+    """
 
     osd_id: int
-    name: str
     device_class: OSDClass
     status: OSDStatus
     crush_weight: float
 
     @classmethod
-    def from_json_data(cls, json_data: dict[str, Any]) -> "OSDTreeEntry":
+    def from_json_data(cls, json_data: dict[str, Any]) -> "OSDTreeOSDNode":
         """Get an osd class from the osd entry in the output of `ceph osd tree -f json`."""
         return cls(
+            node_id=json_data["id"],
+            type=json_data["type"],
             osd_id=json_data["id"],
             name=json_data["name"],
             device_class=OSDClass.from_str(json_data["device_class"]),
             status=OSDStatus.from_str(json_data["status"]),
             crush_weight=json_data["crush_weight"],
+            children=[],
         )
+
+
+@dataclass(frozen=True)
+class OSDTree:
+    """Simple osd tree representation."""
+
+    root_node: OSDTreeNode
+    stray: list[dict[str, Any]]
+
+    @staticmethod
+    def _get_nodes_by_type(node: OSDTreeNode, wanted_type: OSDTreeNodeType) -> Iterable[OSDTreeNode]:
+        """Helper method to retrieve the osd nodes."""
+        extra_nodes: list[OSDTreeNode] = []
+        if node.type == wanted_type:
+            extra_nodes = [node]
+
+        return chain(
+            extra_nodes, *[OSDTree._get_nodes_by_type(node=child, wanted_type=wanted_type) for child in node.children]
+        )
+
+    def get_nodes_by_type(self, wanted_type: OSDTreeNodeType) -> Iterable[OSDTreeNode]:
+        """Get all the nodes matching a type no matter where in the tree."""
+        return self._get_nodes_by_type(node=self.root_node, wanted_type=wanted_type)
 
 
 @dataclass(frozen=True)
@@ -554,19 +632,89 @@ class CephClusterController(CommandRunnerMixin):
         self.unset_osdmap_flag(flag=CephOSDFlag("norebalance"))
         self.uptime_cluster_alerts(silences=silences)
 
-    def wait_for_in_progress_events(self, timeout_seconds: int = 600) -> None:
-        """Wait until a cluster in progress events have finished."""
+    def wait_for_rebalance(self, timeout_seconds: int = 600) -> bool:
+        """Wait until a cluster in rebalance has finished.
+
+        Returns True if it had to wait at any time, False if there was no misplaced objects to rebalance.
+        """
         check_interval_seconds = 10
         start_time = time.time()
         cur_time = start_time
+        cluster_status = self.get_cluster_status()
+        had_to_wait = False
+        # the first rounds this might increase, but it's expected to stop increasing once the cluster started
+        # rebalancing
+        max_number_of_misplaced = 0
         while cur_time - start_time < timeout_seconds:
+            misplaced_objects = cluster_status.status_dict.get("pgmap", {}).get("misplaced_objects", 0)
+            max_number_of_misplaced = (
+                misplaced_objects if misplaced_objects > max_number_of_misplaced else max_number_of_misplaced
+            )
+            if not misplaced_objects:
+                LOGGER.info("No misplaced objects found, returning")
+                return had_to_wait
+
+            LOGGER.info("Misplaced objects found, waiting")
+            had_to_wait = True
+            objects_placed = max_number_of_misplaced - misplaced_objects
+            if cur_time != start_time:
+                recovery_speed = objects_placed / (cur_time - start_time)
+            else:
+                recovery_speed = 0
+
+            if recovery_speed:
+                estimated_elapsed_time = misplaced_objects / recovery_speed
+            else:
+                estimated_elapsed_time = -1
+            LOGGER.info(
+                (
+                    "Cluster still has (%d) misplaced objects, at the current %d obj/s should take another %.2fs to "
+                    "finish, waiting another %d (timeout=%d, elapsed=%d)..."
+                ),
+                misplaced_objects,
+                recovery_speed,
+                estimated_elapsed_time,
+                check_interval_seconds,
+                timeout_seconds,
+                cur_time - start_time,
+            )
+
+            time.sleep(check_interval_seconds)
+            cur_time = time.time()
             cluster_status = self.get_cluster_status()
+
+        raise CephTimeout(
+            f"Waited {timeout_seconds} for the cluster to finish rebalancing, but it never did, current state:\n"
+            f"\n{json.dumps(cluster_status.status_dict, indent=4)}"
+        )
+
+    def wait_for_in_progress_events(self, timeout_seconds: int = 600) -> bool:
+        """Wait until a cluster in progress events have finished.
+
+        Note that this is different than rebalancing or healing, but somewhat a mixture :/
+        If you want to check rebalancing, use the specific one for it.
+
+        Returns True if it had to wait at any time, False if there were no in-progress tasks.
+        """
+        check_interval_seconds = 10
+        start_time = time.time()
+        cur_time = start_time
+        cluster_status = self.get_cluster_status()
+        had_to_wait = False
+        while cur_time - start_time < timeout_seconds:
             in_progress_events = cluster_status.get_in_progress()
             if not in_progress_events:
-                return
+                LOGGER.info("No in-progress events found, returning")
+                return had_to_wait
 
+            LOGGER.info("In-progress events found, waiting")
+            had_to_wait = True
             mean_progress = (
                 sum(event["progress"] for event in in_progress_events.values()) * 100 / len(in_progress_events)
+            )
+            print(
+                f"Cluster still has ({len(in_progress_events)}) in-progress events, {mean_progress}% done, waiting "
+                f"another {check_interval_seconds} (timeout={timeout_seconds})..."
             )
             LOGGER.info(
                 "Cluster still has (%d) in-progress events, %.2f%% done, waiting another %d (timeout=%d)...",
@@ -578,6 +726,7 @@ class CephClusterController(CommandRunnerMixin):
 
             time.sleep(check_interval_seconds)
             cur_time = time.time()
+            cluster_status = self.get_cluster_status()
 
         raise CephTimeout(
             f"Waited {timeout_seconds} for the cluster to finish in-progress events, but it never did, current state:\n"
@@ -642,37 +791,39 @@ class CephClusterController(CommandRunnerMixin):
             f"\n{json.dumps(cluster_status.status_dict['health'], indent=4)}"
         )
 
-    def get_osd_tree(self) -> dict[str, Any]:
+    def get_osd_tree(self) -> OSDTree:
         """Retrieve the osd tree, already parsed into a tree structure."""
 
-        def _get_expanded_node(
-            plain_node: dict[str, Any], all_nodes: dict[int, dict[str, Any]]
-        ) -> dict[str, Any] | OSDTreeEntry:
+        def _get_expanded_node(plain_node: dict[str, Any], all_nodes: dict[int, dict[str, Any]]) -> OSDTreeNode:
             # We expect the "osd" nodes to always be leaf nodes of the tree
             if plain_node.get("type") == "osd":
-                return OSDTreeEntry.from_json_data(plain_node)
+                return OSDTreeOSDNode.from_json_data(plain_node)
 
             # We expect other node types to always have a "children" attribute (can be an empty list)
             if plain_node.get("children", None) is None:
-                raise Exception(f"Unexpected leaf node that is not an OSD: {plain_node}")
+                raise CephException(f"Unexpected leaf node that is not an OSD: {plain_node}")
 
             children_ids = plain_node["children"]
             children = [_get_expanded_node(all_nodes[child_id], all_nodes) for child_id in children_ids]
-            expanded_node = copy(plain_node)
-            expanded_node["children"] = children
-            return expanded_node
+            return OSDTreeNode(
+                children=children,
+                node_id=plain_node["id"],
+                type=plain_node["type"],
+                name=plain_node["name"],
+                crush_weight=plain_node.get("crush_weight", sum(child.crush_weight for child in children)),
+            )
 
-        def _get_nested_nodes_tree(nodes_list: list[dict[str, Any]]) -> dict[str, Any] | OSDTreeEntry:
+        def _get_expanded_root_node(nodes_list: list[dict[str, Any]]) -> OSDTreeNode:
             id_to_nodes: dict[int, dict[str, Any]] = {node["id"]: node for node in nodes_list}
             root_node = next(node for node in nodes_list if node["type"] == "root")
             return _get_expanded_node(plain_node=root_node, all_nodes=id_to_nodes)
 
         flat_nodes = self.run_formatted_as_dict("osd", "tree", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
-        return {
-            "nodes": _get_nested_nodes_tree(nodes_list=flat_nodes["nodes"]),
+        return OSDTree(
+            root_node=_get_expanded_root_node(nodes_list=flat_nodes["nodes"]),
             # TODO: update the following to a useful structure if it's ever needed
-            "stray": flat_nodes["stray"],
-        }
+            stray=flat_nodes["stray"],
+        )
 
     def get_all_osd_ips(self) -> set[str]:
         """Returns all the known ips for all the osd, deduplicated.
@@ -763,16 +914,12 @@ class CephClusterController(CommandRunnerMixin):
     def get_host_osds(self, osd_host: str) -> list[int]:
         """Retrieve the list of osd ids that are there in a host (from the ceph cluster rbdmap)."""
         osd_tree = self.get_osd_tree()
-        # Here we are assuming that the tree has root -> osd_hosts -> osds, that might change if we change the crush
-        # table
-        for osd_host_entry in osd_tree["nodes"]["children"]:
-            if not osd_host_entry["type"] == "host":
-                raise CephException("I was expecting a host in the osd tree, maybe the crush table has changed?")
+        hosts = list(osd_tree.get_nodes_by_type(wanted_type="host"))
+        for host in hosts:
+            if host.name == osd_host:
+                return [osd.node_id for osd in host.children]
 
-            if osd_host_entry["name"] == osd_host:
-                return [cast(OSDTreeEntry, osd_entry).osd_id for osd_entry in osd_host_entry["children"]]
-
-        raise CephException(f"Unable to find osd host {osd_host} on osd tree: {osd_tree}")
+        raise CephException(f"Unable to find osd host {osd_host} on: {hosts}")
 
     def check_osds_ok_to_stop(self, osd_ids: list[int]) -> list[str]:
         """Check if the given OSD daemons can be stopped without affecting the cluster.
@@ -877,23 +1024,28 @@ class CephClusterController(CommandRunnerMixin):
 
         return failures
 
-    def is_osd_host_valid(self, osd_tree: dict[str, Any], hostname: str) -> bool:
+    def is_osd_host_valid(self, osd_tree: OSDTree, hostname: str) -> bool:
         """Validates a specific hostname in a given OSD tree.
 
         It checks that the hostname is present in the tree, and it has the expected attributes.
         """
-        host_node = [n for n in osd_tree["nodes"]["children"] if n["name"] == hostname]
+        found_host_nodes = []
+        for host in osd_tree.get_nodes_by_type(wanted_type="host"):
+            if host.name == hostname:
+                found_host_nodes.append(host)
 
-        if len(host_node) != 1:
-            LOGGER.warning("Expected 1 node in the OSD tree with name='%s' but found %d", hostname, len(host_node))
+        if len(found_host_nodes) != 1:
+            LOGGER.warning(
+                "Expected 1 node in the OSD tree with name='%s' but found %d", hostname, len(found_host_nodes)
+            )
             return False
 
-        if len(host_node[0]["children"]) != self.expected_osd_drives_per_host:
+        if len(found_host_nodes[0].children) != self.expected_osd_drives_per_host:
             LOGGER.warning(
                 "Expected %d OSDs in the OSD tree for host '%s' but found %d",
                 self.expected_osd_drives_per_host,
                 hostname,
-                len(host_node[0]["children"]),
+                len(found_host_nodes[0].children),
             )
             return False
 

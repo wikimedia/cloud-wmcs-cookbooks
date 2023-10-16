@@ -18,7 +18,9 @@ from wmcs_libs.ceph import (
     CephTimeout,
     OSDClass,
     OSDStatus,
-    OSDTreeEntry,
+    OSDTree,
+    OSDTreeNode,
+    OSDTreeOSDNode,
 )
 from wmcs_libs.inventory import CephClusterName
 
@@ -530,47 +532,296 @@ def test_wait_for_cluster_health_raises(
 
 @parametrize(
     {
-        "Parse the OSD tree returned by 'ceph osd tree' into a tree structure": {
+        "Parse the OSD tree returned by 'ceph osd tree' with rack levels": {
+            # root@cloudcephmon2004-dev:~# ceph osd tree -f json
             "osd_tree_command_output": """
             {
-                "nodes":[
-                    {"id":-1,"type":"root","name":"root","children":[-2,-3]},
-                    {"id":-2,"type":"host","name":"host01","children":[101]},
-                    {"id":101,"type":"osd","name":"osd.101","device_class":"ssd","status":"up","crush_weight":1.5},
-                    {"id":-3,"type":"host","name":"host02","children":[]}
+                "nodes": [
+                    {
+                        "id": -1,
+                        "name": "default",
+                        "type": "root",
+                        "type_id": 11,
+                        "children": [
+                            -11,
+                            -9,
+                            -13
+                        ]
+                    },
+                    {
+                        "id": -13,
+                        "name": "C8D5",
+                        "type": "rack",
+                        "type_id": 3,
+                        "pool_weights": {},
+                        "children": [
+                            -3
+                        ]
+                    },
+                    {
+                        "id": -3,
+                        "name": "cloudcephosd2001-dev",
+                        "type": "host",
+                        "type_id": 1,
+                        "pool_weights": {},
+                        "children": [
+                            1,
+                            0
+                        ]
+                    },
+                    {
+                        "id": 0,
+                        "device_class": "ssd",
+                        "name": "osd.0",
+                        "type": "osd",
+                        "type_id": 0,
+                        "crush_weight": 0.87298583984375,
+                        "depth": 3,
+                        "pool_weights": {},
+                        "exists": 1,
+                        "status": "up",
+                        "reweight": 1,
+                        "primary_affinity": 1
+                    },
+                    {
+                        "id": 1,
+                        "device_class": "ssd",
+                        "name": "osd.1",
+                        "type": "osd",
+                        "type_id": 0,
+                        "crush_weight": 0.87298583984375,
+                        "depth": 3,
+                        "pool_weights": {},
+                        "exists": 1,
+                        "status": "up",
+                        "reweight": 1,
+                        "primary_affinity": 1
+                    },
+                    {
+                        "id": -9,
+                        "name": "E4",
+                        "type": "rack",
+                        "type_id": 3,
+                        "pool_weights": {},
+                        "children": [
+                            -5
+                        ]
+                    },
+                    {
+                        "id": -5,
+                        "name": "cloudcephosd2002-dev",
+                        "type": "host",
+                        "type_id": 1,
+                        "pool_weights": {},
+                        "children": [
+                            3,
+                            2
+                        ]
+                    },
+                    {
+                        "id": 2,
+                        "device_class": "ssd",
+                        "name": "osd.2",
+                        "type": "osd",
+                        "type_id": 0,
+                        "crush_weight": 0.87298583984375,
+                        "depth": 3,
+                        "pool_weights": {},
+                        "exists": 1,
+                        "status": "up",
+                        "reweight": 1,
+                        "primary_affinity": 1
+                    },
+                    {
+                        "id": 3,
+                        "device_class": "ssd",
+                        "name": "osd.3",
+                        "type": "osd",
+                        "type_id": 0,
+                        "crush_weight": 0.87298583984375,
+                        "depth": 3,
+                        "pool_weights": {},
+                        "exists": 1,
+                        "status": "up",
+                        "reweight": 1,
+                        "primary_affinity": 1
+                    },
+                    {
+                        "id": -11,
+                        "name": "F4",
+                        "type": "rack",
+                        "type_id": 3,
+                        "pool_weights": {},
+                        "children": [
+                            -7
+                        ]
+                    },
+                    {
+                        "id": -7,
+                        "name": "cloudcephosd2003-dev",
+                        "type": "host",
+                        "type_id": 1,
+                        "pool_weights": {},
+                        "children": [
+                            5,
+                            4
+                        ]
+                    },
+                    {
+                        "id": 4,
+                        "device_class": "ssd",
+                        "name": "osd.4",
+                        "type": "osd",
+                        "type_id": 0,
+                        "crush_weight": 0.87298583984375,
+                        "depth": 3,
+                        "pool_weights": {},
+                        "exists": 1,
+                        "status": "up",
+                        "reweight": 1,
+                        "primary_affinity": 1
+                    },
+                    {
+                        "id": 5,
+                        "device_class": "ssd",
+                        "name": "osd.5",
+                        "type": "osd",
+                        "type_id": 0,
+                        "crush_weight": 0.87298583984375,
+                        "depth": 3,
+                        "pool_weights": {},
+                        "exists": 1,
+                        "status": "up",
+                        "reweight": 1,
+                        "primary_affinity": 1
+                    }
                 ],
-                "stray":[]
+                "stray": []
             }
             """,
-            "expected_tree": {
-                "nodes": {
-                    "id": -1,
-                    "name": "root",
-                    "type": "root",
-                    "children": [
-                        {
-                            "id": -2,
-                            "name": "host01",
-                            "type": "host",
-                            "children": [
-                                OSDTreeEntry(
-                                    osd_id=101,
-                                    name="osd.101",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
+            "expected_tree": OSDTree(
+                root_node=OSDTreeNode(
+                    crush_weight=5.2379150390625,  # sum of the children
+                    children=[
+                        OSDTreeNode(
+                            crush_weight=1.7459716796875,
+                            children=[
+                                OSDTreeNode(
+                                    crush_weight=1.7459716796875,
+                                    children=[
+                                        OSDTreeOSDNode(
+                                            node_id=5,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=5,
+                                            name="osd.5",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=0.87298583984375,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=4,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=4,
+                                            name="osd.4",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=0.87298583984375,
+                                        ),
+                                    ],
+                                    node_id=-7,
+                                    name="cloudcephosd2003-dev",
+                                    type="host",
                                 )
                             ],
-                        },
-                        {"id": -3, "name": "host02", "type": "host", "children": []},
+                            node_id=-11,
+                            name="F4",
+                            type="rack",
+                        ),
+                        OSDTreeNode(
+                            crush_weight=1.7459716796875,
+                            children=[
+                                OSDTreeNode(
+                                    crush_weight=1.7459716796875,
+                                    children=[
+                                        OSDTreeOSDNode(
+                                            node_id=3,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=3,
+                                            name="osd.3",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=0.87298583984375,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=2,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=2,
+                                            name="osd.2",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=0.87298583984375,
+                                        ),
+                                    ],
+                                    node_id=-5,
+                                    name="cloudcephosd2002-dev",
+                                    type="host",
+                                )
+                            ],
+                            node_id=-9,
+                            name="E4",
+                            type="rack",
+                        ),
+                        OSDTreeNode(
+                            crush_weight=1.7459716796875,
+                            children=[
+                                OSDTreeNode(
+                                    crush_weight=1.7459716796875,
+                                    children=[
+                                        OSDTreeOSDNode(
+                                            node_id=1,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=1,
+                                            name="osd.1",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=0.87298583984375,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=0,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=0,
+                                            name="osd.0",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=0.87298583984375,
+                                        ),
+                                    ],
+                                    node_id=-3,
+                                    name="cloudcephosd2001-dev",
+                                    type="host",
+                                )
+                            ],
+                            node_id=-13,
+                            name="C8D5",
+                            type="rack",
+                        ),
                     ],
-                },
-                "stray": [],
-            },
+                    node_id=-1,
+                    name="default",
+                    type="root",
+                ),
+                stray=[],
+            ),
         },
     }
 )
-def test_get_osd_tree(expected_tree: list[str], osd_tree_command_output: str):
+def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=[osd_tree_command_output]),
         cluster_name=CephClusterName.EQIAD1,
@@ -585,84 +836,131 @@ def test_get_osd_tree(expected_tree: list[str], osd_tree_command_output: str):
 @parametrize(
     {
         "Host is present in an OSD tree and has expected properties": {
-            "osd_tree": {
-                "nodes": {
-                    "id": -1,
-                    "name": "root",
-                    "type": "root",
-                    "children": [
-                        {
-                            "id": -2,
-                            "name": "host01",
-                            "type": "host",
-                            "children": [
-                                OSDTreeEntry(
-                                    osd_id=101,
-                                    name="osd.101",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
+            "osd_tree": OSDTree(
+                root_node=OSDTreeNode(
+                    crush_weight=1.0,
+                    node_id=-1,
+                    name="root",
+                    type="root",
+                    children=[
+                        OSDTreeNode(
+                            crush_weight=1.0,
+                            node_id=-12,
+                            name="F4",
+                            type="rack",
+                            children=[],
+                        ),
+                        OSDTreeNode(
+                            crush_weight=1.0,
+                            node_id=-11,
+                            name="E4",
+                            type="rack",
+                            children=[
+                                OSDTreeNode(
+                                    crush_weight=1.0,
+                                    node_id=-2,
+                                    name="host01",
+                                    type="host",
+                                    children=[
+                                        OSDTreeOSDNode(
+                                            node_id=101,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=101,
+                                            name="osd.101",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=102,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=102,
+                                            name="osd.102",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=103,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=103,
+                                            name="osd.103",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=104,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=104,
+                                            name="osd.104",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=105,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=105,
+                                            name="osd.105",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=106,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=106,
+                                            name="osd.106",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=107,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=107,
+                                            name="osd.107",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=108,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=108,
+                                            name="osd.108",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                    ],
                                 ),
-                                OSDTreeEntry(
-                                    osd_id=102,
-                                    name="osd.102",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
-                                ),
-                                OSDTreeEntry(
-                                    osd_id=103,
-                                    name="osd.103",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
-                                ),
-                                OSDTreeEntry(
-                                    osd_id=104,
-                                    name="osd.104",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
-                                ),
-                                OSDTreeEntry(
-                                    osd_id=105,
-                                    name="osd.105",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
-                                ),
-                                OSDTreeEntry(
-                                    osd_id=106,
-                                    name="osd.106",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
-                                ),
-                                OSDTreeEntry(
-                                    osd_id=107,
-                                    name="osd.107",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
-                                ),
-                                OSDTreeEntry(
-                                    osd_id=108,
-                                    name="osd.108",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
+                                OSDTreeNode(
+                                    crush_weight=1.0,
+                                    node_id=-3,
+                                    name="host02",
+                                    type="host",
+                                    children=[],
                                 ),
                             ],
-                        },
-                        {"id": -3, "name": "host02", "type": "host", "children": []},
+                        ),
                     ],
-                },
-                "stray": [],
-            },
+                ),
+                stray=[],
+            ),
         }
     }
 )
-def test_is_osd_host_valid_success(osd_tree: dict[str, Any]):
+def test_is_osd_host_valid_success(osd_tree: OSDTree):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(),
         cluster_name=CephClusterName.EQIAD1,
@@ -675,55 +973,80 @@ def test_is_osd_host_valid_success(osd_tree: dict[str, Any]):
 @parametrize(
     {
         "Host is not present in the OSD tree": {
-            "osd_tree": {
-                "nodes": {
-                    "id": -1,
-                    "name": "root",
-                    "type": "root",
-                    "children": [
-                        {"id": -3, "name": "host02", "type": "host", "children": []},
+            "osd_tree": OSDTree(
+                root_node=OSDTreeNode(
+                    crush_weight=1.0,
+                    node_id=-1,
+                    name="root",
+                    type="root",
+                    children=[
+                        OSDTreeNode(
+                            crush_weight=1.0,
+                            node_id=-11,
+                            name="E4",
+                            type="rack",
+                            children=[
+                                OSDTreeNode(crush_weight=1.0, node_id=-3, name="host02", type="host", children=[]),
+                            ],
+                        ),
                     ],
-                },
-                "stray": [],
-            },
+                ),
+                stray=[],
+            ),
         },
         "Host is present in the OSD tree and has wrong number of OSDs": {
-            "osd_tree": {
-                "nodes": {
-                    "id": -1,
-                    "name": "root",
-                    "type": "root",
-                    "children": [
-                        {
-                            "id": -2,
-                            "name": "host01",
-                            "type": "host",
-                            "children": [
-                                OSDTreeEntry(
-                                    osd_id=101,
-                                    name="osd.101",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
+            "osd_tree": OSDTree(
+                root_node=OSDTreeNode(
+                    crush_weight=1.0,
+                    node_id=-1,
+                    name="root",
+                    type="root",
+                    children=[
+                        OSDTreeNode(
+                            crush_weight=1.0,
+                            name="E4",
+                            node_id=-11,
+                            type="rack",
+                            children=[
+                                OSDTreeNode(
+                                    crush_weight=1.0,
+                                    node_id=-2,
+                                    name="host01",
+                                    type="host",
+                                    children=[
+                                        OSDTreeOSDNode(
+                                            node_id=101,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=101,
+                                            name="osd.101",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                        OSDTreeOSDNode(
+                                            node_id=102,
+                                            type="osd",
+                                            children=[],
+                                            osd_id=102,
+                                            name="osd.102",
+                                            device_class=OSDClass.SSD,
+                                            status=OSDStatus.UP,
+                                            crush_weight=1.5,
+                                        ),
+                                    ],
                                 ),
-                                OSDTreeEntry(
-                                    osd_id=102,
-                                    name="osd.102",
-                                    device_class=OSDClass.SSD,
-                                    status=OSDStatus.UP,
-                                    crush_weight=1.5,
-                                ),
+                                OSDTreeNode(crush_weight=1.0, node_id=-3, name="host02", type="host", children=[]),
                             ],
-                        },
-                        {"id": -3, "name": "host02", "type": "host", "children": []},
+                        ),
                     ],
-                },
-                "stray": [],
-            },
+                ),
+                stray=[],
+            ),
         },
     }
 )
-def test_is_osd_host_valid_failure(osd_tree: dict[str, Any]):
+def test_is_osd_host_valid_failure(osd_tree: OSDTree):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(),
         cluster_name=CephClusterName.EQIAD1,
