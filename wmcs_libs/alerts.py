@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from spicerack import Spicerack
+from spicerack.icinga import IcingaError
 from spicerack.remote import Remote, RemoteHosts
 from wmflib.interactive import get_username
 
@@ -17,6 +18,10 @@ SilenceID = str
 
 ALERTMANAGER_HOST = "alert1001.wikimedia.org"
 LOGGER = logging.getLogger(__name__)
+
+
+class AlertManagerError(Exception):
+    """Base exception for alertmanager issues."""
 
 
 @dataclass
@@ -143,7 +148,11 @@ class AlertManager:
             "expire",
             silence_id,
         ]
-        run_one_raw(node=self.node, command=command)
+        output = run_one_raw(node=self.node, command=command, capture_errors=True)
+        if "already expired" in output or not output.strip():
+            return
+
+        raise AlertManagerError(f"Failed to expire silence {silence_id}: {output}")
 
     def uptime_host(self, host_name: str) -> None:
         """Expire all silences for a host."""
@@ -192,7 +201,11 @@ def downtime_host(
     silence_id = alert_manager.downtime_host(host_name=host_name, duration=duration, comment=final_comment)
 
     icinga_hosts = wrap_with_sudo_icinga(my_spicerack=spicerack).icinga_hosts(target_hosts=[host_name])
-    icinga_hosts.downtime(reason=spicerack.admin_reason(reason=comment or "No comment", task_id=task_id))
+    try:
+        icinga_hosts.downtime(reason=spicerack.admin_reason(reason=comment or "No comment", task_id=task_id))
+    except IcingaError as error:
+        if "not found" not in str(error):
+            raise
 
     return silence_id
 
@@ -211,7 +224,10 @@ def uptime_host(spicerack: Spicerack, host_name: str, silence_id: SilenceID | No
         alert_manager.uptime_host(host_name=host_name)
 
     icinga_hosts = wrap_with_sudo_icinga(my_spicerack=spicerack).icinga_hosts(target_hosts=[host_name])
-    icinga_hosts.remove_downtime()
+    try:
+        icinga_hosts.remove_downtime()
+    except spicerack.icinga.IcingaStatusNotFoundError:
+        pass
 
 
 def downtime_alert(
