@@ -840,33 +840,162 @@ class CephClusterController(CommandRunnerMixin):
 
         return all_osd_ips
 
-    def reweight_osd(self, osd_id: int, new_weight: float) -> None:
-        """Re-weights an OSD daemon."""
+    def crush_reweight_osd(self, osd_id: int, new_weight: float) -> bool:
+        """Re-weights an OSD daemon at the CRUSH table.
+
+        Returns True if any changes were made, False otherwise.
+        """
+        cur_weight = next(
+            (
+                osd.crush_weight
+                for osd in self.get_osd_tree().get_nodes_by_type(wanted_type="osd")
+                if osd.name == f"osd.{osd_id}"
+            ),
+            None,
+        )
+
+        if cur_weight == new_weight:
+            return False
+
         response = self.run_raw(
             "osd",
+            "crush",
             "reweight",
-            str(osd_id),
+            f"osd.{osd_id}",
             str(new_weight),
             cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )
-        if f"reweighted osd.{osd_id} " in response:
-            return
+        if f"reweighted item id {osd_id}" in response:
+            return True
 
         raise CephException(f"Unexpected response when reweighting osd {osd_id} to {new_weight}: {response}")
 
-    def depool_osd(self, osd_id: int, be_unsafe: bool = False) -> None:
-        """Depools an OSD daemon setting it's weight to 0 and forcing ceph to rebalance it's data somewhere else."""
+    def mark_osd_in(self, osd_id: int) -> bool:
+        """Mark an osd as in.
+
+        This will make the mons start assigning PGs to it and (if it's weight is >0) start rebalancing.
+
+        Returns True if the osd was out, False if it was already in.
+        """
+        response = self.run_raw("osd", "in", f"osd.{osd_id}")
+        if "marked in" in response:
+            return True
+
+        if "already in" in response:
+            return False
+
+        raise CephException(f"Unexpected response when marking osd {osd_id} in: {response}")
+
+    def mark_osd_out(self, osd_id: int) -> bool:
+        """Mark an osd as out of the cluster.
+
+        This will make the mons stop assigning PGs to it and (if it's weight was >0) start rebalancing.
+
+        Returns True if the osd was in, False if it was already out.
+        """
+        response = self.run_raw("osd", "out", f"osd.{osd_id}")
+        if "marked out" in response:
+            return True
+
+        if "already out" in response:
+            return False
+
+        raise CephException(f"Unexpected response when marking osd {osd_id} out: {response}")
+
+    def drain_osds(self, osd_ids: list[int], be_unsafe: bool = False) -> bool:
+        """Drains many OSD daemons by setting their weight to 0 and forcing ceph to rebalance it's data somewhere else.
+
+        This is different from depooling them one by one as in it will check if the cluster is consistent when
+        depooling them together, instead of one after the other.
+
+        Returns True if any osds were actually drained, False otherwise.
+        """
         if not be_unsafe:
             # last check just to make sure
-            failures = self.check_osds_ok_to_stop(osd_ids=[osd_id])
+            failures = self.check_osds_ok_to_stop(osd_ids=osd_ids)
             if failures:
                 raise CephException(
-                    f"Destroying the osd {osd_id} will put the cluster in an unstable state, if you are sure call "
+                    f"Depooling the osds {osd_ids} will put the cluster in an unstable state, if you are sure call "
                     "this function again with `be_unsafe=True`: "
                     "\n".join(failures)
                 )
 
-        self.reweight_osd(osd_id=osd_id, new_weight=0.0)
+        any_changes = False
+        for osd_id in osd_ids:
+            any_changes = any_changes or self.crush_reweight_osd(osd_id=osd_id, new_weight=0.0)
+
+        for osd_id in osd_ids:
+            self.mark_osd_out(osd_id=osd_id)
+
+        return any_changes
+
+    def undrain_osds(self, osd_ids: list[int], crush_weight: float = 0.0) -> None:
+        """Undrains OSD daemons by setting their weight to 1."""
+        osd_tree = self.get_osd_tree()
+        osds = osd_tree.get_nodes_by_type(wanted_type="osd")
+        pooled_weight = next((osd.crush_weight for osd in osds if osd.crush_weight > 0), crush_weight)
+
+        if pooled_weight <= 0:
+            raise CephException(
+                "Unable to guess the proper crush weight for the osd, you might have to pass one, gotten from "
+                f"the pool:\n{osds}"
+            )
+
+        for osd_id in osd_ids:
+            self.crush_reweight_osd(osd_id=osd_id, new_weight=pooled_weight)
+
+        # marking in at the end, makes the rebalancing start, this avoid having to rebalance several times
+        for osd_id in osd_ids:
+            self.mark_osd_in(osd_id=osd_id)
+
+    def drain_osd_node(self, osd_host: str, be_unsafe: bool = False, wait: bool = False, batch_size: int = 0) -> None:
+        """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
+        timeout_s = 60 * 60 * 5  # 5h
+        osds = self.get_host_osds(osd_host=osd_host)
+
+        if batch_size == 0:
+            batch_size = len(osds)
+
+        LOGGER.info("Draining osds from host %s: %s", osd_host, str(osds))
+        for chunk_num in range(len(osds) // batch_size):
+            chunk_start = chunk_num * batch_size
+            next_chunk = osds[chunk_start : chunk_start + batch_size]
+            LOGGER.info("Draining osd batch %d of %d: %s", chunk_num + 1, len(osds) // batch_size, str(next_chunk))
+            had_changes = self.drain_osds(osd_ids=next_chunk, be_unsafe=be_unsafe)
+            if wait and had_changes:
+                LOGGER.info("Waiting for the cluster to shift data around...")
+                # give some time for the cluster to start shifting things around
+                while not self.wait_for_rebalance(timeout_seconds=timeout_s):
+                    LOGGER.info("Rebalancing has not started yet, sleeping another 10s for the rebalance to start")
+                    time.sleep(10)
+            elif had_changes:
+                LOGGER.info("No changes to the cluster made, draining the next batch...")
+
+        LOGGER.info("All osds drained on node %s", osd_host)
+
+    def undrain_osd_node(
+        self,
+        osd_host: str,
+        crush_weight: float = 0.0,
+        wait: bool = False,
+        batch_size: int = 0,
+    ) -> None:
+        """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
+        timeout_s = 60 * 60 * 5  # 5h
+        osds = self.get_host_osds(osd_host=osd_host)
+
+        if batch_size == 0:
+            batch_size = len(osds)
+
+        for chunk_num in range(len(osds) // batch_size):
+            chunk_start = chunk_num * batch_size
+            next_chunk = osds[chunk_start : chunk_start + batch_size]
+            self.undrain_osds(osd_ids=next_chunk, crush_weight=crush_weight)
+            if wait:
+                LOGGER.info("Waiting for the cluster to shift data around...")
+                # give some time for the cluster to start shifting things around
+                while not self.wait_for_rebalance(timeout_seconds=timeout_s):
+                    time.sleep(10)
 
     def remove_crush_bucket(self, bucket_name: str) -> None:
         """Remove a CRUSH bucket (host/rack/...).

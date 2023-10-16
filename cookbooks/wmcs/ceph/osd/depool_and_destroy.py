@@ -209,9 +209,8 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         if self.only_check:
             LOGGER.info("Skipping depooling the OSD daemons, note that it might fail the next check before destroying.")
         else:
-            for osd_id in self.ids:
-                # we already checked that it was safe
-                self.cluster_controller.depool_osd(osd_id=osd_id, be_unsafe=True)
+            # we already checked that it was safe
+            self.cluster_controller.drain_osds(osd_ids=self.ids, be_unsafe=True)
 
             # the rebalance might take a very very long time, setting timeout to 12h
             wait_hours = 12
