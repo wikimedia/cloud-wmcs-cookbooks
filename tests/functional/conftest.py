@@ -98,7 +98,7 @@ def run_cookbook_with_recording(request, capsys, spicerack_config):
                 "COOKBOOK_RECORDING_FILE": str(record_file_path),
             },
         ):
-            return_code = run_cookbook(argv=[f"--config={spicerack_config}"] + argv)
+            return_code = run_cookbook(argv=[f"--config-file={spicerack_config}"] + argv)
 
         captured = capsys.readouterr()
 

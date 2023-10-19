@@ -6,7 +6,7 @@ from setuptools import find_namespace_packages, find_packages, setup
 # For prod add the libs to modules/profile/manifests/spicerack.pp
 install_requires = [
     "pyyaml",
-    "wikimedia-spicerack>=6.0.0",
+    "wikimedia-spicerack>=8.0.0",
     "defusedxml",
     "requests[socks]",
 ]

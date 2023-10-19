@@ -30,7 +30,7 @@ def _get_puppetmaster(spicerack: Spicerack, remote_host: RemoteHosts, puppetmast
         puppetmaster_fqdn = puppetmaster_fqdn[:-1]
 
     return PuppetMaster(
-        master_host=spicerack.remote().query(
+        server_host=spicerack.remote().query(
             f"D{{{puppetmaster_fqdn}}}",
             use_sudo=True,
         )
@@ -60,7 +60,6 @@ def _refresh_cert(
     puppetmaster.sign(
         hostname=fqdn,
         fingerprint=cert_fingerprint,
-        allow_alt_names=True,
     )
 
 
