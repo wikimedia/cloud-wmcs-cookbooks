@@ -13,6 +13,7 @@ import logging
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory import OpenstackClusterName
@@ -105,6 +106,17 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
 
     def run(self) -> None:
         """Main entry point"""
+        if "_" in self.common_opts.project:
+            ask_confirmation(
+                "An underscore is generally not a valid character in a DNS label, "
+                "are you sure you want to use one in a project name?"
+            )
+        if "-" in self.common_opts.project:
+            ask_confirmation(
+                "Using a dash in a project name will cause issues with Ceph RGW (Swift/S3), "
+                "are you sure you want to use this project name?"
+            )
+
         self.openstack_api.project_create(project=self.common_opts.project, description=self.description)
         if self.trove_only:
             self.openstack_api.quota_set(
