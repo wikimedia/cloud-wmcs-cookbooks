@@ -101,6 +101,11 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         self.common_opts = common_opts
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"on host '{self.fqdn_to_upgrade}'"
+
     def run(self) -> None:
         """Main entry point."""
         node_to_upgrade = self.spicerack.remote().query(f"D{{{self.fqdn_to_upgrade}}}", use_sudo=True)
