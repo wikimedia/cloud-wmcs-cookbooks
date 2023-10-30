@@ -984,7 +984,7 @@ class CephClusterController(CommandRunnerMixin):
         timeout_s = 60 * 60 * 5  # 5h
         osds = self.get_host_osds(osd_host=osd_host)
 
-        if batch_size == 0:
+        if not batch_size:
             batch_size = len(osds)
 
         for chunk_num in range(len(osds) // batch_size):
