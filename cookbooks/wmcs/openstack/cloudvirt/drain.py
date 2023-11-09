@@ -64,9 +64,13 @@ class DrainRunner(WMCSCookbookRunnerBase):
         self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=get_node_cluster_name(node=self.fqdn))
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"on host '{self.fqdn}'"
+
     def run_with_proxy(self) -> None:
         """Main entry point"""
-        self.sallogger.log(message=f"Draining {self.fqdn}")
         set_maintenance_cookbook = SetMaintenance(spicerack=self.spicerack)
         set_maintenance_cookbook.get_runner(
             args=set_maintenance_cookbook.argument_parser().parse_args(
