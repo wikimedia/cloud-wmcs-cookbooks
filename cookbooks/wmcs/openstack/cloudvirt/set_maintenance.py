@@ -12,7 +12,6 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.alerts import downtime_host
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackNotFound, get_node_cluster_name
 
@@ -69,7 +68,6 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
     def run_with_proxy(self) -> None:
         """Main entry point."""
         hostname = self.fqdn.split(".", 1)[0]
-        downtime_id = downtime_host(spicerack=self.spicerack, host_name=hostname, comment="Setting maintenance mode.")
         self.openstack_api.aggregate_persist_on_host(host=self.spicerack.remote().query(self.fqdn))
 
         try:
@@ -82,7 +80,4 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
         except OpenstackNotFound as error:
             logging.info("%s", error)
 
-        self.sallogger.log(
-            message=f"Set cloudvirt {self.fqdn} maintenance (downtime id: {downtime_id}, use this to unset)"
-        )
         LOGGER.info("Host %s now in maintenance mode. No new VMs will be scheduled in it.", self.fqdn)
