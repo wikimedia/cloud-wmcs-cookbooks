@@ -141,16 +141,19 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
                 restart_dict[pair[0]].append(pair[1])
         return restart_dict
 
-    def restart_services(self, restart_dict: dict):
+    def restart_services(self, restart_dict: dict[str, list[str]]):
         """Restart services specified in a dict of hostname:[service]"""
         for host in restart_dict:
             # We still need to do a lookup because we didn't get fqdns from
             #  openstack.
             LOGGER.info("Restarting openstack services on %s: %s", host, restart_dict[host])
-            query = "P{%s*}" % host
-            nodes = self.spicerack.remote().query(query, use_sudo=True)
-            command = ["systemctl", "restart"] + restart_dict[host]
-            run_one_raw(node=nodes, command=command)
+            try:
+                query = "P{%s*}" % host
+                nodes = self.spicerack.remote().query(query, use_sudo=True)
+                command = ["systemctl", "restart"] + restart_dict[host]
+                run_one_raw(node=nodes, command=command)
+            except Exception:  # pylint: disable=broad-except
+                LOGGER.warning("Failed to restart services on %s", host, exc_info=True)
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
