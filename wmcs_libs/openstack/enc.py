@@ -19,16 +19,16 @@ from wmcs_libs.openstack.common import get_control_nodes
 class EncPrefix(CommandRunnerMixin):
     """Represents a single prefix."""
 
-    def __init__(self, command_runner_node: RemoteHosts, project_name: str, prefix_name: str):
+    def __init__(self, command_runner_node: RemoteHosts, project_id: str, prefix_name: str):
         """Init."""
         super().__init__(command_runner_node)
-        self.project_name = project_name
+        self.project_id = project_id
         self.prefix_name = prefix_name
 
     def _get_full_command(self, *command: str, json_output: bool = True, project_as_arg: bool = False):
         return [
             "wmcs-enc-cli",
-            *(["--openstack-project", self.project_name] if project_as_arg else []),
+            *(["--openstack-project", self.project_id] if project_as_arg else []),
             *command,
         ]
 
@@ -80,6 +80,6 @@ class Enc:
         control_node_fqdn = get_control_nodes(cluster_name)[0]
         self.control_node = remote.query(f"D{{{control_node_fqdn}}}", use_sudo=True)
 
-    def prefix(self, project_name: str, prefix_name: str) -> EncPrefix:
+    def prefix(self, project_id: str, prefix_name: str) -> EncPrefix:
         """Gets a EncPrefix object to interact with a specific prefix."""
-        return EncPrefix(command_runner_node=self.control_node, project_name=project_name, prefix_name=prefix_name)
+        return EncPrefix(command_runner_node=self.control_node, project_id=project_id, prefix_name=prefix_name)
