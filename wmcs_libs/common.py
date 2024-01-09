@@ -708,15 +708,6 @@ class CommandRunnerMixin:
         )
 
 
-class WmBotSALSocketHandler(SocketHandler):
-    """Logging socket handler for wm-bot SAL use."""
-
-    def __init__(self, host: str, port: int, username: str, project: str) -> None:
-        """Init."""
-        super().__init__(host, port, username)
-        self.command = f"#wikimedia-cloud-feed !log {project}"
-
-
 class WMCSCookbookRunnerBase(CookbookRunnerBase):
     """WMCS tweaks to the base cookbook runner.
 
@@ -741,20 +732,27 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
             self.spicerack.sal_logger.handlers.clear()
             return
 
+        # Note: we want to send a message to IRC that looks like
+        #     !log user@host project message (task_id)
+        # We add "project" and "task_id" here, whereas "!log user@host" is added by
+        # https://gerrit.wikimedia.org/r/plugins/gitiles/operations/software/pywmflib/+/refs/heads/master/wmflib/irc.py#73
+
         task_id = f" ({common_opts.task_id})" if common_opts.task_id else ""
+        wmcs_formatter = logging.Formatter(f"{common_opts.project} %(message)s{task_id}")
 
         if self.spicerack.sal_logger.handlers:
-            # If using the Spicerack configured logger, set a formatter to add the project name.
-            self.spicerack.sal_logger.handlers[0].setFormatter(
-                logging.Formatter(f"{common_opts.project} %(message)s{task_id}")
-            )
+            # If using the Spicerack configured logger (tcpircbot),
+            # we just need to add the project name.
+            self.spicerack.sal_logger.handlers[0].setFormatter(wmcs_formatter)
         else:
+            # When running cookbooks from a laptop, we cannot reach tcpircbot,
+            # so we use wm-bot instead, which has a similar syntax but requires
+            # you to prepend the IRC channel name before "!log"
             # TODO: Update Spicerack to allow configuring wm-bot usage properly on local setups,
             # so we don't need this kind of set up that hacks the channel in front.
-            handler = WmBotSALSocketHandler(
-                "wm-bot.wm-bot.wmcloud.org", 64835, self.spicerack.username, common_opts.project
-            )
-            handler.setFormatter(logging.Formatter(f"%(message)s{task_id}"))
+            handler = SocketHandler("wm-bot.wm-bot.wmcloud.org", 64835, self.spicerack.username)
+            handler.command = "#wikimedia-cloud-feed !log"
+            handler.setFormatter(wmcs_formatter)
             self.spicerack.sal_logger.addHandler(handler)
 
     def __getattribute__(self, __name: str) -> Any:
