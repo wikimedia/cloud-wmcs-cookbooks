@@ -38,7 +38,7 @@ class OpenstackRestart(CookbookBase):
             type=OpenstackClusterName,
             help="Openstack cluster/deployment to act on.",
         )
-        parser.add_argument("--all", action="store_true", help="Restart all openstack services")
+        parser.add_argument("--all-services", action="store_true", help="Restart all openstack services")
         parser.add_argument("--nova", action="store_true", help="Restart all openstack nova services")
         parser.add_argument("--glance", action="store_true", help="Restart all openstack glance services")
         parser.add_argument("--keystone", action="store_true", help="Restart all openstack keystone services")
@@ -62,7 +62,7 @@ class OpenstackRestart(CookbookBase):
 
 
 class OpenstackRestartRunner(WMCSCookbookRunnerBase):
-    """Runner for QuotaIncrease"""
+    """Runner for OpenstackRestart"""
 
     def __init__(
         self,
@@ -158,28 +158,28 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
     def run_with_proxy(self) -> None:
         """Main entry point"""
         restart_list = []
-        if vars(self.args)["nova"] or self.args.all:
+        if vars(self.args)["nova"] or self.args.all_services:
             restart_list.extend(self.get_nova_service_list())
             # Nova service discovery doesn't find the api services
             restart_list.extend(self.get_misc_service_list("nova"))
-        if vars(self.args)["cinder"] or self.args.all:
+        if vars(self.args)["cinder"] or self.args.all_services:
             restart_list.extend(self.get_cinder_service_list())
-        if vars(self.args)["neutron"] or self.args.all:
+        if vars(self.args)["neutron"] or self.args.all_services:
             # Neutron supports discovery for most, but not all
             #  of its services
             restart_list.extend(self.get_neutron_service_list())
             restart_list.extend(self.get_misc_service_list("neutron"))
-        if vars(self.args)["designate"] or self.args.all:
+        if vars(self.args)["designate"] or self.args.all_services:
             restart_list.extend(self.get_designate_service_list())
-        if vars(self.args)["trove"] or self.args.all:
+        if vars(self.args)["trove"] or self.args.all_services:
             restart_list.extend(self.get_misc_service_list("trove"))
-        if vars(self.args)["keystone"] or self.args.all:
+        if vars(self.args)["keystone"] or self.args.all_services:
             restart_list.extend(self.get_misc_service_list("keystone"))
-        if vars(self.args)["glance"] or self.args.all:
+        if vars(self.args)["glance"] or self.args.all_services:
             restart_list.extend(self.get_misc_service_list("glance"))
-        if vars(self.args)["magnum"] or self.args.all:
+        if vars(self.args)["magnum"] or self.args.all_services:
             restart_list.extend(self.get_misc_service_list("magnum"))
-        if vars(self.args)["heat"] or self.args.all:
+        if vars(self.args)["heat"] or self.args.all_services:
             restart_list.extend(self.get_misc_service_list("heat"))
 
         if restart_list:
