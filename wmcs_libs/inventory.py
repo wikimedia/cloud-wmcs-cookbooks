@@ -80,7 +80,7 @@ class OpenstackClusterName(ClusterName):
         return ClusterType.OPENSTACK
 
 
-class NodeRoleName(Enum):
+class NodeRoleName(ArgparsableEnum):
     """Base node role name class, for inheritance."""
 
 
@@ -89,7 +89,9 @@ class OpenstackNodeRoleName(NodeRoleName):
 
     GATEWAY = "cloudgw"
     CONTROL = "cloudcontrol"
+    SERVICES = "cloudservices"
     NET = "cloudnet"
+    VIRT = "cloudvirt"
 
 
 class CephClusterName(ClusterName):
@@ -432,7 +434,9 @@ def _guess_cluster_name(
     raise InventoryError(f"More than one cluster of type {cluster_type} on site {site_name}: {clusters}")
 
 
-def _guess_role_name(node: str) -> OpenstackNodeRoleName | CephNodeRoleName | ToolforgeKubernetesNodeRoleName | None:
+def _guess_role_name(  # pylint: disable=too-many-return-statements
+    node: str,
+) -> OpenstackNodeRoleName | CephNodeRoleName | ToolforgeKubernetesNodeRoleName | None:
     if node.startswith("cloudcephosd"):
         return CephNodeRoleName.OSD
     if node.startswith("cloudcephmon"):
@@ -440,8 +444,14 @@ def _guess_role_name(node: str) -> OpenstackNodeRoleName | CephNodeRoleName | To
 
     if node.startswith("cloudcontrol"):
         return OpenstackNodeRoleName.CONTROL
+    if node.startswith("cloudservices"):
+        return OpenstackNodeRoleName.SERVICES
     if node.startswith("cloudgw"):
         return OpenstackNodeRoleName.GATEWAY
+    if node.startswith("cloudnet"):
+        return OpenstackNodeRoleName.NET
+    if node.startswith("cloudvirt"):
+        return OpenstackNodeRoleName.VIRT
 
     if "-k8s-control-" in node:
         return ToolforgeKubernetesNodeRoleName.CONTROL

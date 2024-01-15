@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from typing import List
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase, CookbookRunnerBase
@@ -16,7 +17,7 @@ from wmcs_libs.common import (
     run_one_raw,
     with_common_opts,
 )
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory import OpenstackClusterName, OpenstackNodeRoleName
 from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
@@ -52,12 +53,23 @@ class OpenstackRestart(CookbookBase):
         parser.add_argument("--swift", action="store_true", help="Restart all openstack swift services")
         parser.add_argument("--designate", action="store_true", help="Restart all openstack swift services")
 
+        parser.add_argument(
+            "--filter-nodes",
+            choices=[entry for entry in OpenstackNodeRoleName if entry != OpenstackNodeRoleName.GATEWAY],
+            type=OpenstackNodeRoleName,
+            nargs="+",
+            help="Restart services only on this type of hosts",
+        )
+
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> CookbookRunnerBase:
         """Get runner"""
         return with_common_opts(spicerack=self.spicerack, args=args, runner=OpenstackRestartRunner)(
-            spicerack=self.spicerack, cluster_name=args.cluster_name, args=args
+            spicerack=self.spicerack,
+            cluster_name=args.cluster_name,
+            args=args,
+            filter_nodes=args.filter_nodes,
         )
 
 
@@ -70,6 +82,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         cluster_name: OpenstackClusterName,
         args: argparse.Namespace,
         common_opts: CommonOpts,
+        filter_nodes: List[OpenstackNodeRoleName],
     ):
         """Init"""
         self.common_opts = common_opts
@@ -79,6 +92,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         self.nova_services = None
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=cluster_name)
+        self.filter_nodes = filter_nodes
 
     # OpenStack services will give us info about hosts and services, but in a different format
     #  depending on the service. These little helper functions adjust that into standard
@@ -181,6 +195,13 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
             restart_list.extend(self.get_misc_service_list("magnum"))
         if vars(self.args)["heat"] or self.args.all_services:
             restart_list.extend(self.get_misc_service_list("heat"))
+
+        if self.filter_nodes:
+            restart_list = [
+                entry
+                for entry in restart_list
+                if any(entry[0].startswith(prefix.value) for prefix in self.filter_nodes)
+            ]
 
         if restart_list:
             restart_dict = self.consolidate_restart_list(restart_list)
