@@ -92,6 +92,12 @@ class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
                 )
             ]
 
+            if aggregates_to_add == ["maintenance"]:
+                raise RuntimeError(
+                    f"Host {self.fqdn} thinks it should be in 'maintenance' aggregate, "
+                    "specify real aggregate with --aggregate"
+                )
+
         for aggregate_name in aggregates_to_add:
             try:
                 self.openstack_api.aggregate_add_host(aggregate_name=aggregate_name, host_name=hostname)
