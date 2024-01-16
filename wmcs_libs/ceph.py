@@ -9,6 +9,7 @@ import re
 import time
 from copy import deepcopy
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from itertools import chain
 from typing import Any, Iterable, Literal, cast
 
@@ -631,33 +632,35 @@ class CephClusterController(CommandRunnerMixin):
         self.unset_osdmap_flag(flag=CephOSDFlag("norebalance"))
         self.uptime_cluster_alerts(silences=silences)
 
-    def wait_for_rebalance(self, timeout_seconds: int = 600) -> bool:
+    def wait_for_rebalance(self, timeout: timedelta = timedelta(seconds=600)) -> bool:
         """Wait until a cluster in rebalance has finished.
 
         Returns True if it had to wait at any time, False if there was no misplaced objects to rebalance.
         """
-        check_interval_seconds = 10
-        start_time = time.time()
+        check_interval = timedelta(seconds=10)
+        start_time = datetime.now()
         cur_time = start_time
         cluster_status = self.get_cluster_status()
         had_to_wait = False
         # the first rounds this might increase, but it's expected to stop increasing once the cluster started
         # rebalancing
         max_number_of_misplaced = 0
-        while cur_time - start_time < timeout_seconds:
+        while cur_time - start_time < timeout:
             misplaced_objects = cluster_status.status_dict.get("pgmap", {}).get("misplaced_objects", 0)
             max_number_of_misplaced = (
                 misplaced_objects if misplaced_objects > max_number_of_misplaced else max_number_of_misplaced
             )
             if not misplaced_objects:
-                LOGGER.info("No misplaced objects found, returning")
+                LOGGER.info(
+                    "No misplaced objects found, returning, took %s to stabilize", (datetime.now() - start_time)
+                )
                 return had_to_wait
 
-            LOGGER.info("Misplaced objects found, waiting")
+            LOGGER.debug("Misplaced objects found, waiting")
             had_to_wait = True
             objects_placed = max_number_of_misplaced - misplaced_objects
             if cur_time != start_time:
-                recovery_speed = objects_placed / (cur_time - start_time)
+                recovery_speed = objects_placed / (cur_time - start_time).total_seconds()
             else:
                 recovery_speed = 0
 
@@ -667,27 +670,27 @@ class CephClusterController(CommandRunnerMixin):
                 estimated_elapsed_time = -1
             LOGGER.info(
                 (
-                    "Cluster still has (%d) misplaced objects, at the current %d obj/s should take another %.2fs to "
-                    "finish, waiting another %d (timeout=%d, elapsed=%d)..."
+                    "Cluster still has (%d) misplaced objects, at the current %d obj/s should take %s to "
+                    "finish, waiting %s (timeout=%s, elapsed=%s)..."
                 ),
                 misplaced_objects,
                 recovery_speed,
-                estimated_elapsed_time,
-                check_interval_seconds,
-                timeout_seconds,
+                timedelta(seconds=estimated_elapsed_time),
+                check_interval,
+                timeout,
                 cur_time - start_time,
             )
 
-            time.sleep(check_interval_seconds)
-            cur_time = time.time()
+            time.sleep(check_interval.total_seconds())
+            cur_time = datetime.now()
             cluster_status = self.get_cluster_status()
 
         raise CephTimeout(
-            f"Waited {timeout_seconds} for the cluster to finish rebalancing, but it never did, current state:\n"
+            f"Waited {timeout} for the cluster to finish rebalancing, but it never did, current state:\n"
             f"\n{json.dumps(cluster_status.status_dict, indent=4)}"
         )
 
-    def wait_for_in_progress_events(self, timeout_seconds: int = 600) -> bool:
+    def wait_for_in_progress_events(self, timeout: timedelta = timedelta(minutes=10)) -> bool:
         """Wait until a cluster in progress events have finished.
 
         Note that this is different than rebalancing or healing, but somewhat a mixture :/
@@ -695,12 +698,12 @@ class CephClusterController(CommandRunnerMixin):
 
         Returns True if it had to wait at any time, False if there were no in-progress tasks.
         """
-        check_interval_seconds = 10
-        start_time = time.time()
+        check_interval = timedelta(seconds=10)
+        start_time = datetime.now()
         cur_time = start_time
         cluster_status = self.get_cluster_status()
         had_to_wait = False
-        while cur_time - start_time < timeout_seconds:
+        while cur_time - start_time < timeout:
             in_progress_events = cluster_status.get_in_progress()
             if not in_progress_events:
                 LOGGER.info("No in-progress events found, returning")
@@ -711,45 +714,41 @@ class CephClusterController(CommandRunnerMixin):
             mean_progress = (
                 sum(event["progress"] for event in in_progress_events.values()) * 100 / len(in_progress_events)
             )
-            print(
-                f"Cluster still has ({len(in_progress_events)}) in-progress events, {mean_progress}% done, waiting "
-                f"another {check_interval_seconds} (timeout={timeout_seconds})..."
-            )
             LOGGER.info(
-                "Cluster still has (%d) in-progress events, %.2f%% done, waiting another %d (timeout=%d)...",
+                "Cluster still has (%d) in-progress events, %.2f%% done, waiting %s (timeout=%s)...",
                 len(in_progress_events),
                 mean_progress,
-                check_interval_seconds,
-                timeout_seconds,
+                check_interval,
+                timeout,
             )
 
-            time.sleep(check_interval_seconds)
-            cur_time = time.time()
+            time.sleep(check_interval.total_seconds())
+            cur_time = datetime.now()
             cluster_status = self.get_cluster_status()
 
         raise CephTimeout(
-            f"Waited {timeout_seconds} for the cluster to finish in-progress events, but it never did, current state:\n"
+            f"Waited {timeout} for the cluster to finish in-progress events, but it never did, current state:\n"
             f"\n{json.dumps(cluster_status.get_in_progress(), indent=4)}"
         )
 
     def wait_for_one_manager_standby(
         self,
-        timeout_seconds: int = 600,
+        timeout: timedelta = timedelta(minutes=10),
     ) -> None:
         """Wait until there's at least one mgr in standby."""
-        check_interval_seconds = 10
-        start_time = time.time()
+        check_interval = timedelta(seconds=10)
+        start_time = datetime.now()
         cur_time = start_time
-        while cur_time - start_time < timeout_seconds:
+        while cur_time - start_time < timeout:
             if self.get_cluster_status().get_mgrmap().num_standbys:
                 return
 
-            time.sleep(check_interval_seconds)
-            cur_time = time.time()
+            time.sleep(check_interval.total_seconds())
+            cur_time = datetime.now()
 
         cluster_status = self.get_cluster_status()
         raise CephClusterUnhealthy(
-            f"Waited {timeout_seconds} for any manager to become standby, but it never did, current state:\n"
+            f"Waited {timeout} for any manager to become standby, but it never did, current state:\n"
             f"\n{json.dumps(cluster_status.status_dict['health'], indent=4)}"
         )
 
@@ -758,14 +757,14 @@ class CephClusterController(CommandRunnerMixin):
         consider_maintenance_healthy: bool = False,
         # Ceph uses the 15-minute average to measure health, so we need to wait
         #  a long time for it to feel better after a reboot
-        timeout_seconds: int = 1800,
+        timeout: timedelta = timedelta(minutes=30),
         health_issues_to_ignore: Iterable[str] | None = None,
     ) -> None:
         """Wait until a cluster becomes healthy."""
-        check_interval_seconds = 10
-        start_time = time.time()
+        check_interval = timedelta(seconds=10)
+        start_time = datetime.now()
         cur_time = start_time
-        while cur_time - start_time < timeout_seconds:
+        while cur_time - start_time < timeout:
             try:
                 self.get_cluster_status().check_healthy(
                     consider_maintenance_healthy=consider_maintenance_healthy,
@@ -775,18 +774,18 @@ class CephClusterController(CommandRunnerMixin):
 
             except CephClusterUnhealthy:
                 LOGGER.info(
-                    "%ds have passed, but the cluster is still not healthy, waiting another %d (timeout=%d)...",
+                    "%s have passed, but the cluster is still not healthy, waiting %s (timeout=%s)...",
                     cur_time - start_time,
-                    check_interval_seconds,
-                    timeout_seconds,
+                    check_interval,
+                    timeout,
                 )
 
-            time.sleep(check_interval_seconds)
-            cur_time = time.time()
+            time.sleep(check_interval.total_seconds())
+            cur_time = datetime.now()
 
         cluster_status = self.get_cluster_status()
         raise CephClusterUnhealthy(
-            f"Waited {timeout_seconds} for the cluster to become healthy, but it never did, current state:\n"
+            f"Waited {timeout} for the cluster to become healthy, but it never did, current state:\n"
             f"\n{json.dumps(cluster_status.status_dict['health'], indent=4)}"
         )
 
@@ -950,7 +949,7 @@ class CephClusterController(CommandRunnerMixin):
 
     def drain_osd_node(self, osd_host: str, be_unsafe: bool = False, wait: bool = False, batch_size: int = 0) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
-        timeout_s = 60 * 60 * 5  # 5h
+        timeout = timedelta(hours=5)
         osds = self.get_host_osds(osd_host=osd_host)
 
         if batch_size == 0:
@@ -965,7 +964,7 @@ class CephClusterController(CommandRunnerMixin):
             if wait and had_changes:
                 LOGGER.info("Waiting for the cluster to shift data around...")
                 # give some time for the cluster to start shifting things around
-                while not self.wait_for_rebalance(timeout_seconds=timeout_s):
+                while not self.wait_for_rebalance(timeout=timeout):
                     LOGGER.info("Rebalancing has not started yet, sleeping another 10s for the rebalance to start")
                     time.sleep(10)
             elif had_changes:
@@ -981,7 +980,7 @@ class CephClusterController(CommandRunnerMixin):
         batch_size: int = 0,
     ) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
-        timeout_s = 60 * 60 * 5  # 5h
+        timeout = timedelta(hours=5)
         osds = self.get_host_osds(osd_host=osd_host)
 
         if not batch_size:
@@ -994,7 +993,7 @@ class CephClusterController(CommandRunnerMixin):
             if wait:
                 LOGGER.info("Waiting for the cluster to shift data around...")
                 # give some time for the cluster to start shifting things around
-                while not self.wait_for_rebalance(timeout_seconds=timeout_s):
+                while not self.wait_for_rebalance(timeout=timeout):
                     time.sleep(10)
 
     def remove_crush_bucket(self, bucket_name: str) -> None:

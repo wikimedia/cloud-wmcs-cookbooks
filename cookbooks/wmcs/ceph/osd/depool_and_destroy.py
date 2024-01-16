@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import logging
 import time
+from datetime import timedelta
 from typing import cast
 
 from spicerack import Spicerack
@@ -213,12 +214,12 @@ class DestroyRunner(WMCSCookbookRunnerBase):
             self.cluster_controller.drain_osds(osd_ids=self.ids, be_unsafe=True)
 
             # the rebalance might take a very very long time, setting timeout to 12h
-            wait_hours = 12
-            LOGGER.info("Waiting for the cluster to rebalance all the data (timeout of %d hours)...", wait_hours)
+            timeout = timedelta(hours=12)
+            LOGGER.info("Waiting for the cluster to rebalance all the data (timeout of %s)...", timeout)
             # first sleep to allow the cluster to start rebalancing
             time.sleep(60)
-            self.cluster_controller.wait_for_in_progress_events(timeout_seconds=wait_hours * 60 * 60)
-            self.cluster_controller.wait_for_rebalance(timeout_seconds=wait_hours * 60 * 60)
+            self.cluster_controller.wait_for_in_progress_events(timeout=timeout)
+            self.cluster_controller.wait_for_rebalance(timeout=timeout)
             LOGGER.info("Rebalancing done, will stop the OSD daemons service.")
 
             osd_fqdn = f"{self.osd_hostname}.{self.cluster_controller.cluster_name.get_site().value}.wmnet"

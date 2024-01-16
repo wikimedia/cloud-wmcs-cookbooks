@@ -30,7 +30,7 @@ def test_cluster_never_gets_healthy(run_cookbook_with_recording):
 
     assert run_result.return_code == 99
     assert (
-        "wmcs_libs.ceph.CephClusterUnhealthy: Waited 1800 for the cluster to become healthy, "
+        "wmcs_libs.ceph.CephClusterUnhealthy: Waited 0:30:00 for the cluster to become healthy, "
         "but it never did, current state"
     ) in run_result.stderr
 
@@ -47,4 +47,4 @@ def test_manager_standby_never_comes_up(run_cookbook_with_recording):
         )
 
     assert run_result.return_code == 99
-    assert "Waited 600 for any manager to become standby, but it never did, current state" in run_result.stderr
+    assert "Waited 0:10:00 for any manager to become standby, but it never did, current state" in run_result.stderr

@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import logging
 import time
+from datetime import timedelta
 from typing import cast
 
 from spicerack import Spicerack
@@ -243,10 +244,10 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
 
         if self.wait_for_rebalance:
             # the rebalance might take a very very long time, setting timeout to 12h
-            wait_hours = 12
-            LOGGER.info("Waiting for the cluster to rebalance all the data (timeout of {%d} hours)...", wait_hours)
-            self.cluster_controller.wait_for_in_progress_events(timeout_seconds=wait_hours * 60 * 60)
-            self.cluster_controller.wait_for_rebalance(timeout_seconds=wait_hours * 60 * 60)
+            timeout = timedelta(hours=12)
+            LOGGER.info("Waiting for the cluster to rebalance all the data (timeout of {%s})...", timeout)
+            self.cluster_controller.wait_for_in_progress_events(timeout=timeout)
+            self.cluster_controller.wait_for_rebalance(timeout=timeout)
             LOGGER.info("Rebalancing done.")
             self.sallogger.log(
                 message=f"The cluster is now rebalanced after adding the new OSDs {self.new_osd_fqdns}",

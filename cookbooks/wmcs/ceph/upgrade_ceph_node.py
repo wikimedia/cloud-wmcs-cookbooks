@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import logging
+from datetime import timedelta
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -133,7 +134,7 @@ class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
 
         # Once the node is up, let it rebalance
         self.controller.unset_osdmap_flag(CephOSDFlag("norebalance"))
-        self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True, timeout_seconds=300)
+        self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True, timeout=timedelta(minutes=5))
         self.controller.set_osdmap_flag(CephOSDFlag("norebalance"))
 
         if not self.skip_maintenance:

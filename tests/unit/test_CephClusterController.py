@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 from typing import Any, Type
 from unittest import mock
 
 import pytest
 from cumin.transports import Command
+from freezegun import freeze_time
 from spicerack import Spicerack
 
 from wmcs_libs.ceph import (
@@ -385,22 +387,22 @@ def test_unset_maintenance_raising(commands_output: list[str], exception: Type[E
     {
         "Passes if no in-progress events": {
             "commands_output": [json.dumps(CephTestUtils.get_status_dict({"progress_events": {}}))],
-            "time_ticks": [0],
+            "auto_tick_seconds": 0,
         },
         "Passes if in-progress events get resolved before timeout": {
             "commands_output": [
                 json.dumps(CephTestUtils.get_status_dict({"progress_events": {"some event": {"progress": 0}}})),
                 json.dumps(CephTestUtils.get_status_dict({"progress_events": {}})),
             ],
-            "time_ticks": [0, 1],
-            "timeout_seconds": 100,
+            "auto_tick_seconds": 1,
+            "timeout": timedelta(seconds=100),
         },
     }
 )
 def test_wait_for_progress_events_happy_path(
     commands_output: list[str],
-    time_ticks: list[int],
-    timeout_seconds: int | None,
+    auto_tick_seconds: int,
+    timeout: timedelta | None,
 ):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=commands_output),
@@ -408,9 +410,9 @@ def test_wait_for_progress_events_happy_path(
         spicerack=mock.MagicMock(spec=Spicerack),
     )
 
-    with mock.patch("wmcs_libs.ceph.time.time", side_effect=time_ticks), mock.patch("wmcs_libs.ceph.time.sleep"):
-        if timeout_seconds is not None:
-            my_controller.wait_for_in_progress_events(timeout_seconds=timeout_seconds)
+    with freeze_time(auto_tick_seconds=auto_tick_seconds), mock.patch("wmcs_libs.ceph.time.sleep"):
+        if timeout is not None:
+            my_controller.wait_for_in_progress_events(timeout=timeout)
         else:
             my_controller.wait_for_in_progress_events()
 
@@ -422,15 +424,15 @@ def test_wait_for_progress_events_happy_path(
                 json.dumps(CephTestUtils.get_status_dict({"progress_events": {"some event": {"progress": 0}}})),
                 json.dumps(CephTestUtils.get_status_dict({"progress_events": {"some event": {"progress": 0}}})),
             ],
-            "time_ticks": [0, 101],
-            "timeout_seconds": 100,
+            "auto_tick_seconds": 101,
+            "timeout": timedelta(seconds=100),
         },
     }
 )
 def test_wait_for_progress_events_raises(
     commands_output: list[str],
-    time_ticks: list[int],
-    timeout_seconds: int,
+    auto_tick_seconds: int,
+    timeout: timedelta,
 ):
     my_controller = CephClusterController(
         remote=CephTestUtils.get_fake_remote(responses=commands_output),
@@ -438,21 +440,21 @@ def test_wait_for_progress_events_raises(
         spicerack=mock.MagicMock(spec=Spicerack),
     )
 
-    with mock.patch("wmcs_libs.ceph.time.time", side_effect=time_ticks), mock.patch(
-        "wmcs_libs.ceph.time.sleep"
-    ), pytest.raises(CephTimeout):
-        my_controller.wait_for_in_progress_events(timeout_seconds=timeout_seconds)
+    with freeze_time(auto_tick_seconds=auto_tick_seconds), mock.patch("wmcs_libs.ceph.time.sleep"), pytest.raises(
+        CephTimeout
+    ):
+        my_controller.wait_for_in_progress_events(timeout=timeout)
 
 
 @parametrize(
     {
         "Passes if cluster healthy": {
             "commands_output": [json.dumps(CephTestUtils.get_ok_status_dict())],
-            "time_ticks": [0],
+            "auto_tick_seconds": 1,
         },
         "Passes if cluster in maintenance and consider_maintenance_healthy True": {
             "commands_output": [json.dumps(CephTestUtils.get_maintenance_status_dict())],
-            "time_ticks": [0],
+            "auto_tick_seconds": 1,
             "consider_maintenance_healthy": True,
         },
         "Passes if in-progress events get resolved before timeout": {
@@ -460,15 +462,15 @@ def test_wait_for_progress_events_raises(
                 json.dumps(CephTestUtils.get_warn_status_dict()),
                 json.dumps(CephTestUtils.get_ok_status_dict()),
             ],
-            "time_ticks": [0, 1],
-            "timeout_seconds": 100,
+            "auto_tick_seconds": 1,
+            "timeout": timedelta(seconds=100),
         },
     }
 )
 def test_wait_for_cluster_health_happy_path(
     commands_output: list[str],
-    time_ticks: list[int],
-    timeout_seconds: int | None,
+    auto_tick_seconds: int,
+    timeout: timedelta | None,
     consider_maintenance_healthy: bool | None,
 ):
     my_controller = CephClusterController(
@@ -480,10 +482,10 @@ def test_wait_for_cluster_health_happy_path(
     params: dict[str, Any] = {}
     if consider_maintenance_healthy is not None:
         params["consider_maintenance_healthy"] = consider_maintenance_healthy
-    if timeout_seconds is not None:
-        params["timeout_seconds"] = timeout_seconds
+    if timeout is not None:
+        params["timeout"] = timeout
 
-    with mock.patch("wmcs_libs.ceph.time.time", side_effect=time_ticks), mock.patch("wmcs_libs.ceph.time.sleep"):
+    with freeze_time(auto_tick_seconds=auto_tick_seconds), mock.patch("wmcs_libs.ceph.time.sleep"):
         my_controller.wait_for_cluster_healthy(**params)
 
 
@@ -494,24 +496,24 @@ def test_wait_for_cluster_health_happy_path(
                 json.dumps(CephTestUtils.get_warn_status_dict()),
                 json.dumps(CephTestUtils.get_warn_status_dict()),
             ],
-            "time_ticks": [0, 101],
-            "timeout_seconds": 100,
+            "auto_tick_seconds": 101,
+            "timeout": timedelta(seconds=100),
         },
         "Raises if cluster in maintenance and consider_maintenance_healthy is False": {
             "commands_output": [
                 json.dumps(CephTestUtils.get_warn_status_dict()),
                 json.dumps(CephTestUtils.get_warn_status_dict()),
             ],
-            "time_ticks": [0, 101],
-            "timeout_seconds": 100,
+            "auto_tick_seconds": 101,
+            "timeout": timedelta(seconds=100),
             "consider_maintenance_healthy": True,
         },
     }
 )
 def test_wait_for_cluster_health_raises(
     commands_output: list[str],
-    time_ticks: list[int],
-    timeout_seconds: int,
+    auto_tick_seconds: int,
+    timeout: timedelta,
     consider_maintenance_healthy: bool | None,
 ):
     my_controller = CephClusterController(
@@ -520,13 +522,13 @@ def test_wait_for_cluster_health_raises(
         spicerack=mock.MagicMock(spec=Spicerack),
     )
 
-    params: dict[str, Any] = {"timeout_seconds": timeout_seconds}
+    params: dict[str, Any] = {"timeout": timeout}
     if consider_maintenance_healthy is not None:
         params["consider_maintenance_healthy"] = consider_maintenance_healthy
 
-    with mock.patch("wmcs_libs.ceph.time.time", side_effect=time_ticks), mock.patch(
-        "wmcs_libs.ceph.time.sleep"
-    ), pytest.raises(CephClusterUnhealthy):
+    with freeze_time(auto_tick_seconds=auto_tick_seconds), mock.patch("wmcs_libs.ceph.time.sleep"), pytest.raises(
+        CephClusterUnhealthy
+    ):
         my_controller.wait_for_cluster_healthy(**params)
 
 
