@@ -81,7 +81,8 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
         )
 
         try:
-            self.openstack_api.aggregate_remove_host(aggregate_name="ceph", host_name=hostname)
+            for aggregate in aggregate_names:
+                self.openstack_api.aggregate_remove_host(aggregate_name=aggregate, host_name=hostname)
         except OpenstackNotFound as error:
             logging.info("%s", error)
 
