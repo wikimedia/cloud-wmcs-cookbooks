@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from datetime import timedelta
 from typing import Any, Type
 from unittest import mock
@@ -24,6 +25,7 @@ from wmcs_libs.ceph import (
     OSDTreeNode,
     OSDTreeOSDNode,
 )
+from wmcs_libs.common import CUMIN_UNSAFE_WITH_OUTPUT
 from wmcs_libs.inventory.ceph import CephClusterName
 
 
@@ -164,7 +166,7 @@ def test_set_osdmap_flag_happy_path(set_flag_command_output: str):
     my_controller.set_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
     my_controller._controlling_node.run_sync.assert_called_with(
-        Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0])
+        Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), **asdict(CUMIN_UNSAFE_WITH_OUTPUT)
     )
 
 
@@ -187,7 +189,7 @@ def test_set_osdmap_flag_raising(set_flag_command_output: str):
         my_controller.set_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
     my_controller._controlling_node.run_sync.assert_called_with(
-        Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0])
+        Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), **asdict(CUMIN_UNSAFE_WITH_OUTPUT)
     )
 
 
@@ -212,7 +214,7 @@ def test_unset_osdmap_flag_happy_path(unset_flag_command_output: str):
     my_controller.unset_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
     my_controller._controlling_node.run_sync.assert_called_with(
-        Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0])
+        Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), **asdict(CUMIN_UNSAFE_WITH_OUTPUT)
     )
 
 
@@ -235,7 +237,7 @@ def test_unset_osdmap_flag_raising(unset_flag_command_output: str):
         my_controller.unset_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
     my_controller._controlling_node.run_sync.assert_called_with(
-        Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0])
+        Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), **asdict(CUMIN_UNSAFE_WITH_OUTPUT)
     )
 
 

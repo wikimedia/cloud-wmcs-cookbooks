@@ -20,6 +20,7 @@ from wmflib.interactive import ask_confirmation
 from wmcs_libs.alerts import SilenceID, downtime_alert, uptime_alert
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
+    CUMIN_UNSAFE_WITH_OUTPUT,
     CUMIN_UNSAFE_WITHOUT_OUTPUT,
     ArgparsableEnum,
     CommandRunnerMixin,
@@ -519,13 +520,17 @@ class CephClusterController(CommandRunnerMixin):
 
     def set_osdmap_flag(self, flag: CephOSDFlag) -> None:
         """Set one of the osdmap flags."""
-        set_osdmap_flag_result = self.run_raw("osd", "set", flag.value, json_output=False)
+        set_osdmap_flag_result = self.run_raw(
+            "osd", "set", flag.value, json_output=False, cumin_params=CUMIN_UNSAFE_WITH_OUTPUT
+        )
         if not re.match(f"(^|\n){flag.value} is set", set_osdmap_flag_result):
             raise CephFlagSetError(f"Unable to set `{flag.value}` on the cluster, got output: {set_osdmap_flag_result}")
 
     def unset_osdmap_flag(self, flag: CephOSDFlag) -> None:
         """Unset one of the osdmap flags."""
-        unset_osdmap_flag_result = self.run_raw("osd", "unset", flag.value, json_output=False)
+        unset_osdmap_flag_result = self.run_raw(
+            "osd", "unset", flag.value, json_output=False, cumin_params=CUMIN_UNSAFE_WITH_OUTPUT
+        )
         if not re.match(f"(^|\n){flag.value} is unset", unset_osdmap_flag_result, re.MULTILINE):
             raise CephFlagSetError(
                 f"Unable to unset `{flag.value}` on the cluster, got output: {unset_osdmap_flag_result}"
@@ -536,8 +541,18 @@ class CephClusterController(CommandRunnerMixin):
 
         Note that `osd_id` is the number of the osd, for example, for osd.195, that would be the integer 195.
         """
-        self.run_raw("osd", "crush", "rm-device-class", f"{osd_id}", json_output=False)
-        self.run_raw("osd", "crush", "set-device-class", osd_class.value, f"{osd_id}", json_output=False)
+        self.run_raw(
+            "osd", "crush", "rm-device-class", f"{osd_id}", json_output=False, cumin_params=CUMIN_UNSAFE_WITH_OUTPUT
+        )
+        self.run_raw(
+            "osd",
+            "crush",
+            "set-device-class",
+            osd_class.value,
+            f"{osd_id}",
+            json_output=False,
+            cumin_params=CUMIN_UNSAFE_WITH_OUTPUT,
+        )
 
     def downtime_cluster_alerts(self, reason: str, duration: str = "4h", task_id: str | None = None) -> list[SilenceID]:
         """Downtime all the known cluster-wide alerts (the ones not related to a specific ceph node)."""
@@ -875,7 +890,7 @@ class CephClusterController(CommandRunnerMixin):
 
         Returns True if the osd was out, False if it was already in.
         """
-        response = self.run_raw("osd", "in", f"osd.{osd_id}")
+        response = self.run_raw("osd", "in", f"osd.{osd_id}", cumin_params=CUMIN_UNSAFE_WITH_OUTPUT)
         if "marked in" in response:
             return True
 
@@ -891,7 +906,7 @@ class CephClusterController(CommandRunnerMixin):
 
         Returns True if the osd was in, False if it was already out.
         """
-        response = self.run_raw("osd", "out", f"osd.{osd_id}")
+        response = self.run_raw("osd", "out", f"osd.{osd_id}", cumin_params=CUMIN_UNSAFE_WITH_OUTPUT)
         if "marked out" in response:
             return True
 
@@ -921,6 +936,7 @@ class CephClusterController(CommandRunnerMixin):
         any_changes = False
         for osd_id in osd_ids:
             new_changes = self.crush_reweight_osd(osd_id=osd_id, new_weight=0.0)
+            # python short-circuits the binary expressions, so keeping the action separated to execute it no matter what
             any_changes = any_changes or new_changes
 
         for osd_id in osd_ids:
