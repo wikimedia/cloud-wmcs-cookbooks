@@ -2,7 +2,7 @@ r"""WMCS Ceph - Undrain all the osd damons from a host
 
 Usage example:
     cookbook wmcs.ceph.reboot_node \
-        --hostname cloudcephosd2001-dev
+        --node cloudcephosd2001-dev
 
 """
 
@@ -64,8 +64,9 @@ class UndrainNode(CookbookBase):
         parser.add_argument(
             "--batch-size",
             required=False,
+            default=0,
             type=int,
-            help="Amount of osd daemons to undrain at a time.",
+            help="Amount of osd daemons to undrain at a time (0 for no batches).",
         )
 
         return parser
