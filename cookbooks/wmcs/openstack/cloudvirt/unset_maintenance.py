@@ -12,7 +12,6 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.alerts import uptime_host
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.openstack.common import AGGREGATES_FILE_PATH, OpenstackAPI, OpenstackNotFound, get_node_cluster_name
 
@@ -46,12 +45,6 @@ class UnsetMaintenance(CookbookBase):
                 f"use {AGGREGATES_FILE_PATH} if it exists, and fail otherwise). A safe choice would be just `ceph`"
             ),
         )
-        parser.add_argument(
-            "--downtime-id",
-            required=False,
-            default=None,
-            help="Downtime id that you got when downtiming before, otherwise will remove all downtimes.",
-        )
 
         return parser
 
@@ -60,7 +53,6 @@ class UnsetMaintenance(CookbookBase):
         return with_common_opts(self.spicerack, args, UnsetMaintenanceRunner,)(
             fqdn=args.fqdn,
             aggregates=args.aggregates,
-            downtime_id=args.downtime_id,
             spicerack=self.spicerack,
         )
 
@@ -73,7 +65,6 @@ class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         fqdn: str,
         spicerack: Spicerack,
-        downtime_id: str | None = None,
         aggregates: str | None = None,
     ):
         """Init."""
@@ -82,7 +73,6 @@ class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
         self.aggregates = aggregates
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
-        self.downtime_id = downtime_id
 
     def run_with_proxy(self) -> None:
         """Main entry point."""
@@ -108,7 +98,6 @@ class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
             except OpenstackNotFound as error:
                 logging.info("%s", error)
 
-        uptime_host(spicerack=self.spicerack, host_name=hostname, silence_id=self.downtime_id)
         aggregates_str = ",".join(aggregates_to_add)
         self.sallogger.log(message=f"unset {self.fqdn} maintenance (aggregates: {aggregates_str})")
         LOGGER.info(
