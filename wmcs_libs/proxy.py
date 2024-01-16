@@ -21,6 +21,7 @@ BASE64_PUPPET_CA_URL = (
     "?format=TEXT"
 )
 LOGGER = logging.getLogger(__name__)
+DEFAULT_PROXY_VIA_HOST = "cloudcumin1001.eqiad.wmnet"
 
 
 def _is_proxy_working(port: int) -> bool:
@@ -42,9 +43,9 @@ def _is_proxy_working(port: int) -> bool:
     return False
 
 
-def _start_proxy(puppet_ca_path: Path, port: int) -> None:
+def _start_proxy(puppet_ca_path: Path, host: str, port: int) -> None:
     if _is_proxy_working(port=port):
-        _stop_proxy(port=port)
+        _stop_proxy(host=host, port=port)
 
     if "http_proxy" in os.environ:
         del os.environ["http_proxy"]
@@ -63,7 +64,7 @@ def _start_proxy(puppet_ca_path: Path, port: int) -> None:
             # Start a socks proxy
             "-D",
             f"127.0.0.1:{port}",
-            "cumin1001.eqiad.wmnet",
+            host,
         ],
         check=True,
     )
@@ -72,8 +73,8 @@ def _start_proxy(puppet_ca_path: Path, port: int) -> None:
     os.environ["REQUESTS_CA_BUNDLE"] = str(puppet_ca_path.resolve().absolute())
 
 
-def _stop_proxy(port: int) -> None:
-    subprocess.run(["/usr/bin/pkill", "-f", f"D 127.0.0.1:{port}.*cumin1001.eqiad.wmnet"], check=True)
+def _stop_proxy(host: str, port: int) -> None:
+    subprocess.run(["/usr/bin/pkill", "-f", f"D 127.0.0.1:{port}.*{host}"], check=True)
     if "http_proxy" in os.environ:
         del os.environ["http_proxy"]
     if "https_proxy" in os.environ:
@@ -104,6 +105,7 @@ def with_proxy(spicerack: Spicerack):
 
     config = load_yaml_config(config_file=spicerack.config_dir / "wmcs.yaml", raises=False)
     LOGGER.info("Loading socks proxy config from %s", spicerack.config_dir / "wmcs.yaml")
+    proxy_via_host = config.get("socks_proxy_host", DEFAULT_PROXY_VIA_HOST)
     socks_proxy_port = int(config.get("socks_proxy_port", "54123"))
     puppet_ca_path = (
         Path(config.get("puppet_ca_path", spicerack.config_dir / "puppet_ca.crt")).expanduser().resolve().absolute()
@@ -113,7 +115,7 @@ def with_proxy(spicerack: Spicerack):
         try:
             LOGGER.info("Starting socks proxy on 127.0.0.1:%d", socks_proxy_port)
             _download_puppet_ca(puppet_ca_path=puppet_ca_path)
-            _start_proxy(port=socks_proxy_port, puppet_ca_path=puppet_ca_path)
+            _start_proxy(host=proxy_via_host, port=socks_proxy_port, puppet_ca_path=puppet_ca_path)
             proxy_started = True
         except Exception as error:  # pylint: disable=broad-except
             LOGGER.warning(
@@ -130,6 +132,6 @@ def with_proxy(spicerack: Spicerack):
     finally:
         if proxy_started:
             LOGGER.info("Stopping proxy on 127.0.0.1:%d", socks_proxy_port)
-            _stop_proxy(port=socks_proxy_port)
+            _stop_proxy(host=proxy_via_host, port=socks_proxy_port)
         else:
             LOGGER.info("The proxy was not started, not stopping.")
