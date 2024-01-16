@@ -949,28 +949,36 @@ class CephClusterController(CommandRunnerMixin):
 
     def drain_osd_node(self, osd_host: str, be_unsafe: bool = False, wait: bool = False, batch_size: int = 0) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
+        start_time = datetime.now()
         timeout = timedelta(hours=5)
         osds = self.get_host_osds(osd_host=osd_host)
 
         if batch_size == 0:
             batch_size = len(osds)
 
-        LOGGER.info("Draining osds from host %s: %s", osd_host, str(osds))
+        chunk_start = 0
+
+        def info(msg, *args):
+            LOGGER.info(f"[%d/%d] {msg}", chunk_start, len(osds), *args)
+
+        info("Draining osds from host %s: %s", osd_host, str(osds))
         for chunk_num in range(len(osds) // batch_size):
             chunk_start = chunk_num * batch_size
             next_chunk = osds[chunk_start : chunk_start + batch_size]
-            LOGGER.info("Draining osd batch %d of %d: %s", chunk_num + 1, len(osds) // batch_size, str(next_chunk))
+            info("Draining osd batch %d of %d: %s", chunk_num + 1, len(osds) // batch_size, str(next_chunk))
             had_changes = self.drain_osds(osd_ids=next_chunk, be_unsafe=be_unsafe)
             if wait and had_changes:
-                LOGGER.info("Waiting for the cluster to shift data around...")
+                info("Waiting for the cluster to shift data around...")
                 # give some time for the cluster to start shifting things around
                 while not self.wait_for_rebalance(timeout=timeout):
-                    LOGGER.info("Rebalancing has not started yet, sleeping another 10s for the rebalance to start")
+                    info("Rebalancing has not started yet, sleeping another 10s for the rebalance to start")
                     time.sleep(10)
             elif had_changes:
-                LOGGER.info("No changes to the cluster made, draining the next batch...")
+                info("No changes to the cluster made, draining the next batch...")
 
-        LOGGER.info("All osds drained on node %s", osd_host)
+        chunk_start = len(osds)
+        end_time = datetime.now()
+        info("All osds drained on node %s, took %s", osd_host, (end_time - start_time))
 
     def undrain_osd_node(
         self,
