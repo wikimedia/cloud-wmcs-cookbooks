@@ -1,7 +1,8 @@
-r"""WMCS Ceph - Drain all the osd damons from a host or set of hosts
+r"""WMCS Ceph - Drain all the osd daemons from a host or set of hosts
 
 Usage example:
     cookbook wmcs.ceph.drain_node \
+        --cluster eqiad1 \
         --node cloudcephosd2001-dev \
         --node cloudcephosd2002-dev
 
@@ -17,8 +18,9 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.alerts import downtime_host, uptime_host
-from wmcs_libs.ceph import CephClusterController, get_node_cluster_name
+from wmcs_libs.ceph import CephClusterController
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.inventory.ceph import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 
@@ -67,6 +69,13 @@ class DrainNode(CookbookBase):
                 "not have to rebalance, might wait forever for the rebalancing to start)."
             ),
         )
+        parser.add_argument(
+            "--cluster-name",
+            required=True,
+            choices=list(CephClusterName),
+            type=CephClusterName,
+            help="Ceph cluster to roll restart.",
+        )
 
         return parser
 
@@ -79,6 +88,7 @@ class DrainNode(CookbookBase):
         )(
             hosts_to_drain=args.node,
             set_maintenance=args.set_maintenance,
+            cluster_name=args.cluster_name,
             force=args.force,
             wait=not args.no_wait,
             spicerack=self.spicerack,
@@ -92,6 +102,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         hosts_to_drain: list[str],
+        cluster_name: CephClusterName,
         force: bool,
         wait: bool,
         set_maintenance: bool,
@@ -106,9 +117,13 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.controller = CephClusterController(
             remote=self.spicerack.remote(),
-            cluster_name=get_node_cluster_name(node=self.hosts_to_drain[0]),
+            cluster_name=cluster_name,
             spicerack=self.spicerack,
         )
+        cluster_nodes = self.controller.get_nodes()
+        for host in self.hosts_to_drain:
+            if host not in cluster_nodes:
+                raise Exception(f"Host {host} is not in the cluster {', '.join(cluster_nodes.keys())}")
 
     def run_with_proxy(self) -> None:
         """Main entry point"""

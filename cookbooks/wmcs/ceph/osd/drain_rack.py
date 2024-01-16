@@ -118,6 +118,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
         self.set_maintenance = set_maintenance
         self.force = force
         self.wait = wait
+        self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.controller = CephClusterController(
             remote=self.spicerack.remote(),
@@ -144,6 +145,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
             hosts_to_drain=hosts,
             force=self.force,
             set_maintenance=self.set_maintenance,
+            cluster_name=self.cluster_name,
             spicerack=self.spicerack,
             wait=self.wait,
         )
