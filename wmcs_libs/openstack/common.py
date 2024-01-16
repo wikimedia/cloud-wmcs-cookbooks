@@ -633,13 +633,11 @@ class OpenstackAPI(CommandRunnerMixin):
                 "instead of the fqdn?"
             )
 
-    def aggregate_persist_on_host(self, host: RemoteHosts) -> None:
-        """Creates a file in the host with it's current list of aggregates.
+    def aggregate_persist_on_host(self, host: RemoteHosts, current_aggregates: list[dict[str, Any]]) -> None:
+        """Creates a file in the host with its current list of aggregates.
 
         For later usage, for example, when moving the host temporarily to another aggregate.
         """
-        hostname = str(host).split(".", 1)[0]
-        current_aggregates = self.server_get_aggregates(name=hostname)
         simple_create_file(
             dst_node=host, contents=yaml.dump(current_aggregates, indent=4), remote_path=AGGREGATES_FILE_PATH
         )

@@ -68,7 +68,17 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
     def run_with_proxy(self) -> None:
         """Main entry point."""
         hostname = self.fqdn.split(".", 1)[0]
-        self.openstack_api.aggregate_persist_on_host(host=self.spicerack.remote().query(self.fqdn))
+
+        current_aggregates = self.openstack_api.server_get_aggregates(name=hostname)
+        aggregate_names = [aggregate["name"] for aggregate in current_aggregates]
+
+        if aggregate_names == ["maintenance"]:
+            LOGGER.warning("Host %s is already in maintenance mode", self.fqdn)
+            return
+
+        self.openstack_api.aggregate_persist_on_host(
+            host=self.spicerack.remote().query(self.fqdn), current_aggregates=current_aggregates
+        )
 
         try:
             self.openstack_api.aggregate_remove_host(aggregate_name="ceph", host_name=hostname)
