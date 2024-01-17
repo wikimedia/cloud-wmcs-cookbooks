@@ -358,7 +358,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
             exceptions=(RemoteExecutionError,),
         )
         def try_to_reach_the_new_instance():
-            return run_one_raw(node=new_prefix_node, command=["hostname"]).strip()
+            return run_one_raw(node=new_prefix_node, command=["cat", "/.cloud-init-finished"]).strip()
 
         result = try_to_reach_the_new_instance()
 
