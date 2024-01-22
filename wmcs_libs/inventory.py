@@ -30,6 +30,7 @@ class ClusterType(Enum):
     OPENSTACK = auto()
     CEPH = auto()
     TOOLFORGE_KUBERNETES = auto()
+    TOOLFORGE_TOOLSDB = auto()
 
 
 class ClusterName(ArgparsableEnum):
@@ -121,6 +122,24 @@ class CephNodeRoleName(NodeRoleName):
     MON = auto()
 
 
+class ToolforgeToolsDBClusterName(OpenStackProjectSpecificClusterName):
+    """Names of toolsdb clusters we have."""
+
+    TOOLS = "tools"
+
+    def get_type(self) -> ClusterType:
+        """Get the cluster type from the name"""
+        return ClusterType.TOOLFORGE_TOOLSDB
+
+    def get_openstack_cluster_name(self) -> OpenstackClusterName:
+        """Get the OpenStack cluster/deployment where a cluster is deployed in by the name."""
+        return OpenstackClusterName.EQIAD1
+
+    def get_project(self) -> str:
+        """Get the OpenStack cluster project where a cluster is deployed in by the name."""
+        return "tools"
+
+
 class ToolforgeKubernetesClusterName(OpenStackProjectSpecificClusterName):
     """Every Toolforge-like Kubernetes cluster we have."""
 
@@ -178,6 +197,22 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
         return self == ToolforgeKubernetesNodeRoleName.WORKER
 
 
+class ToolforgeToolsDBNodeRoleName(NodeRoleName):
+    """Toolforge ToolsDB node roles."""
+
+    PRIMARY = "primary"
+    REPLICA = "replica"
+
+    def __str__(self) -> str:
+        """Needed to show the nice string values and for argparse to use those to call the `type` parameter."""
+        return self.name.lower()
+
+    @classmethod
+    def from_str(cls, arg: str) -> "ToolforgeToolsDBNodeRoleName":
+        """Helps when passing ToolforgeToolsDBNodeRoleName to argparse as type."""
+        return cls[arg.upper()]
+
+
 @dataclass(frozen=True)
 class Cluster:
     """Base cluster, to be used as parent."""
@@ -213,6 +248,16 @@ class ToolforgeKubernetesCluster(Cluster):
     instance_prefix: str
     security_group_name: str
     nodes_by_role: dict[ToolforgeKubernetesNodeRoleName, list[str]]
+
+
+@dataclass(frozen=True)
+class ToolforgeToolsDBCluster(Cluster):
+    """Toolforge ToolsDB cluster definition."""
+
+    name: ToolforgeToolsDBClusterName
+    instance_prefix: str
+    security_group_name: str
+    nodes_by_role: dict[ToolforgeToolsDBNodeRoleName, list[str]]
 
 
 @dataclass(frozen=True)
@@ -284,6 +329,22 @@ _INVENTORY = {
                             "toolsbeta-test-k8s-control-4.toolsbeta.eqiad1.wikimedia.cloud",
                             "toolsbeta-test-k8s-control-5.toolsbeta.eqiad1.wikimedia.cloud",
                             "toolsbeta-test-k8s-control-6.toolsbeta.eqiad1.wikimedia.cloud",
+                        ],
+                    },
+                ),
+            },
+            ClusterType.TOOLFORGE_TOOLSDB: {
+                ToolforgeToolsDBClusterName.TOOLS: ToolforgeToolsDBCluster(
+                    name=ToolforgeToolsDBClusterName.TOOLS,
+                    instance_prefix="tools-db",
+                    security_group_name="toolsdb",
+                    nodes_by_role={
+                        ToolforgeToolsDBNodeRoleName.PRIMARY: [
+                            "tools-db-1.tools.eqiad1.wikimedia.cloud",
+                        ],
+                        # TODO: extract the replicas from the primary configuration if possible
+                        ToolforgeToolsDBNodeRoleName.REPLICA: [
+                            "tools-db-2.tools.eqiad1.wikimedia.cloud",
                         ],
                     },
                 ),
@@ -389,6 +450,9 @@ def _guess_cluster_type(node: str) -> ClusterType | None:
     if "-k8s-" in node:
         return ClusterType.TOOLFORGE_KUBERNETES
 
+    if "-db-" in node and node.startswith("tools"):
+        return ClusterType.TOOLFORGE_TOOLSDB
+
     return None
 
 
@@ -436,7 +500,7 @@ def _guess_cluster_name(
 
 def _guess_role_name(  # pylint: disable=too-many-return-statements
     node: str,
-) -> OpenstackNodeRoleName | CephNodeRoleName | ToolforgeKubernetesNodeRoleName | None:
+) -> OpenstackNodeRoleName | CephNodeRoleName | ToolforgeKubernetesNodeRoleName | ToolforgeToolsDBNodeRoleName | None:
     if node.startswith("cloudcephosd"):
         return CephNodeRoleName.OSD
     if node.startswith("cloudcephmon"):
@@ -455,6 +519,11 @@ def _guess_role_name(  # pylint: disable=too-many-return-statements
 
     if "-k8s-control-" in node:
         return ToolforgeKubernetesNodeRoleName.CONTROL
+
+    if "-db-1-" in node and node.startswith("tools"):
+        return ToolforgeToolsDBNodeRoleName.PRIMARY
+    if "-db-" in node and node.startswith("tools"):
+        return ToolforgeToolsDBNodeRoleName.REPLICA
 
     return None
 

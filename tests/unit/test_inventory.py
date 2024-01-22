@@ -22,6 +22,9 @@ from wmcs_libs.inventory import (
     ToolforgeKubernetesCluster,
     ToolforgeKubernetesClusterName,
     ToolforgeKubernetesNodeRoleName,
+    ToolforgeToolsDBCluster,
+    ToolforgeToolsDBClusterName,
+    ToolforgeToolsDBNodeRoleName,
     get_node_inventory_info,
     get_openstack_project_deployment,
 )
@@ -183,6 +186,48 @@ def get_dummy_inventory(
                     cluster_extra_args={
                         "instance_prefix": "tools",
                         "security_group_name": "tools-new-k8s-full-connectivity",
+                    },
+                ),
+            },
+            "Node not in inventory, matches OpenStack deployment host name and toolsdb role": {
+                "node_fqdn": "tools-db-2.tools.eqiad1.wikimedia.cloud",
+                "expected_node_inventory_info": NodeInventoryInfo(
+                    site_name=SiteName.EQIAD,
+                    openstack_project="tools",
+                    cluster_type=ClusterType.TOOLFORGE_TOOLSDB,
+                    cluster_name=ToolforgeToolsDBClusterName.TOOLS,
+                    role_name=ToolforgeToolsDBNodeRoleName.REPLICA,
+                ),
+                "inventory": get_dummy_inventory(
+                    site_name=SiteName.EQIAD,
+                    cluster_type=ClusterType.TOOLFORGE_TOOLSDB,
+                    cluster_name=ToolforgeToolsDBClusterName.TOOLS,
+                    role_name=ToolforgeToolsDBNodeRoleName.PRIMARY,
+                    cluster_class=ToolforgeToolsDBCluster,
+                    cluster_extra_args={
+                        "instance_prefix": "tools-db",
+                        "security_group_name": "toolsdb",
+                    },
+                ),
+            },
+            "Toolforge ToolsDB node in inventory": {
+                "node_fqdn": "tools-db-1.tools.eqiad1.wikimedia.cloud",
+                "expected_node_inventory_info": NodeInventoryInfo(
+                    site_name=SiteName.EQIAD,
+                    openstack_project="tools",
+                    cluster_type=ClusterType.TOOLFORGE_TOOLSDB,
+                    cluster_name=ToolforgeToolsDBClusterName.TOOLS,
+                    role_name=ToolforgeToolsDBNodeRoleName.REPLICA,
+                ),
+                "inventory": get_dummy_inventory(
+                    site_name=SiteName.EQIAD,
+                    cluster_type=ClusterType.TOOLFORGE_TOOLSDB,
+                    cluster_name=ToolforgeToolsDBClusterName.TOOLS,
+                    role_name=ToolforgeToolsDBNodeRoleName.PRIMARY,
+                    cluster_class=ToolforgeToolsDBCluster,
+                    cluster_extra_args={
+                        "instance_prefix": "tools-db",
+                        "security_group_name": "toolsdb",
                     },
                 ),
             },

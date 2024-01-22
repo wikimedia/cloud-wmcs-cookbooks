@@ -218,7 +218,10 @@ def run_one_raw_needed_to_be_able_to_mock(
     except StopIteration:
         return ""
 
-    raw_result = result[1].message().decode()
+    message = raw_result = result[1].message()
+    # Avoid crashing if we can't decode properly
+    raw_result = message.decode("utf-8", "backslashreplace")
+
     if skip_first_line:
         raw_result = "\n".join(raw_result.splitlines()[1:])
 
