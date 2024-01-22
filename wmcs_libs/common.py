@@ -295,7 +295,7 @@ def run_one_as_dict(
         cumin_params=cumin_params,
     )
     if not isinstance(result, dict):
-        raise TypeError(f"Was expecting a list, got {result}")
+        raise TypeError(f"Was expecting a dict, got {result}")
 
     return result
 
