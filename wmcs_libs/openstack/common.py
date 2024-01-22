@@ -684,11 +684,12 @@ class OpenstackAPI(CommandRunnerMixin):
         """
         # OS_PROJECT_ID=PROJECT wmcs-openstack quota show displays the admin project!
         # This must be run as wmcs-openstack quota show PROJECT
-        raw_quotas = self.run_formatted_as_dict(
+        raw_quotas = self.run_formatted_as_list(
             "quota", "show", project_as_arg=True, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
         )
         final_quotas: dict[str | OpenstackQuotaName, Any] = {}
-        for quota_name, quota_value in raw_quotas.items():
+        for quota_entry in raw_quotas:
+            quota_name, quota_value = quota_entry["Resource"], quota_entry["Limit"]
             try:
                 quota_entry = OpenstackQuotaEntry(name=OpenstackQuotaName(quota_name), value=quota_value)
                 final_quotas[quota_entry.name] = quota_entry
@@ -715,10 +716,7 @@ class OpenstackAPI(CommandRunnerMixin):
         self.run_raw("database", "quota", "update", self.project, resource, value)
 
     def quota_increase(self, *quota_increases: OpenstackQuotaEntry) -> None:
-        """Set a quota to the given value.
-
-        Note that this sets the final value, not an increase.
-        """
+        """Set a quota to the current value plus the given increase."""
         current_quotas = self.quota_show()
 
         increased_quotas: list[OpenstackQuotaEntry] = []
