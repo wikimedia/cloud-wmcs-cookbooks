@@ -18,7 +18,7 @@ from wmflib.interactive import ask_confirmation
 from wmflib.requests import http_session
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
-from wmcs_libs.inventory import ToolforgeKubernetesClusterName
+from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
     get_control_nodes,

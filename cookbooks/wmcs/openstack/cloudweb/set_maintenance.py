@@ -14,7 +14,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.alerts import downtime_host
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory.openstack import OpenstackClusterName
 
 LOGGER = logging.getLogger(__name__)
 

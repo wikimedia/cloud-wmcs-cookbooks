@@ -3,270 +3,28 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from enum import Enum, auto
-from typing import Any, Tuple, cast
-
-from wmcs_libs.common import ArgparsableEnum
-
-
-class InventoryError(Exception):
-    """Parent exception for the module."""
-
-
-class SiteName(Enum):
-    """Sites we have infrastructure in."""
-
-    EQIAD = "eqiad"
-    CODFW = "codfw"
-
-    def __str__(self):
-        """String representation"""
-        return self.value
-
-
-class ClusterType(Enum):
-    """Different types of clusters we handle."""
-
-    OPENSTACK = auto()
-    CEPH = auto()
-    TOOLFORGE_KUBERNETES = auto()
-    TOOLFORGE_TOOLSDB = auto()
-
-
-class ClusterName(ArgparsableEnum):
-    """Base class for a cluster name."""
-
-    def get_site(self) -> SiteName:
-        """Get the site a cluster is deployed in by the name."""
-        raise NotImplementedError()
-
-    def get_type(self) -> ClusterType:
-        """Get the cluster type from the name"""
-        raise NotImplementedError()
-
-
-class OpenStackProjectSpecificClusterName(ClusterName):
-    """A cluster name which is specific to an OpenStack project."""
-
-    def get_openstack_cluster_name(self) -> "OpenstackClusterName":
-        """Get the OpenStack cluster/deployment where a cluster is deployed in by the name."""
-        raise NotImplementedError()
-
-    def get_site(self) -> SiteName:
-        """Get the site a cluster is deployed in by the name."""
-        return self.get_openstack_cluster_name().get_site()
-
-    def get_project(self) -> str:
-        """Get the OpenStack cluster project where a cluster is deployed in by the name."""
-        raise NotImplementedError()
-
-
-class OpenstackClusterName(ClusterName):
-    """Every openstack cluster name we have (should be the same as deployment)."""
-
-    EQIAD1 = "eqiad1"
-    CODFW1DEV = "codfw1dev"
-
-    def get_site(self) -> SiteName:
-        """Get the site a cluster is deployed in by the name."""
-        if self == OpenstackClusterName.EQIAD1:
-            return SiteName.EQIAD
-        if self == OpenstackClusterName.CODFW1DEV:
-            return SiteName.CODFW
-
-        raise InventoryError(f"I don't know which site the cluster {self} is in.")
-
-    def get_type(self) -> ClusterType:
-        """Get the cluster type from the name"""
-        return ClusterType.OPENSTACK
-
-
-class NodeRoleName(ArgparsableEnum):
-    """Base node role name class, for inheritance."""
-
-
-class OpenstackNodeRoleName(NodeRoleName):
-    """Different types of openstack node roles."""
-
-    GATEWAY = "cloudgw"
-    CONTROL = "cloudcontrol"
-    SERVICES = "cloudservices"
-    NET = "cloudnet"
-    VIRT = "cloudvirt"
-
-
-class CephClusterName(ClusterName):
-    """Names of ceph clusters we have."""
-
-    EQIAD1 = "eqiad1"
-    CODFW1 = "codfw1"
-
-    def get_site(self) -> SiteName:
-        """Get the site a cluster is deployed in by the name."""
-        if self == CephClusterName.EQIAD1:
-            return SiteName.EQIAD
-        if self == CephClusterName.CODFW1:
-            return SiteName.CODFW
-
-        raise InventoryError(f"I don't know which site the cluster {self} is in.")
-
-    def get_type(self) -> ClusterType:
-        """Get the cluster type from the name"""
-        return ClusterType.CEPH
-
-
-class CephNodeRoleName(NodeRoleName):
-    """Ceph node (not daemon) roles."""
-
-    OSD = auto()
-    MON = auto()
-
-
-class ToolforgeToolsDBClusterName(OpenStackProjectSpecificClusterName):
-    """Names of toolsdb clusters we have."""
-
-    TOOLS = "tools"
-
-    def get_type(self) -> ClusterType:
-        """Get the cluster type from the name"""
-        return ClusterType.TOOLFORGE_TOOLSDB
-
-    def get_openstack_cluster_name(self) -> OpenstackClusterName:
-        """Get the OpenStack cluster/deployment where a cluster is deployed in by the name."""
-        return OpenstackClusterName.EQIAD1
-
-    def get_project(self) -> str:
-        """Get the OpenStack cluster project where a cluster is deployed in by the name."""
-        return "tools"
-
-
-class ToolforgeKubernetesClusterName(OpenStackProjectSpecificClusterName):
-    """Every Toolforge-like Kubernetes cluster we have."""
-
-    TOOLS = "tools"
-    TOOLSBETA = "toolsbeta"
-
-    def get_type(self) -> ClusterType:
-        """Get the cluster type from the name"""
-        return ClusterType.TOOLFORGE_KUBERNETES
-
-    def get_openstack_cluster_name(self) -> OpenstackClusterName:
-        """Get the OpenStack cluster/deployment where a cluster is deployed in by the name."""
-        return OpenstackClusterName.EQIAD1
-
-    def get_project(self) -> str:
-        """Get the OpenStack cluster project where a cluster is deployed in by the name."""
-        if self == ToolforgeKubernetesClusterName.TOOLS:
-            return "tools"
-        if self == ToolforgeKubernetesClusterName.TOOLSBETA:
-            return "toolsbeta"
-
-        raise InventoryError(f"I don't know which project the cluster {self} is in.")
-
-
-class ToolforgeKubernetesNodeRoleName(NodeRoleName):
-    """Toolforge Kubernetes node roles."""
-
-    CONTROL = "control"
-    WORKER = "worker"
-    INGRESS = "ingress"
-    ETCD = "etcd"
-
-    def __str__(self) -> str:
-        """Needed to show the nice string values and for argparse to use those to call the `type` parameter."""
-        return self.name.lower()
-
-    @classmethod
-    def from_str(cls, arg: str) -> "ToolforgeKubernetesNodeRoleName":
-        """Helps when passing ToolforgeKubernetesNodeRoleName to argparse as type."""
-        return cls[arg.upper()]
-
-    @property
-    def runs_kubelet(self) -> bool:
-        """Check if this node type is a Kubernetes worker or control node."""
-        return self != ToolforgeKubernetesNodeRoleName.ETCD
-
-    @property
-    def is_worker(self) -> bool:
-        """Check if this is a worker (including specialized worker roles)."""
-        return self in (ToolforgeKubernetesNodeRoleName.WORKER, ToolforgeKubernetesNodeRoleName.INGRESS)
-
-    @property
-    def has_extra_image_storage(self) -> bool:
-        """Check if nodes in this role have an extra partition for container image storage."""
-        return self == ToolforgeKubernetesNodeRoleName.WORKER
-
-
-class ToolforgeToolsDBNodeRoleName(NodeRoleName):
-    """Toolforge ToolsDB node roles."""
-
-    PRIMARY = "primary"
-    REPLICA = "replica"
-
-    def __str__(self) -> str:
-        """Needed to show the nice string values and for argparse to use those to call the `type` parameter."""
-        return self.name.lower()
-
-    @classmethod
-    def from_str(cls, arg: str) -> "ToolforgeToolsDBNodeRoleName":
-        """Helps when passing ToolforgeToolsDBNodeRoleName to argparse as type."""
-        return cls[arg.upper()]
-
-
-@dataclass(frozen=True)
-class Cluster:
-    """Base cluster, to be used as parent."""
-
-    name: ClusterName
-    # Enum as dict key does not match correctly to an Enum superclass (ex. CephNodeRoleName), so use Any
-    nodes_by_role: dict[Any, list[str]]
-
-
-@dataclass(frozen=True)
-class CephCluster(Cluster):
-    """Ceph cluster definition."""
-
-    name: CephClusterName
-    nodes_by_role: dict[CephNodeRoleName, list[str]]
-    osd_drives_count: int
-
-
-@dataclass(frozen=True)
-class OpenstackCluster(Cluster):
-    """Openstack cluster definition."""
-
-    name: OpenstackClusterName
-    nodes_by_role: dict[OpenstackNodeRoleName, list[str]]
-    internal_network_name: str
-
-
-@dataclass(frozen=True)
-class ToolforgeKubernetesCluster(Cluster):
-    """Toolforge Kubernetes cluster definition."""
-
-    name: ToolforgeKubernetesClusterName
-    instance_prefix: str
-    security_group_name: str
-    nodes_by_role: dict[ToolforgeKubernetesNodeRoleName, list[str]]
-
-
-@dataclass(frozen=True)
-class ToolforgeToolsDBCluster(Cluster):
-    """Toolforge ToolsDB cluster definition."""
-
-    name: ToolforgeToolsDBClusterName
-    instance_prefix: str
-    security_group_name: str
-    nodes_by_role: dict[ToolforgeToolsDBNodeRoleName, list[str]]
-
-
-@dataclass(frozen=True)
-class Site:
-    """A whole site representation, with support for multi-clusters."""
-
-    name: SiteName
-    clusters_by_type: dict[ClusterType, dict[Any, Cluster]]
-
+from enum import Enum
+from typing import Tuple, cast
+
+from wmcs_libs.inventory.ceph import CephCluster, CephClusterName, CephNodeRoleName
+from wmcs_libs.inventory.cluster import ClusterName, ClusterType, NodeRoleName, Site, SiteName
+from wmcs_libs.inventory.exceptions import InventoryError
+from wmcs_libs.inventory.openstack import (
+    OpenstackCluster,
+    OpenstackClusterName,
+    OpenstackNodeRoleName,
+    OpenStackProjectSpecificClusterName,
+)
+from wmcs_libs.inventory.toolsdb import (
+    ToolforgeToolsDBCluster,
+    ToolforgeToolsDBClusterName,
+    ToolforgeToolsDBNodeRoleName,
+)
+from wmcs_libs.inventory.toolsk8s import (
+    ToolforgeKubernetesCluster,
+    ToolforgeKubernetesClusterName,
+    ToolforgeKubernetesNodeRoleName,
+)
 
 # TODO: replace this with different sources (dynamic or not) for hosts, ex. netbox, openstack cluster, ceph cluster,
 #       k8s cluster ...
@@ -577,22 +335,6 @@ def get_node_inventory_info(node: str) -> NodeInventoryInfo:
     )
 
 
-def get_openstack_project_deployment(fqdn: str) -> Tuple[str, OpenstackClusterName]:
-    """Guess the project and cluster of a Cloud VPS VM."""
-    if not fqdn.endswith(".wikimedia.cloud"):
-        raise InventoryError(f"'{fqdn}' does not seem to be a Cloud VPS VM")
-    try:
-        _, project, cluster_name, _, _ = fqdn.split(".")
-        cluster = OpenstackClusterName(cluster_name)
-    except ValueError as e:
-        # A ValueError is thrown both when
-        #  * there is a wrong number of segments in the FQDN to unpack
-        #  * the cluster name is invalid
-        raise InventoryError(f"Unable to parse FQDN '{fqdn}'") from e
-
-    return project, cluster
-
-
 def generic_get_node_cluster_name(node: str) -> ClusterName:
     """Try to get the node cluster_name or raise.
 
@@ -649,3 +391,19 @@ def get_openstack_internal_network_name(cluster_name: OpenstackClusterName) -> s
     os_cluster = cast(OpenstackCluster, inventory[site].clusters_by_type[ClusterType.OPENSTACK][cluster_name])
 
     return os_cluster.internal_network_name
+
+
+def get_openstack_project_deployment(fqdn: str) -> Tuple[str, OpenstackClusterName]:
+    """Guess the project and cluster of a Cloud VPS VM."""
+    if not fqdn.endswith(".wikimedia.cloud"):
+        raise InventoryError(f"'{fqdn}' does not seem to be a Cloud VPS VM")
+    try:
+        _, project, cluster_name, _, _ = fqdn.split(".")
+        cluster = OpenstackClusterName(cluster_name)
+    except ValueError as e:
+        # A ValueError is thrown both when
+        #  * there is a wrong number of segments in the FQDN to unpack
+        #  * the cluster name is invalid
+        raise InventoryError(f"Unable to parse FQDN '{fqdn}'") from e
+
+    return project, cluster

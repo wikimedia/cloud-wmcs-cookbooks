@@ -27,13 +27,12 @@ from wmcs_libs.common import (
     run_one_raw,
 )
 from wmcs_libs.inventory import (
-    CephClusterName,
-    CephNodeRoleName,
     generic_get_node_cluster_name,
     get_node_inventory_info,
     get_nodes_by_role,
     get_osd_drives_count,
 )
+from wmcs_libs.inventory.ceph import CephClusterName, CephNodeRoleName
 
 LOGGER = logging.getLogger(__name__)
 # list of alerts that are triggered by the cluster aside from the specifics for each node

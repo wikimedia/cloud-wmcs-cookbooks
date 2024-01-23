@@ -7,7 +7,7 @@ import cumin
 import pytest
 
 from wmcs_libs.common import UtilsForTesting
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 from wmcs_libs.openstack.neutron import (
     NetworkUnhealthy,

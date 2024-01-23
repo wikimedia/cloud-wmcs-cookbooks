@@ -12,7 +12,7 @@ from wmcs_libs.common import (
     OutputFormat,
     with_temporary_file,
 )
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import get_control_nodes
 
 

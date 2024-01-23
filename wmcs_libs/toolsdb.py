@@ -7,7 +7,8 @@ from typing import Literal
 from spicerack.remote import Remote, RemoteExecutionError, RemoteHosts
 
 from wmcs_libs.common import CUMIN_SAFE_WITHOUT_OUTPUT, run_one_formatted_as_list, run_one_raw
-from wmcs_libs.inventory import ToolforgeToolsDBClusterName, ToolforgeToolsDBNodeRoleName, get_nodes_by_role
+from wmcs_libs.inventory import get_nodes_by_role
+from wmcs_libs.inventory.toolsdb import ToolforgeToolsDBClusterName, ToolforgeToolsDBNodeRoleName
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,16 +18,26 @@ HostStatus = Literal["Up", "Down", "Unknown"]
 
 @dataclass(frozen=True)
 class ReplicationState:
+    """Shared data between primary and replica states."""
+
     status: ReplicationStatus
 
 
 @dataclass(frozen=True)
 class PrimaryReplicationState(ReplicationState):
+    """Primary node state information."""
+
     replica_ids: list[str]
 
 
 @dataclass(frozen=True)
 class ReplicaReplicationState(ReplicationState):
+    """Replica node state information.
+
+    To add new ones to be fetched, just add them here as they show in 'show slave status', lowercased and they will
+    be populated automatically.
+    """
+
     slave_io_state: str
     master_host: str
     master_log_file: str
@@ -44,6 +55,8 @@ class ReplicaReplicationState(ReplicationState):
 
 @dataclass(frozen=True)
 class NodeStatus:
+    """Info about a toolsdb node."""
+
     fqdn: str
     nodeid: str
     replication_state: ReplicationState
@@ -179,8 +192,6 @@ class MariaDBNode:
 
 
 class ToolsDBController:
-    """ToolsDB cluster controller class."""
-
     def __init__(self, remote: Remote, cluster_name: ToolforgeToolsDBClusterName):
         self.cluster_name = cluster_name
         self.primary_node_fqdn = get_nodes_by_role(
@@ -194,7 +205,6 @@ class ToolsDBController:
         )
 
     def get_cluster_status(self) -> ClusterStatus:
-        """Retrieve the current status of the cluster."""
         primary_status = self.primary_node.get_node_status()
         replica_nodes = self.get_replica_nodes()
         return ClusterStatus(

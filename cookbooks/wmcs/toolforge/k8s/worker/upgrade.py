@@ -19,12 +19,8 @@ from spicerack.decorators import retry
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw
-from wmcs_libs.inventory import (
-    NodeInventoryInfo,
-    ToolforgeKubernetesClusterName,
-    ToolforgeKubernetesNodeRoleName,
-    get_node_inventory_info,
-)
+from wmcs_libs.inventory.inventory import NodeInventoryInfo, get_node_inventory_info
+from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
     get_control_nodes,

@@ -18,7 +18,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from cookbooks.wmcs.toolforge.k8s.worker.drain import Drain
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, natural_sort_key
-from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
+from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
     get_cluster_node_prefix,

@@ -14,7 +14,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.inventory import ToolforgeToolsDBClusterName
+from wmcs_libs.inventory.toolsdb import ToolforgeToolsDBClusterName
 from wmcs_libs.toolsdb import ReplicaReplicationState, ToolsDBController
 
 LOGGER = logging.getLogger(__name__)

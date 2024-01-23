@@ -16,7 +16,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from cookbooks.wmcs.ceph.reboot_node import RebootNode
 from wmcs_libs.ceph import CephClusterController
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.inventory import CephClusterName
+from wmcs_libs.inventory.ceph import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 

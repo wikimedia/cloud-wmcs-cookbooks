@@ -8,13 +8,12 @@ from typing import Callable, cast
 from spicerack import Spicerack
 
 from wmcs_libs.common import CommonOpts, add_common_opts
-from wmcs_libs.inventory import (
-    ClusterType,
+from wmcs_libs.inventory.cluster import ClusterType
+from wmcs_libs.inventory.inventory import get_inventory, get_nodes_by_role
+from wmcs_libs.inventory.toolsk8s import (
     ToolforgeKubernetesCluster,
     ToolforgeKubernetesClusterName,
     ToolforgeKubernetesNodeRoleName,
-    get_inventory,
-    get_nodes_by_role,
 )
 
 

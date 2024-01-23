@@ -17,7 +17,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from cookbooks.wmcs.toolforge.k8s.etcd.add_node_to_cluster import AddNodeToCluster
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
-from wmcs_libs.inventory import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
+from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
     get_cluster_node_prefix,

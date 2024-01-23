@@ -7,7 +7,7 @@ import cumin
 import pytest
 
 from wmcs_libs.common import CUMIN_SAFE_WITHOUT_OUTPUT, UtilsForTesting
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackBadQuota, OpenstackQuotaEntry, OpenstackQuotaName, Unit
 
 

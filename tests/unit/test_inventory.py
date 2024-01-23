@@ -6,27 +6,20 @@ from unittest import mock
 import pytest
 
 from wmcs_libs.common import UtilsForTesting
-from wmcs_libs.inventory import (
-    CephNodeRoleName,
-    Cluster,
-    ClusterName,
-    ClusterType,
-    InventoryError,
-    NodeInventoryInfo,
-    NodeRoleName,
-    OpenstackCluster,
-    OpenstackClusterName,
-    OpenstackNodeRoleName,
-    Site,
-    SiteName,
-    ToolforgeKubernetesCluster,
-    ToolforgeKubernetesClusterName,
-    ToolforgeKubernetesNodeRoleName,
+from wmcs_libs.inventory.ceph import CephNodeRoleName
+from wmcs_libs.inventory.cluster import Cluster, ClusterName, ClusterType, NodeRoleName, Site, SiteName
+from wmcs_libs.inventory.exceptions import InventoryError
+from wmcs_libs.inventory.inventory import NodeInventoryInfo, get_node_inventory_info, get_openstack_project_deployment
+from wmcs_libs.inventory.openstack import OpenstackCluster, OpenstackClusterName, OpenstackNodeRoleName
+from wmcs_libs.inventory.toolsdb import (
     ToolforgeToolsDBCluster,
     ToolforgeToolsDBClusterName,
     ToolforgeToolsDBNodeRoleName,
-    get_node_inventory_info,
-    get_openstack_project_deployment,
+)
+from wmcs_libs.inventory.toolsk8s import (
+    ToolforgeKubernetesCluster,
+    ToolforgeKubernetesClusterName,
+    ToolforgeKubernetesNodeRoleName,
 )
 
 
@@ -237,7 +230,7 @@ def get_dummy_inventory(
 def test_get_node_inventory_info(
     node_fqdn: str, expected_node_inventory_info: NodeInventoryInfo, inventory: dict[SiteName, Site]
 ):
-    with mock.patch("wmcs_libs.inventory.get_inventory", return_value=inventory):
+    with mock.patch("wmcs_libs.inventory.inventory.get_inventory", return_value=inventory):
         gotten_inventory_info = get_node_inventory_info(node=node_fqdn)
 
     assert gotten_inventory_info == expected_node_inventory_info

@@ -15,7 +15,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from cookbooks.wmcs.openstack.cloudnet.reboot_node import RebootNode
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 from wmcs_libs.openstack.neutron import NeutronController
 

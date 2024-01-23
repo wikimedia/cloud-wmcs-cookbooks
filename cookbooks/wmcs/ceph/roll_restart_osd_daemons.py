@@ -24,7 +24,7 @@ from wmcs_libs.common import (
     run_one_raw,
     with_common_opts,
 )
-from wmcs_libs.inventory import CephClusterName
+from wmcs_libs.inventory.ceph import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 

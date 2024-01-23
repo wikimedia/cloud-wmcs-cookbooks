@@ -24,7 +24,7 @@ from wmcs_libs.common import (
     with_common_opts,
 )
 from wmcs_libs.grid import GridController, GridNodeNotFound
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)

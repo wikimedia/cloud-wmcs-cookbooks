@@ -35,7 +35,7 @@ from wmcs_libs.common import (
     run_one_raw,
     with_common_opts,
 )
-from wmcs_libs.inventory import OpenstackClusterName
+from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackIdentifier, OpenstackServerGroupPolicy
 
 LOGGER = logging.getLogger(__name__)

@@ -22,7 +22,7 @@ from wmcs_libs.ceph import (
     OSDTreeNode,
     OSDTreeOSDNode,
 )
-from wmcs_libs.inventory import CephClusterName
+from wmcs_libs.inventory.ceph import CephClusterName
 
 
 def parametrize(params: dict[str, Any]):
