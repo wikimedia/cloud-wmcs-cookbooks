@@ -16,6 +16,7 @@ from spicerack.puppet import PuppetHosts, PuppetMaster
 from spicerack.remote import RemoteExecutionError
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
+from wmcs_libs.inventory import get_openstack_project_deployment
 
 LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ class RefreshPuppetCerts(CookbookBase):
             description=__doc__,
             formatter_class=ArgparseFormatter,
         )
-        add_common_opts(parser)
+        add_common_opts(parser, project_default=None)
         parser.add_argument(
             "--fqdn",
             required=True,
@@ -96,6 +97,7 @@ class RefreshPuppetCerts(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
+        args.project, _ = get_openstack_project_deployment(args.fqdn)
         return with_common_opts(self.spicerack, args, RefreshPuppetCertsRunner)(
             fqdn=args.fqdn,
             pre_run_puppet=args.pre_run_puppet,
@@ -124,7 +126,7 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
     @property
     def runtime_description(self) -> str:
         """Return a nicely formatted string that represents the cookbook action."""
-        return f" on {self.fqdn}"
+        return f"on {self.fqdn}"
 
     def run(self) -> None:
         """Main entry point.

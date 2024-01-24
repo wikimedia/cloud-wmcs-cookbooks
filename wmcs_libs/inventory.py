@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any, cast
+from typing import Any, Tuple, cast
 
 from wmcs_libs.common import ArgparsableEnum
 
@@ -506,6 +506,22 @@ def get_node_inventory_info(node: str) -> NodeInventoryInfo:
         cluster_name=guessed_cluster_name,
         role_name=guessed_role_name,
     )
+
+
+def get_openstack_project_deployment(fqdn: str) -> Tuple[str, OpenstackClusterName]:
+    """Guess the project and cluster of a Cloud VPS VM."""
+    if not fqdn.endswith(".wikimedia.cloud"):
+        raise InventoryError(f"'{fqdn}' does not seem to be a Cloud VPS VM")
+    try:
+        _, project, cluster_name, _, _ = fqdn.split(".")
+        cluster = OpenstackClusterName(cluster_name)
+    except ValueError as e:
+        # A ValueError is thrown both when
+        #  * there is a wrong number of segments in the FQDN to unpack
+        #  * the cluster name is invalid
+        raise InventoryError(f"Unable to parse FQDN '{fqdn}'") from e
+
+    return project, cluster
 
 
 def generic_get_node_cluster_name(node: str) -> ClusterName:

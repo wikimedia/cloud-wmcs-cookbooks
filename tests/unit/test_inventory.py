@@ -11,6 +11,7 @@ from wmcs_libs.inventory import (
     Cluster,
     ClusterName,
     ClusterType,
+    InventoryError,
     NodeInventoryInfo,
     NodeRoleName,
     OpenstackCluster,
@@ -22,6 +23,7 @@ from wmcs_libs.inventory import (
     ToolforgeKubernetesClusterName,
     ToolforgeKubernetesNodeRoleName,
     get_node_inventory_info,
+    get_openstack_project_deployment,
 )
 
 
@@ -194,3 +196,35 @@ def test_get_node_inventory_info(
         gotten_inventory_info = get_node_inventory_info(node=node_fqdn)
 
     assert gotten_inventory_info == expected_node_inventory_info
+
+
+@pytest.mark.parametrize(
+    "node_fqdn, expected_project, expected_cluster",
+    [
+        ("tools-k8s-control-N.tools.eqiad1.wikimedia.cloud", "tools", OpenstackClusterName.EQIAD1),
+        (
+            "toolsbeta-test-k8s-control-N.toolsbeta.codfw1dev.wikimedia.cloud",
+            "toolsbeta",
+            OpenstackClusterName.CODFW1DEV,
+        ),
+    ],
+)
+def test_get_openstack_project_deployment_ok(
+    node_fqdn: str, expected_project: str, expected_cluster: OpenstackClusterName
+) -> None:
+    assert get_openstack_project_deployment(node_fqdn) == (expected_project, expected_cluster)
+
+
+@pytest.mark.parametrize(
+    "node_fqdn",
+    [
+        "foobar",
+        "cloudcontrol1005.eqiad.wmnet",
+        "tools.eqiad1.wikimedia.cloud",
+        "foo.bar.baz.tools.eqiad1.wikimedia.cloud",
+        "somevm.tools.invalid.wikimedia.cloud",
+    ],
+)
+def test_get_openstack_project_deployment_invalid(node_fqdn: str) -> None:
+    with pytest.raises(InventoryError):
+        assert get_openstack_project_deployment(node_fqdn) is None
