@@ -69,6 +69,15 @@ class ToolforgeAddK8sNode(CookbookBase):
             ),
         )
         parser.add_argument(
+            "--network",
+            required=False,
+            default=None,
+            help=(
+                "Network for the new instance (will use the same as the latest existing one by default, ex. "
+                "lan-flat-cloudinstances2b, ex. a69bdfad-d7d2-4cfa-8231-3d6d3e0074c9)"
+            ),
+        )
+        parser.add_argument(
             "--role",
             required=True,
             choices=[role for role in ToolforgeKubernetesNodeRoleName if role.runs_kubelet],
@@ -83,6 +92,7 @@ class ToolforgeAddK8sNode(CookbookBase):
         return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeAddK8sNodeRunner,)(
             image=args.image,
             flavor=args.flavor,
+            network=args.network,
             role=args.role,
             spicerack=self.spicerack,
         )
@@ -98,6 +108,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
         image: str | None,
         flavor: str | None,
+        network: str | None,
         role: ToolforgeKubernetesNodeRoleName,
     ):
         """Init"""
@@ -106,6 +117,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.image = image
         self.flavor = flavor
+        self.network = network
         self.role = role
 
     @property
@@ -154,6 +166,9 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
 
         if self.flavor:
             start_args.extend(["--flavor", self.flavor])
+
+        if self.network:
+            start_args.extend(["--network", self.network])
 
         create_instance_cookbook = CreateInstanceWithPrefix(spicerack=self.spicerack)
         new_member = create_instance_cookbook.get_runner(
