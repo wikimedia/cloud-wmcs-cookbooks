@@ -25,7 +25,7 @@ from wmcs_libs.common import (
     parser_type_list_hostnames,
     with_common_opts,
 )
-from wmcs_libs.inventory.inventory import get_openstack_internal_network_name
+from wmcs_libs.inventory.libs import get_openstack_internal_network_name
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackClusterName, OpenstackName, get_control_nodes
 
 LOGGER = logging.getLogger(__name__)

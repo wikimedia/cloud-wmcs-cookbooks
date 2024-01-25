@@ -28,7 +28,7 @@ from wmcs_libs.common import (
     run_one_raw,
     simple_create_file,
 )
-from wmcs_libs.inventory import generic_get_node_cluster_name, get_node_inventory_info, get_nodes_by_role
+from wmcs_libs.inventory.libs import generic_get_node_cluster_name, get_node_inventory_info, get_nodes_by_role
 from wmcs_libs.inventory.openstack import OpenstackClusterName, OpenstackNodeRoleName
 
 LOGGER = logging.getLogger(__name__)

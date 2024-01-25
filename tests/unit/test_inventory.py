@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Type
-from unittest import mock
 
 import pytest
 
@@ -9,7 +8,7 @@ from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.inventory.ceph import CephNodeRoleName
 from wmcs_libs.inventory.cluster import Cluster, ClusterName, ClusterType, NodeRoleName, Site, SiteName
 from wmcs_libs.inventory.exceptions import InventoryError
-from wmcs_libs.inventory.inventory import NodeInventoryInfo, get_node_inventory_info, get_openstack_project_deployment
+from wmcs_libs.inventory.libs import NodeInventoryInfo, get_node_inventory_info, get_openstack_project_deployment
 from wmcs_libs.inventory.openstack import OpenstackCluster, OpenstackClusterName, OpenstackNodeRoleName
 from wmcs_libs.inventory.toolsdb import (
     ToolforgeToolsDBCluster,
@@ -184,27 +183,6 @@ def get_dummy_inventory(
                     },
                 ),
             },
-            "Node not in inventory, matches OpenStack deployment host name and toolsdb role": {
-                "node_fqdn": "tools-db-2.tools.eqiad1.wikimedia.cloud",
-                "expected_node_inventory_info": NodeInventoryInfo(
-                    site_name=SiteName.EQIAD,
-                    openstack_project="tools",
-                    cluster_type=ClusterType.TOOLFORGE_TOOLSDB,
-                    cluster_name=ToolforgeToolsDBClusterName.TOOLS,
-                    role_name=ToolforgeToolsDBNodeRoleName.REPLICA,
-                ),
-                "inventory": get_dummy_inventory(
-                    site_name=SiteName.EQIAD,
-                    cluster_type=ClusterType.TOOLFORGE_TOOLSDB,
-                    cluster_name=ToolforgeToolsDBClusterName.TOOLS,
-                    role_name=ToolforgeToolsDBNodeRoleName.PRIMARY,
-                    cluster_class=ToolforgeToolsDBCluster,
-                    cluster_extra_args={
-                        "instance_prefix": "tools-db",
-                        "security_group_name": "toolsdb",
-                    },
-                ),
-            },
             "Toolforge ToolsDB node in inventory": {
                 "node_fqdn": "tools-db-1.tools.eqiad1.wikimedia.cloud",
                 "expected_node_inventory_info": NodeInventoryInfo(
@@ -212,9 +190,10 @@ def get_dummy_inventory(
                     openstack_project="tools",
                     cluster_type=ClusterType.TOOLFORGE_TOOLSDB,
                     cluster_name=ToolforgeToolsDBClusterName.TOOLS,
-                    role_name=ToolforgeToolsDBNodeRoleName.REPLICA,
+                    role_name=ToolforgeToolsDBNodeRoleName.PRIMARY,
                 ),
                 "inventory": get_dummy_inventory(
+                    node_fqdn="tools-db-1.tools.eqiad1.wikimedia.cloud",
                     site_name=SiteName.EQIAD,
                     cluster_type=ClusterType.TOOLFORGE_TOOLSDB,
                     cluster_name=ToolforgeToolsDBClusterName.TOOLS,
@@ -232,8 +211,7 @@ def get_dummy_inventory(
 def test_get_node_inventory_info(
     node_fqdn: str, expected_node_inventory_info: NodeInventoryInfo, inventory: dict[SiteName, Site]
 ):
-    with mock.patch("wmcs_libs.inventory.inventory.get_inventory", return_value=inventory):
-        gotten_inventory_info = get_node_inventory_info(node=node_fqdn)
+    gotten_inventory_info = get_node_inventory_info(node=node_fqdn, inventory=inventory)
 
     assert gotten_inventory_info == expected_node_inventory_info
 

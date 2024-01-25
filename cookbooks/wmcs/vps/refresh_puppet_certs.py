@@ -17,7 +17,7 @@ from spicerack.puppet import PuppetHosts, PuppetServer
 from spicerack.remote import RemoteExecutionError
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
-from wmcs_libs.inventory import get_openstack_project_deployment
+from wmcs_libs.inventory.libs import get_openstack_project_deployment
 
 LOGGER = logging.getLogger(__name__)
 

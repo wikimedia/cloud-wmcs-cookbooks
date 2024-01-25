@@ -7,7 +7,8 @@ from typing import Literal
 from spicerack.remote import Remote, RemoteExecutionError, RemoteHosts
 
 from wmcs_libs.common import CUMIN_SAFE_WITHOUT_OUTPUT, run_one_formatted_as_list, run_one_raw
-from wmcs_libs.inventory import get_nodes_by_role
+from wmcs_libs.inventory.dynamic import get_inventory
+from wmcs_libs.inventory.libs import get_nodes_by_role
 from wmcs_libs.inventory.toolsdb import ToolforgeToolsDBClusterName, ToolforgeToolsDBNodeRoleName
 
 LOGGER = logging.getLogger(__name__)
@@ -194,10 +195,14 @@ class MariaDBNode:
 class ToolsDBController:
     def __init__(self, remote: Remote, cluster_name: ToolforgeToolsDBClusterName):
         self.cluster_name = cluster_name
-        self.primary_node_fqdn = get_nodes_by_role(
-            cluster_name=self.cluster_name, role_name=ToolforgeToolsDBNodeRoleName.PRIMARY
-        )[0]
         self._remote = remote
+        # cache the inventory
+        self._inventory = get_inventory(load_dynamic_inventory=True, remote=self._remote)
+        self.primary_node_fqdn = get_nodes_by_role(
+            cluster_name=self.cluster_name,
+            role_name=ToolforgeToolsDBNodeRoleName.PRIMARY,
+            inventory=self._inventory,
+        )[0]
         self.primary_node = MariaDBNode(
             node=self._remote.query(f"D{{{self.primary_node_fqdn}}}", use_sudo=True),
             fqdn=self.primary_node_fqdn,
@@ -218,7 +223,9 @@ class ToolsDBController:
         To get the ones connected use `MariaDBNode.get_connected_replica_ids`.
         """
         defined_replicas = get_nodes_by_role(
-            cluster_name=self.cluster_name, role_name=ToolforgeToolsDBNodeRoleName.REPLICA
+            cluster_name=self.cluster_name,
+            role_name=ToolforgeToolsDBNodeRoleName.REPLICA,
+            inventory=self._inventory,
         )
         return {
             defined_replica: MariaDBNode(

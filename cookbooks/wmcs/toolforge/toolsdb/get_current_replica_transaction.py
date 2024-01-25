@@ -80,46 +80,50 @@ class ToolsDBGetCurrentReplicaTransactionRunner(WMCSCookbookRunnerBase):
 
     def run(self) -> None:
         """Main entry point"""
-        replica_nodes = self.toolsdb_controller.get_replica_nodes()
+        for replica_name, replica_node in self.toolsdb_controller.get_replica_nodes().items():
+            replica_state = replica_node.get_node_status()
+            if replica_state.mariadb_status != "Running":
+                logging.warning("Skipping not-active replica node %s: %s", replica_name, str(replica_state))
+                continue
 
-        # TODO: allow filtering which replica to get it from, once we have >1
-        myreplica = next(node for node in replica_nodes.values())
-        replication_state = cast(ReplicaReplicationState, myreplica.get_replication_state())
+            replication_state = cast(ReplicaReplicationState, replica_state.replication_state)
 
-        start = int(replication_state.exec_master_log_pos)
-        new_stop = start + 1
-        last_stop = new_stop
-        binlog_chunk = ""
-        maybe_table_regex = re.compile("Table_map: ([^ ]*) mapped")
-        maybe_table_match = None
-        # we keep going until we find some useful data
-        while not maybe_table_match:
-            binlog_chunk = self.toolsdb_controller.primary_node.get_binlog_entry(
-                logfile=replication_state.relay_master_log_file,
-                # we start at the same place, as starting from a non-existing position will make the command fail
-                # and the numbers are not sequential
-                start_pos=start,
-                stop_pos=new_stop,
-            )
-            maybe_table_match = maybe_table_regex.search(binlog_chunk)
-            new_stop = last_stop + 10000
+            start = int(replication_state.exec_master_log_pos)
+            new_stop = start + 1
             last_stop = new_stop
+            binlog_chunk = ""
+            maybe_table_regex = re.compile("Table_map: ([^ ]*) mapped")
+            maybe_table_match = None
+            # we keep going until we find some useful data
+            while not maybe_table_match:
+                binlog_chunk = self.toolsdb_controller.primary_node.get_binlog_entry(
+                    logfile=replication_state.relay_master_log_file,
+                    # we start at the same place, as starting from a non-existing position will make the command fail
+                    # and the numbers are not sequential
+                    start_pos=start,
+                    stop_pos=new_stop,
+                )
+                maybe_table_match = maybe_table_regex.search(binlog_chunk)
+                new_stop = last_stop + 10000
+                last_stop = new_stop
 
-        potential_tables = set()
-        potential_queries = set()
-        for binlog_line in binlog_chunk.splitlines():
-            maybe_table_match = maybe_table_regex.search(binlog_line)
-            if maybe_table_match:
-                potential_tables.add(maybe_table_match.group())
+            potential_tables = set()
+            potential_queries = set()
+            for binlog_line in binlog_chunk.splitlines():
+                maybe_table_match = maybe_table_regex.search(binlog_line)
+                if maybe_table_match:
+                    potential_tables.add(maybe_table_match.group())
 
-            if binlog_line.startswith("#Q>"):
-                potential_queries.add(binlog_line)
+                if binlog_line.startswith("#Q>"):
+                    potential_queries.add(binlog_line)
 
-        potential_queries_str = "\n    ".join(potential_queries)
-        potential_tables_str = "\n    ".join(potential_tables)
-        print(f"Suspicious tables:\n    {potential_tables_str}")
-        print(f"Suspicious queries:\n    {potential_queries_str}")
-        if self.show_raw_binlog:
-            print("Raw logs:\n------------")
-            print(binlog_chunk)
-            print("------------")
+            potential_queries_str = "\n    ".join(potential_queries)
+            potential_tables_str = "\n    ".join(potential_tables)
+            print("#" * 75)
+            print(f"Replica: {replica_name}")
+            print(f"Suspicious tables:\n    {potential_tables_str}")
+            print(f"Suspicious queries:\n    {potential_queries_str}")
+            if self.show_raw_binlog:
+                print("Raw logs:\n------------")
+                print(binlog_chunk)
+                print("------------")
