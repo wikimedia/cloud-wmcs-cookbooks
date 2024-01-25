@@ -119,7 +119,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
             return
 
         device = "/dev/sdb"
-        LOGGER.info("Making sure %s is ext4, docker overlay storage needs it", device)
+        LOGGER.info("Making sure %s is ext4, container overlay storage needs it", device)
         run_one_raw(
             node=node,
             # we have to remove the mount from fstab as the fstype will be wrong
@@ -128,7 +128,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
                 "|| { "
                 f"    sudo umount {device} 2>/dev/null; "
                 f"    sudo -i mkfs.ext4 {device}; "
-                f"    sudo sed -i -e '\\|^.*/var/lib/docker\\s.*|d' /etc/fstab; "
+                f"    sudo sed -i -e '\\:^.*/var/lib/\\(docker\\|containerd\\)\\s.*:d' /etc/fstab; "
                 "}"
             ),
         )
