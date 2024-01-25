@@ -64,11 +64,11 @@ def get_cluster_security_group_name(cluster_name: ToolforgeKubernetesClusterName
 def get_cluster_node_prefix(cluster_name: ToolforgeKubernetesClusterName, role: ToolforgeKubernetesNodeRoleName) -> str:
     """Gets the naming prefix for nodes with a given role in a given cluster."""
     cluster = _get_cluster(cluster_name)
-    return f"{cluster.instance_prefix}-k8s-{role.name.lower()}"
+    return f"{cluster.instance_prefix}-k8s-{role.value}"
 
 
 def get_cluster_node_server_group_name(
     cluster_name: ToolforgeKubernetesClusterName, role: ToolforgeKubernetesNodeRoleName
 ) -> str:
     """Gets the name of the OpenStack server group to use for given role in a given cluster."""
-    return f"{cluster_name.name.lower()}-k8s-{role.name.lower()}"
+    return f"{cluster_name.name.lower()}-k8s-{role.value}"
