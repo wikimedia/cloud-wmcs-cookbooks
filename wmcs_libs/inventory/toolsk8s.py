@@ -36,6 +36,7 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
 
     CONTROL = "control"
     WORKER = "worker"
+    WORKER_NFS = "worker-nfs"
     INGRESS = "ingress"
     ETCD = "etcd"
 
@@ -56,12 +57,16 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     @property
     def is_worker(self) -> bool:
         """Check if this is a worker (including specialized worker roles)."""
-        return self in (ToolforgeKubernetesNodeRoleName.WORKER, ToolforgeKubernetesNodeRoleName.INGRESS)
+        return self in (
+            ToolforgeKubernetesNodeRoleName.WORKER,
+            ToolforgeKubernetesNodeRoleName.WORKER_NFS,
+            ToolforgeKubernetesNodeRoleName.INGRESS,
+        )
 
     @property
     def has_extra_image_storage(self) -> bool:
         """Check if nodes in this role have an extra partition for container image storage."""
-        return self == ToolforgeKubernetesNodeRoleName.WORKER
+        return self in (ToolforgeKubernetesNodeRoleName.WORKER, ToolforgeKubernetesNodeRoleName.WORKER_NFS)
 
 
 @dataclass(frozen=True)

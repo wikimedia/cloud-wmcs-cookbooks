@@ -3,6 +3,7 @@ r"""WMCS Toolforge - Depool and delete the given k8s worker node from a Toolforg
 Usage example:
     cookbook wmcs.toolforge.remove_k8s_node \
         --cluster-name toolsbeta \
+        --role worker \
         --hostname-to-remove toolsbeta-test-worker-4
 
 """

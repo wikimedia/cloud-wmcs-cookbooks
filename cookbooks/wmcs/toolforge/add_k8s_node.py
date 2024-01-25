@@ -73,7 +73,6 @@ class ToolforgeAddK8sNode(CookbookBase):
             required=True,
             choices=[role for role in ToolforgeKubernetesNodeRoleName if role.runs_kubelet],
             type=ToolforgeKubernetesNodeRoleName.from_str,
-            default=ToolforgeKubernetesNodeRoleName.WORKER,
             help="Role of the node to create",
         )
 

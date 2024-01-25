@@ -3,6 +3,7 @@ r"""WMCS Toolforge - Depool and delete the given k8s worker node from a toolforg
 Usage example:
     cookbook wmcs.toolforge.k8s.worker.depool_and_remove_node \
         --cluster-name toolsbeta \
+        --role worker \
         --hostname-to-remove toolsbeta-test-worker-4
 
 """
@@ -55,7 +56,6 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
             required=True,
             choices=[role for role in ToolforgeKubernetesNodeRoleName if role.runs_kubelet],
             type=ToolforgeKubernetesNodeRoleName.from_str,
-            default=ToolforgeKubernetesNodeRoleName.WORKER,
             help="Role of the node to remove",
         )
 
