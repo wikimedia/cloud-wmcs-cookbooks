@@ -33,6 +33,7 @@ from wmcs_libs.k8s.clusters import (
 from wmcs_libs.k8s.kubeadm import KubeadmController
 from wmcs_libs.k8s.kubernetes import KubernetesController
 from wmcs_libs.openstack.common import OpenstackServerGroupPolicy
+from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -144,6 +145,24 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
             ),
         )
 
+    def _update_hiera(self, new_node_fqdn: str):
+        if not self.role.list_in_hiera:
+            return
+
+        hiera_role, hiera_key = self.role.list_in_hiera
+        hiera_prefix = get_cluster_node_prefix(self.cluster_name, hiera_role)
+        LOGGER.info("Updating Hiera key '%s' in prefix '%s'", hiera_key, hiera_prefix)
+
+        enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
+        enc_prefix = enc.prefix(
+            self.cluster_name.get_project(),
+            hiera_prefix,
+        )
+
+        hiera = enc_prefix.get_current_hiera()
+        hiera[hiera_key].append(new_node_fqdn)
+        enc_prefix.set_hiera_values(hiera)
+
     def run(self) -> None:
         """Main entry point"""
         node_prefix = get_cluster_node_prefix(self.cluster_name, self.role)
@@ -224,6 +243,6 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         LOGGER.info("Joining the cluster...")
         kubeadm.join(kubernetes_controller=kubectl, wait_for_ready=True, is_control=is_control)
 
-        # TODO: for control or ingress nodes, add to the haproxy hiera key
+        self._update_hiera(new_node_fqdn=new_member.server_fqdn)
 
         self.spicerack.sal_logger.info("Added a new k8s %s %s to the cluster", self.role.value, new_member.server_fqdn)

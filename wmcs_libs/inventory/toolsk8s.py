@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Tuple
 
 from wmcs_libs.inventory.cluster import Cluster, ClusterType, NodeRoleName
 from wmcs_libs.inventory.exceptions import InventoryError
@@ -39,6 +40,7 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     WORKER_NFS = "worker-nfs"
     INGRESS = "ingress"
     ETCD = "etcd"
+    HAPROXY = "haproxy"
 
     def __str__(self) -> str:
         """Needed to show the nice string values and for argparse to use those to call the `type` parameter."""
@@ -52,7 +54,7 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     @property
     def runs_kubelet(self) -> bool:
         """Check if this node type is a Kubernetes worker or control node."""
-        return self != ToolforgeKubernetesNodeRoleName.ETCD
+        return self not in (ToolforgeKubernetesNodeRoleName.ETCD, ToolforgeKubernetesNodeRoleName.HAPROXY)
 
     @property
     def is_worker(self) -> bool:
@@ -67,6 +69,21 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     def has_extra_image_storage(self) -> bool:
         """Check if nodes in this role have an extra partition for container image storage."""
         return self in (ToolforgeKubernetesNodeRoleName.WORKER, ToolforgeKubernetesNodeRoleName.WORKER_NFS)
+
+    @property
+    def list_in_hiera(self) -> Tuple["ToolforgeKubernetesNodeRoleName", str] | None:
+        """A tuple of (role type, hiera key) that has a list of nodes of this type."""
+        if self == ToolforgeKubernetesNodeRoleName.CONTROL:
+            return (
+                ToolforgeKubernetesNodeRoleName.HAPROXY,
+                "profile::toolforge::k8s::control_nodes",
+            )
+        if self == ToolforgeKubernetesNodeRoleName.INGRESS:
+            return (
+                ToolforgeKubernetesNodeRoleName.HAPROXY,
+                "profile::toolforge::k8s::ingress_nodes",
+            )
+        return None
 
 
 @dataclass(frozen=True)
