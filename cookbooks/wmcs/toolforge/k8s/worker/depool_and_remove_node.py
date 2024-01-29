@@ -158,7 +158,6 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             self.hostname_to_remove,
             "--control-node-fqdn",
             control_node_fqdn,
-            "--no-dologmsg",  # not interested in the inner SAL entries
         ] + self.common_opts.to_cli_args()
 
         drain_cookbook.get_runner(args=drain_cookbook.argument_parser().parse_args(args=drain_args)).run()
@@ -177,7 +176,6 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
                 [
                     "--server-name",
                     self.hostname_to_remove,
-                    "--no-dologmsg",  # not interested in the inner SAL entry
                     "--revoke-puppet-certs",  # so it will also be removed from puppetdb
                 ]
                 + self.common_opts.to_cli_args(),
