@@ -54,7 +54,7 @@ _INVENTORY = {
                     nodes_by_role={
                         OpenstackNodeRoleName.CONTROL: [
                             "cloudcontrol1005.eqiad.wmnet",
-                            "cloudcontrol1006.wikimedia.org",
+                            "cloudcontrol1006.eqiad.wmnet",
                             "cloudcontrol1007.eqiad.wmnet",
                         ],
                         OpenstackNodeRoleName.GATEWAY: [
