@@ -14,10 +14,8 @@ from datetime import datetime
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from cookbooks.wmcs.openstack.network.tests import NetworkTests
 from wmcs_libs.alerts import downtime_host, uptime_host
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import get_control_nodes, get_node_cluster_name
 
 LOGGER = logging.getLogger(__name__)
@@ -41,12 +39,6 @@ class RebootNode(CookbookBase):
             required=True,
             help="FQDN of the node to reboot.",
         )
-        parser.add_argument(
-            "--skip-checks",
-            required=False,
-            action="store_true",
-            help="If passed, will not test the network before or after rebooting the node.",
-        )
 
         return parser
 
@@ -54,17 +46,8 @@ class RebootNode(CookbookBase):
         """Get runner"""
         return with_common_opts(self.spicerack, args, RebootNodeRunner,)(
             fqdn_to_reboot=args.fqdn_to_reboot,
-            skip_checks=args.skip_checks,
             spicerack=self.spicerack,
         )
-
-
-def check_network_ok(cluster_name: OpenstackClusterName, spicerack: Spicerack) -> None:
-    """Run the network tests and check if they pass."""
-    args = ["--cluster_name", str(cluster_name)]
-    network_test_cookbook = NetworkTests(spicerack=spicerack)
-    if network_test_cookbook.get_runner(args=network_test_cookbook.argument_parser().parse_args(args)).run() != 0:
-        raise Exception("Network tests failed, see logs or run the cookbook for details.")
 
 
 class RebootNodeRunner(WMCSCookbookRunnerBase):
@@ -74,13 +57,11 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         fqdn_to_reboot: str,
-        skip_checks: bool,
         spicerack: Spicerack,
     ):
         """Init"""
         self.common_opts = common_opts
         self.fqdn_to_reboot = fqdn_to_reboot
-        self.skip_checks = skip_checks
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
@@ -90,21 +71,10 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         if not known_cloudcontrols:
             raise Exception(f"No cloudcontrols found for cluster_name {self.cluster_name} :-S")
 
-        if len(known_cloudcontrols) == 1 and not self.skip_checks:
-            raise Exception(
-                f"There's only one gateway node for the cluster_name {self.cluster_name} ({known_cloudcontrols}), and "
-                "the network will go dow if rebooted, pass --skip-checks to ignore."
-            )
-
         if self.fqdn_to_reboot not in known_cloudcontrols:
             raise Exception(
                 f"Host {self.fqdn_to_reboot} is not part of the cloudcontrol for cluster_name {self.cluster_name}"
             )
-
-        if not self.skip_checks:
-            LOGGER.info("Checking the current state of the network...")
-            check_network_ok(cluster_name=self.cluster_name, spicerack=self.spicerack)
-            LOGGER.info("Network up and running!")
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
@@ -122,15 +92,6 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         node.reboot()
 
         node.wait_reboot_since(since=reboot_time)
-        LOGGER.info(
-            "Rebooted node %s, waiting for cluster to stabilize...",
-            self.fqdn_to_reboot,
-        )
-
-        if not self.skip_checks:
-            LOGGER.info("Checking if the network is up and running")
-            check_network_ok(cluster_name=self.cluster_name, spicerack=self.spicerack)
-            LOGGER.info("Network up and running!")
 
         uptime_host(spicerack=self.spicerack, host_name=host_name, silence_id=host_silence_id)
         LOGGER.info("Silences removed.")
