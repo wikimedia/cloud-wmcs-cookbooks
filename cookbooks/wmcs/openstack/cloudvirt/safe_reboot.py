@@ -39,6 +39,8 @@ class SafeReboot(CloudvirtBatchBase):
 class SafeRebootRunner(CloudvirtBatchRunnerBase):
     """Runner for SafeReboot"""
 
+    downtime_reason = "host reboot"
+
     def __init__(self, common_opts: CommonOpts, args: argparse.Namespace, spicerack: Spicerack):
         super().__init__(common_opts, args, spicerack)
         self.control_node_fqdn = get_control_nodes(cluster_name=self.cluster)[0]
