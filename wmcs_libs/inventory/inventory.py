@@ -84,9 +84,9 @@ _INVENTORY = {
                     security_group_name="toolsbeta-k8s-full-connectivity",
                     nodes_by_role={
                         ToolforgeKubernetesNodeRoleName.CONTROL: [
-                            "toolsbeta-test-k8s-control-4.toolsbeta.eqiad1.wikimedia.cloud",
-                            "toolsbeta-test-k8s-control-5.toolsbeta.eqiad1.wikimedia.cloud",
-                            "toolsbeta-test-k8s-control-6.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-test-k8s-control-7.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-test-k8s-control-8.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-test-k8s-control-9.toolsbeta.eqiad1.wikimedia.cloud",
                         ],
                     },
                 ),
