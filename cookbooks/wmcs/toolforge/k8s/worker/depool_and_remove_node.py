@@ -28,6 +28,7 @@ from wmcs_libs.k8s.clusters import (
 )
 from wmcs_libs.k8s.kubernetes import KubernetesController, KubernetesNodeNotFound
 from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -131,6 +132,30 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             control_node for control_node in get_control_nodes(self.cluster_name) if control_node != fqdn_to_remove
         )
 
+    def _update_hiera(self):
+        if not self.role.list_in_hiera:
+            return
+
+        hiera_role, hiera_key = self.role.list_in_hiera
+        hiera_prefix = get_cluster_node_prefix(self.cluster_name, hiera_role)
+        LOGGER.info("Updating Hiera key '%s' in prefix '%s'", hiera_key, hiera_prefix)
+
+        enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
+        enc_prefix = enc.prefix(
+            self.cluster_name.get_project(),
+            hiera_prefix,
+        )
+
+        domain = f"{self.cluster_name.get_openstack_cluster_name()}.wikimedia.cloud"
+        fqdn_to_remove = f"{self.hostname_to_remove}.{self.cluster_name.get_project()}.{domain}"
+
+        hiera = enc_prefix.get_current_hiera()
+        hiera[hiera_key] = [node for node in hiera[hiera_key] if node != fqdn_to_remove]
+        enc_prefix.set_hiera_values(hiera)
+
+        # TODO: should we manually run Puppet on the affected nodes?
+        # Or is relying on HAProxy health checks fine enough?
+
     def run(self) -> None:
         """Main entry point"""
         remote = self.spicerack.remote()
@@ -146,11 +171,10 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             self.hostname_to_remove = self._get_oldest_node(name_prefix)
             LOGGER.info("Picked node %s to remove.", self.hostname_to_remove)
 
+        self._update_hiera()
+
         control_node_fqdn = self._pick_a_control_node()
         LOGGER.info("Found control node %s", control_node_fqdn)
-
-        # TODO: if removing a control or ingress node, remove
-        # it from haproxy hieradata and run puppet there
 
         drain_cookbook = Drain(spicerack=self.spicerack)
         drain_args = [
