@@ -179,7 +179,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             self.hostname_to_remove,
             "--cluster-name",
             self.cluster_name.value,
-        ] + self.common_opts.to_cli_args()
+        ]
 
         drain_cookbook.get_runner(args=drain_cookbook.argument_parser().parse_args(args=drain_args)).run()
 
