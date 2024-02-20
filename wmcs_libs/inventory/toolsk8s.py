@@ -71,6 +71,20 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
         return self in (ToolforgeKubernetesNodeRoleName.WORKER, ToolforgeKubernetesNodeRoleName.WORKER_NFS)
 
     @property
+    def labels(self) -> set[str]:
+        """A set of labels that must be applied to all new nodes of this role."""
+        if self == ToolforgeKubernetesNodeRoleName.INGRESS:
+            return {"kubernetes.io/role=ingressgen2"}
+        return set()
+
+    @property
+    def taints(self) -> set[str]:
+        """A set of taints that must be applied to all new nodes of this role."""
+        if self == ToolforgeKubernetesNodeRoleName.INGRESS:
+            return {"ingressgen2=true:NoSchedule"}
+        return set()
+
+    @property
     def list_in_hiera(self) -> Tuple["ToolforgeKubernetesNodeRoleName", str] | None:
         """A tuple of (role type, hiera key) that has a list of nodes of this type."""
         if self == ToolforgeKubernetesNodeRoleName.CONTROL:

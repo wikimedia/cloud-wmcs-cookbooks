@@ -351,3 +351,11 @@ class KubernetesController:
         self.wait_for_ready(node_hostname)
 
         return KubernetesRebootNodePhase.DONE
+
+    def add_node_labels(self, node_hostname: str, labels: set[str]) -> None:
+        """Add the specified labels to a node."""
+        run_one_raw(command=["kubectl", "label", "node", node_hostname, *labels], node=self._controlling_node)
+
+    def add_node_taints(self, node_hostname: str, taints: set[str]) -> None:
+        """Add the specified labels to a node."""
+        run_one_raw(command=["kubectl", "taint", "node", node_hostname, *taints], node=self._controlling_node)

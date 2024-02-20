@@ -163,6 +163,15 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         hiera[hiera_key].append(new_node_fqdn)
         enc_prefix.set_hiera_values(hiera)
 
+    def _tag_node(self, kubernetes_controller: KubernetesController, node: str):
+        """Apply any necessary labels and taints."""
+        # TODO: investigate if we can apply these in the Kubelet config file so
+        # they are there from the first startup
+        if self.role.labels:
+            kubernetes_controller.add_node_labels(node_hostname=node, labels=self.role.labels)
+        if self.role.taints:
+            kubernetes_controller.add_node_taints(node_hostname=node, taints=self.role.taints)
+
     def run(self) -> None:
         """Main entry point"""
         node_prefix = get_cluster_node_prefix(self.cluster_name, self.role)
@@ -243,6 +252,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         LOGGER.info("Joining the cluster...")
         kubeadm.join(kubernetes_controller=kubectl, wait_for_ready=True, is_control=is_control)
 
+        self._tag_node(kubernetes_controller=kubectl, node=new_member.server_fqdn.split(".")[0])
         self._update_hiera(new_node_fqdn=new_member.server_fqdn)
 
         self.spicerack.sal_logger.info("Added a new k8s %s %s to the cluster", self.role.value, new_member.server_fqdn)
