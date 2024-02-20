@@ -173,19 +173,18 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
 
         self._update_hiera()
 
-        control_node_fqdn = self._pick_a_control_node()
-        LOGGER.info("Found control node %s", control_node_fqdn)
-
         drain_cookbook = Drain(spicerack=self.spicerack)
         drain_args = [
             "--hostname-to-drain",
             self.hostname_to_remove,
-            "--control-node-fqdn",
-            control_node_fqdn,
+            "--cluster-name",
+            self.cluster_name.value,
         ] + self.common_opts.to_cli_args()
 
         drain_cookbook.get_runner(args=drain_cookbook.argument_parser().parse_args(args=drain_args)).run()
 
+        control_node_fqdn = self._pick_a_control_node()
+        LOGGER.info("Found control node %s", control_node_fqdn)
         kubectl = KubernetesController(remote=remote, controlling_node_fqdn=control_node_fqdn)
         try:
             kubectl.delete_node(self.hostname_to_remove)
