@@ -113,7 +113,7 @@ class HostChanges:
                 to_delete.append(vm_name)
                 continue
 
-            if server["Flavor Name"] != FLAVOR:
+            if server["Flavor"] != FLAVOR:
                 LOGGER.debug("marking %s for deletion: wrong flavor", vm_name)
                 to_delete.append(vm_name)
                 continue
@@ -205,7 +205,9 @@ def calculate_changelist(
     """Helper to calculate a list of changes via HostChanges()."""
     host_to_canary_vms: dict[str, list[dict[str, Any]]] = {}
     for canary_vm in existing_canary_vms:
-        host = canary_vm["Host"]
+        # this is reported as a FQDN by openstack
+        # also, some dangling VMs may have the Host attr set to None
+        host = canary_vm["Host"].split(".", 1)[0] if canary_vm["Host"] else ""
         if host in hypervisors:
             host_to_canary_vms[host] = host_to_canary_vms.get(host, []) + [canary_vm]
 
