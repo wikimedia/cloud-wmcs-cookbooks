@@ -18,7 +18,6 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
     CommonOpts,
-    SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
     natural_sort_key,
@@ -243,17 +242,8 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
         self.hostname_list = hostname_list
         self.recreate = recreate
         self.control_node_fqdn = get_control_nodes(cluster_name=self.deployment)[0]
-        self.disable_sal_log = False
         self.existing_canary_vms: list[dict[str, Any]] = []
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-
-        if deployment == OpenstackClusterName.CODFW1DEV:
-            # the SAL we have for codfw1dev is the admin one
-            sal_project = "admin"
-        else:
-            sal_project = common_opts.project
-
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts, project=sal_project)
 
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(), cluster_name=self.deployment, project=self.common_opts.project
@@ -279,12 +269,10 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
                 if hostname not in actual_host_list:
                     raise ValueError(f"wrong hostname, does not exists: {hostname}")
 
-    def _sal_log(self, msg: str) -> None:
-        """Simple wrapper function to disable the SAL logger."""
-        if self.disable_sal_log:
-            return
-
-        self.sallogger.log(msg)
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        return f"on {self.deployment}, with recreate {self.recreate}, for hosts list: {self.hostname_list}"
 
     def _get_new_vm_name(self, vm_prefix: str) -> str:
         """Calculate the new VM prefix."""
@@ -314,8 +302,6 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
         if not self.spicerack.dry_run:
             self.openstack_api.server_force_reboot(name_to_reboot=hostchanges.to_force_reboot)
 
-        self._sal_log(f"force-rebooting VM {hostchanges.to_force_reboot} in host {hostchanges.hostname}")
-
     def _create(self, hostchanges: HostChanges) -> None:
         """Create canary VM on a given cloudvirt."""
         if not hostchanges.needs_create:
@@ -335,8 +321,6 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
                 availability_zone=f"host:{hostchanges.hostname}",
             )
 
-        self._sal_log(f"created VM {new_vm_name} in {hostchanges.hostname}")
-
     def _delete(self, hostchanges: HostChanges) -> None:
         """Delete canary VMs."""
         for vm_name in hostchanges.to_delete:
@@ -344,8 +328,6 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
 
             if not self.spicerack.dry_run:
                 self.openstack_api.server_delete(name_to_remove=vm_name)
-
-            self._sal_log(f"deleted VM {vm_name} from {hostchanges.hostname}")
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
@@ -357,11 +339,6 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
         if how_many_changes == 0:
             LOGGER.info("INFO: no changes")
             return
-
-        if how_many_changes > 10:
-            self.sallogger.log(f"performing {how_many_changes} changes to canary VMs")
-            # disable further calls to the SAL
-            self.disable_sal_log = True
 
         for hostchanges in changelist:
             LOGGER.info("INFO: %s has changes: %s", hostchanges.hostname, str(hostchanges))
