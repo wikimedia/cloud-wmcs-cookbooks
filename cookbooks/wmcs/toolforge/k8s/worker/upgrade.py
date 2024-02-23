@@ -198,13 +198,10 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
 
         LOGGER.info("Upgrading packages")
 
-        packages = ["kubectl", "kubelet", "containerd.io"]
+        packages = ["kubectl", "kubelet", "containerd"]
 
         if inventory_info.role_name == ToolforgeKubernetesNodeRoleName.CONTROL:
             packages.append("helm")
-
-        # TODO: only update when on Buster hosts
-        packages.extend(["docker-ce", "docker-ce-cli"])
 
         apt_get.install(*packages)
 
