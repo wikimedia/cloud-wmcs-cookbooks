@@ -12,7 +12,7 @@ from typing import Any, Generator, Literal, overload
 
 from spicerack.remote import Remote, RemoteExecutionError
 
-from wmcs_libs.common import CuminParams, run_one_as_dict, run_one_raw
+from wmcs_libs.common import CuminParams, OutputFormat, run_one_as_dict, run_one_raw
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +39,26 @@ class KubernetesTimeoutForNotReady(KubernetesError):
 
 class KubernetesTimeoutForDrain(KubernetesError):
     """Risen when there is a timeout waiting for a node to drain."""
+
+
+class KubeletStaticPodNotFound(KubernetesError):
+    """Risen when there is no such static pod defined in a kubelet."""
+
+
+class KubeletUnexpectedStaticPodPathStatus(KubernetesError):
+    """Risen when an unexpected kubelet static pod path status."""
+
+
+class KubeletUnexpectedConfig(KubernetesError):
+    """Risen when an unexpected kubelet config is found."""
+
+
+class KubeletUnableToStopStaticPod(KubernetesError):
+    """Risen when the system failed to stop a static pod."""
+
+
+class KubeletUnableToStartStaticPod(KubernetesError):
+    """Risen when the system failed to start a static pod."""
 
 
 class KubernetesRebootNodePhase(Enum):
@@ -193,7 +213,7 @@ class KubernetesController:
 
         return KubernetesNodeInfo.from_node_status(node_data[0]["status"])
 
-    def get_pods(self, field_selector: str | None = None) -> list[dict[str, Any]]:
+    def get_pods(self, namespace: str | None = "default", field_selector: str | None = None) -> list[dict[str, Any]]:
         """Get pods."""
         if field_selector:
             field_selector_cli = f"--field-selector='{field_selector}'"
@@ -201,15 +221,15 @@ class KubernetesController:
             field_selector_cli = ""
 
         output = run_one_as_dict(
-            command=["kubectl", "get", "pods", "--output=json", field_selector_cli],
+            command=["kubectl", "--namespace", namespace, "get", "pods", "--output=json", field_selector_cli],
             node=self._controlling_node,
             cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
         )
         return output["items"]
 
-    def get_pods_for_node(self, node_hostname: str) -> list[dict[str, Any]]:
+    def get_pods_for_node(self, node_hostname: str, namespace: str | None = "default") -> list[dict[str, Any]]:
         """Get pods for node."""
-        return self.get_pods(field_selector=f"spec.nodeName={node_hostname}")
+        return self.get_pods(namespace=namespace, field_selector=f"spec.nodeName={node_hostname}")
 
     def get_evictable_pods_for_node(self, node_hostname: str) -> list[dict[str, Any]]:
         """Get all pods in a node which will be evicted when draining the node."""
@@ -363,3 +383,186 @@ class KubernetesController:
     def add_node_taints(self, node_hostname: str, taints: set[str]) -> None:
         """Add the specified labels to a node."""
         run_one_raw(command=["kubectl", "taint", "node", node_hostname, *taints], node=self._controlling_node)
+
+    def delete_pod(self, pod_name: str, namespace: str) -> None:
+        """Delete the given pod."""
+        command = ["kubectl", "--namespace", namespace, "delete", "pod", pod_name]
+        run_one_raw(
+            node=self._controlling_node,
+            command=command,
+            capture_errors=False,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False),
+        )
+
+    def is_pod_running(self, pod_name: str, namespace: str, missing_ok: bool = False) -> bool:
+        """Check if a pod is in running state."""
+        pod_dict = self.get_object(kind="pod", name=pod_name, namespace=namespace, missing_ok=missing_ok)
+        if not pod_dict:
+            # we rely on get_object() to raise the error if not missing_ok
+            return False
+
+        return pod_dict.get("status", {}).get("phase", "") == "Running"
+
+
+class KubeletController:
+    """Controller for a given kubelet daemon."""
+
+    def __init__(
+        self,
+        remote: Remote,
+        kubelet_node_fqdn: str,
+        k8s_control: KubernetesController,
+        kubelet_config_path: str = "/var/lib/kubelet/config.yaml",
+    ):
+        """Init."""
+        self._remote = remote
+        self.kubelet_node_fqdn = kubelet_node_fqdn
+        self.kubelet_node_short_hostname = kubelet_node_fqdn.split(".", 1)[0]
+        self.k8s_control = k8s_control
+        self.kubelet_config_path = kubelet_config_path
+        self._kubelet_node = self._remote.query(f"D{{{self.kubelet_node_fqdn}}}", use_sudo=True)
+        self._static_pod_stopped_prefix = ".cookbook-stopped-"
+        self._kubelet_config_cache: dict[str, Any] = {}
+
+    def get_kubelet_config(self) -> dict[str, Any]:
+        """Get the kubelet configuration."""
+        # some basic caching
+        if not self._kubelet_config_cache:
+            self._kubelet_config_cache = run_one_as_dict(
+                command=["cat", self.kubelet_config_path],
+                node=self._kubelet_node,
+                try_format=OutputFormat.YAML,
+                cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
+            )
+
+        return self._kubelet_config_cache
+
+    def get_kubelet_config_parameter(self, param: str) -> Any:
+        """Get a given config parameter."""
+        try:
+            return self.get_kubelet_config()[param]
+        except KeyError as e:
+            raise KubeletUnexpectedConfig(f"couldn't find config parameter {param} in kubelet config: {str(e)}") from e
+
+    def get_kubelet_filecheckfrequency(self) -> int:
+        """Get fileCheckFrequency config parameter."""
+        raw_value = str(self.get_kubelet_config_parameter("fileCheckFrequency"))
+        if not raw_value.endswith("s"):
+            raise KubeletUnexpectedConfig("the fileCheckFrequency value doesn't end with a 's' characted")
+
+        return int(raw_value.rstrip("s"))
+
+    def get_static_pods_defined(self) -> list[str]:
+        """Get a list of static pods defined in this kubelet."""
+        static_pods_path = str(self.get_kubelet_config_parameter("staticPodPath"))
+        files = run_one_raw(
+            command=["ls", f"{static_pods_path}/*.yaml"],
+            node=self._kubelet_node,
+            cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
+        )
+        return [file.removesuffix(".yaml").removeprefix(f"{static_pods_path}/") for file in files.splitlines()]
+
+    def assert_static_pod_path_clean(self) -> None:
+        """Quick and dirty check to see if there was a previous unfinished run."""
+        static_pod_path = str(self.get_kubelet_config_parameter("staticPodPath"))
+        command = ["ls", "-ad", f"{static_pod_path}/.*"]
+        try:
+            raw_output = run_one_raw(
+                node=self._kubelet_node,
+                command=command,
+                capture_errors=False,
+                cumin_params=CuminParams(print_output=False, print_progress_bars=False, is_safe=True),
+            )
+        except RemoteExecutionError:
+            # if this fails, there is usually nothing in here, ignore
+            return
+
+        for line in raw_output.splitlines():
+            if line in [f"{static_pod_path}.", f"{static_pod_path}.."]:
+                continue
+
+            raise KubeletUnexpectedStaticPodPathStatus(f"path '{static_pod_path}' contains cruft. Fix by hand.")
+
+    def assert_static_pod_is_defined(self, pod_name: str) -> None:
+        """Asserts whether a static pod is defined."""
+        if pod_name not in self.get_static_pods_defined():
+            raise KubeletStaticPodNotFound(f"static pod {pod_name} doesn't seem to be defined in this kubelet")
+
+    def stop_static_pod(self, pod_name: str, namespace: str) -> None:
+        """Stop a static pod running in this kubelet."""
+        self.assert_static_pod_is_defined(pod_name)
+
+        static_pod_path = self.get_kubelet_config_parameter("staticPodPath")
+        orig = f"{static_pod_path}/{pod_name}.yaml"
+        dest = f"{static_pod_path}/{self._static_pod_stopped_prefix}{pod_name}.yaml"
+
+        command = ["mv", orig, dest]
+        run_one_raw(
+            node=self._kubelet_node,
+            command=command,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False),
+        )
+
+        time.sleep(self.get_kubelet_filecheckfrequency())
+
+        try:
+            # reset the metadata.creationTimestamp value
+            self.k8s_control.delete_pod(pod_name, namespace)
+        except RemoteExecutionError:
+            # we don't care if this fails, this step is actually optional
+            pass
+
+        try:
+            self.assert_static_pod_is_defined(pod_name)
+            if self.k8s_control.is_pod_running(pod_name=pod_name, namespace=namespace, missing_ok=True):
+                # pod is still running? we failed to stop it
+                raise KubeletUnableToStopStaticPod(f"we somehow failed to stop static pod {pod_name}")
+        except KubeletStaticPodNotFound:
+            # expected, the pod was sucessfully stopped
+            pass
+
+    def start_static_pod(self, pod_name: str, namespace: str) -> None:
+        """Start a previously stopped static pod."""
+        try:
+            self.assert_static_pod_is_defined(pod_name)
+            if self.k8s_control.is_pod_running(pod_name=pod_name, namespace=namespace, missing_ok=True):
+                # pod is already running doing nothing
+                return
+        except KubeletStaticPodNotFound:
+            # expected, the pod was previously stopped
+            pass
+
+        static_pod_path = self.get_kubelet_config_parameter("staticPodPath")
+        orig = f"{static_pod_path}/{self._static_pod_stopped_prefix}{pod_name}.yaml"
+        dest = f"{static_pod_path}/{pod_name}.yaml"
+
+        command = ["mv", orig, dest]
+        run_one_raw(
+            node=self._kubelet_node,
+            command=command,
+            cumin_params=CuminParams(print_output=False, print_progress_bars=False),
+        )
+
+        time.sleep(self.get_kubelet_filecheckfrequency())
+
+        try:
+            self.assert_static_pod_is_defined(pod_name)
+        except KubeletStaticPodNotFound as e:
+            raise KubeletUnableToStartStaticPod(f"we failed to start static pod {pod_name}: {str(e)}") from e
+
+        if not self.k8s_control.is_pod_running(pod_name=pod_name, namespace=namespace, missing_ok=True):
+            raise KubeletUnableToStartStaticPod(f"we failed to start static pod {pod_name}")
+
+    def restart_static_pod(self, pod_name: str, namespace: str) -> None:
+        """Restart a given static pod.
+
+        See also https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/
+        """
+        self.stop_static_pod(pod_name, namespace)
+        self.start_static_pod(pod_name, namespace)
+
+    def restart_all_static_pods(self, namespace: str) -> None:
+        """Restart all static pods."""
+        self.assert_static_pod_path_clean()
+        for pod in self.get_static_pods_defined():
+            self.restart_static_pod(pod, namespace)
