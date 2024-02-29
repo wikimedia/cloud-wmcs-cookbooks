@@ -564,5 +564,15 @@ class KubeletController:
     def restart_all_static_pods(self, namespace: str) -> None:
         """Restart all static pods."""
         self.assert_static_pod_path_clean()
-        for pod in self.get_static_pods_defined():
+
+        pod_list = self.get_static_pods_defined()
+
+        if "kube-apiserver" in pod_list:
+            # restart the kube-apiserver first, then the rest of the pods
+            # this should account for an ugly error in scheduler and controller-manager
+            # if they start before the apiserver
+            self.restart_static_pod("kube-apiserver", namespace)
+            pod_list.remove("kube-apiserver")
+
+        for pod in pod_list:
             self.restart_static_pod(pod, namespace)
