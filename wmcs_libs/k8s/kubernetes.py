@@ -167,10 +167,9 @@ class KubernetesController:
 
     def get_object(self, kind: str, name: str, namespace: str, *, missing_ok: bool = False) -> dict[str, Any] | None:
         """Get data for a single object in the cluster."""
-        namespace_args = [f"--namespace={namespace}"] if namespace else []
         try:
             return run_one_as_dict(
-                command=["kubectl", "get", kind, name, *namespace_args, "--output=json"],
+                command=["kubectl", "get", kind, name, f"--namespace={namespace}", "--output=json"],
                 node=self._controlling_node,
                 cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
             )
@@ -213,21 +212,19 @@ class KubernetesController:
 
         return KubernetesNodeInfo.from_node_status(node_data[0]["status"])
 
-    def get_pods(self, namespace: str | None = "default", field_selector: str | None = None) -> list[dict[str, Any]]:
+    def get_pods(self, namespace: str | None = None, field_selector: str | None = None) -> list[dict[str, Any]]:
         """Get pods."""
-        if field_selector:
-            field_selector_cli = f"--field-selector='{field_selector}'"
-        else:
-            field_selector_cli = ""
+        namespace_arg = f"--namespace='{namespace}'" if namespace else "--all-namespaces"
+        field_selector_args = [f"--field-selector='{field_selector}'"] if field_selector else []
 
         output = run_one_as_dict(
-            command=["kubectl", "--namespace", namespace, "get", "pods", "--output=json", field_selector_cli],
+            command=["kubectl", namespace_arg, "get", "pods", "--output=json", *field_selector_args],
             node=self._controlling_node,
             cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
         )
         return output["items"]
 
-    def get_pods_for_node(self, node_hostname: str, namespace: str | None = "default") -> list[dict[str, Any]]:
+    def get_pods_for_node(self, node_hostname: str, namespace: str | None = None) -> list[dict[str, Any]]:
         """Get pods for node."""
         return self.get_pods(namespace=namespace, field_selector=f"spec.nodeName={node_hostname}")
 
