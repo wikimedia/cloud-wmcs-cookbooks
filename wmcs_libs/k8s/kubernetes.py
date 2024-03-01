@@ -141,6 +141,10 @@ class KubernetesController:
     ) -> dict[str, Any] | None:
         pass
 
+    @overload
+    def get_object(self, kind: str, name: str, namespace: str, *, missing_ok: bool = False) -> dict[str, Any] | None:
+        pass
+
     def get_object(self, kind: str, name: str, namespace: str, *, missing_ok: bool = False) -> dict[str, Any] | None:
         """Get data for a single object in the cluster."""
         namespace_args = [f"--namespace={namespace}"] if namespace else []
