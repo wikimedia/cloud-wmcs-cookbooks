@@ -73,22 +73,6 @@ class ArgparsableEnum(Enum):
         return self.value
 
 
-class DebianVersion(Enum):
-    """Represents Debian release names/numbers."""
-
-    STRETCH = "09"
-    BUSTER = "10"
-
-    def __str__(self) -> str:
-        """Needed to show the nice string values and for argparse to use those to call the `type` parameter."""
-        return self.name.lower()
-
-    @classmethod
-    def from_version_str(cls, version_str: str) -> "DebianVersion":
-        """Helps when passing DebianVersion to argparse as type."""
-        return cls[version_str.upper()]
-
-
 class OutputFormat(Enum):
     """Types of format supported to try to decode when running commands."""
 

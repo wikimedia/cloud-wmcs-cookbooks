@@ -60,7 +60,6 @@ Some known services and packages are:
 * vps: operations with Openstack APIs.
 * nfs: NFS related stuff.
 * toolforge: everything Toolforge.
-* toolforge.grid: everything Toolforge grid infrastructure.
 * toolforge.k8s: everything Toolforge kubernetes infrastructure.
 * toolforge.k8s.etcd: everything Toolforge kubernetes etcd infrastructure.
 

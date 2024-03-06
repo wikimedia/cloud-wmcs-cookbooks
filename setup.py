@@ -7,7 +7,6 @@ from setuptools import find_namespace_packages, find_packages, setup
 install_requires = [
     "pyyaml",
     "wikimedia-spicerack>=8.0.0",
-    "defusedxml",
     "requests[socks]",
 ]
 
