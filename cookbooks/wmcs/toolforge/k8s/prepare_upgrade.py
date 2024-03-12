@@ -93,13 +93,18 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
         return f"thirdparty/kubeadm-k8s-{dst_parts[0]}-{dst_parts[1]}"
 
     def _check_component_exists(self):
-        component = self._format_apt_component()
-        deb_name = f"kubeadm_{self.dst_version}-00_amd64.deb"
-        url_to_check = f"https://apt.wikimedia.org/wikimedia/pool/{component}/k/kubeadm/{deb_name}"
-
         session = http_session("wmcs-cookbooks wmcs.toolforge.k8s.prepare_upgrade")
-        if session.head(url_to_check).status_code != 200:
-            raise Exception(f"Version {self.dst_version} does not seem to exist in the Wikimedia APT repository")
+        component = self._format_apt_component()
+        url_to_check = f"https://apt.wikimedia.org/wikimedia/pool/{component}/k/kubeadm/"
+
+        LOGGER.info("Checked URL %s", url_to_check)
+
+        result = session.get(url_to_check)
+        if result.status_code != 200:
+            raise Exception(f"{self.dst_version} doesn't exists in the repo. Check reprepro and URL {url_to_check}")
+
+        if self.dst_version not in result.text or ".deb" not in result.text:
+            raise Exception(f"{component} has no .deb files. Check reprepro and URL {url_to_check}")
 
     def run(self) -> None:
         """Main entry point"""
