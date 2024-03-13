@@ -219,7 +219,7 @@ class KubernetesController:
         field_selector_args = [f"--field-selector='{field_selector}'"] if field_selector else []
 
         output = run_one_as_dict(
-            command=["kubectl", namespace_arg, "get", "pods", "--output=json", *field_selector_args],
+            command=["kubectl", "get", "pods", namespace_arg, "--output=json", *field_selector_args],
             node=self._controlling_node,
             cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
         )
@@ -384,7 +384,7 @@ class KubernetesController:
 
     def delete_pod(self, pod_name: str, namespace: str) -> None:
         """Delete the given pod."""
-        command = ["kubectl", "--namespace", namespace, "delete", "pod", pod_name]
+        command = ["kubectl", "delete", "--namespace", namespace, "pod", pod_name]
         run_one_raw(
             node=self._controlling_node,
             command=command,
