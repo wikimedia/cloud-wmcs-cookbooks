@@ -25,7 +25,7 @@ from wmcs_libs.k8s.clusters import (
     with_toolforge_kubernetes_cluster_opts,
 )
 from wmcs_libs.k8s.kubeadm import KUBEADM_VERSION_COMPONENT_HIERA_KEY, KUBERNETES_VERSION_HIERA_KEY
-from wmcs_libs.k8s.kubernetes import KubernetesController
+from wmcs_libs.k8s.kubernetes import KubernetesController, validate_version
 from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
@@ -47,11 +47,13 @@ class ToolforgeK8sPrepareUpgrade(CookbookBase):
         parser.add_argument(
             "--src-version",
             required=True,
+            type=validate_version,
             help="Old version to upgrade from.",
         )
         parser.add_argument(
             "--dst-version",
             required=True,
+            type=validate_version,
             help="New version to migrate to.",
         )
         return parser

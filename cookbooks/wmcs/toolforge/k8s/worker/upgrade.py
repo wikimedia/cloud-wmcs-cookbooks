@@ -27,7 +27,7 @@ from wmcs_libs.k8s.clusters import (
     with_toolforge_kubernetes_cluster_opts,
 )
 from wmcs_libs.k8s.kubeadm import KubeadmController
-from wmcs_libs.k8s.kubernetes import KubernetesController
+from wmcs_libs.k8s.kubernetes import KubernetesController, validate_version
 
 LOGGER = logging.getLogger(__name__)
 
@@ -53,11 +53,13 @@ class Upgrade(CookbookBase):
         parser.add_argument(
             "--src-version",
             required=True,
+            type=validate_version,
             help="Old version to upgrade from.",
         )
         parser.add_argument(
             "--dst-version",
             required=True,
+            type=validate_version,
             help="New version to migrate to.",
         )
 
