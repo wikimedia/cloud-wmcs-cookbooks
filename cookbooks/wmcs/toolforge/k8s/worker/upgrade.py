@@ -27,7 +27,7 @@ from wmcs_libs.k8s.clusters import (
     with_toolforge_kubernetes_cluster_opts,
 )
 from wmcs_libs.k8s.kubeadm import KubeadmController
-from wmcs_libs.k8s.kubernetes import KubernetesController, validate_version
+from wmcs_libs.k8s.kubernetes import KubeletController, KubernetesController, validate_version
 
 LOGGER = logging.getLogger(__name__)
 
@@ -221,4 +221,10 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
 
         # TODO: for control nodes, tail service logs and ensure everything works
         if inventory_info.role_name == ToolforgeKubernetesNodeRoleName.CONTROL:
+            # most likely, we need to restart static pods. It is known that controller-manager and/or scheduler
+            # can show errors if they are started before the api-server by the kubelet. This is solved by another
+            # manual restart in the right order, which this function should do
+            kubelet = KubeletController(remote=remote, kubelet_node_fqdn=fqdn, k8s_control=kubectl)
+            kubelet.restart_all_static_pods(namespace="kube-system")
+
             ask_confirmation("As this is a control node, please check that control plane services work fine")
