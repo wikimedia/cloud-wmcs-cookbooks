@@ -493,6 +493,10 @@ class KubeletController:
         if pod_name not in self.get_static_pods_defined():
             raise KubeletStaticPodNotFound(f"static pod {pod_name} doesn't seem to be defined in this kubelet")
 
+    def _static_pod_runtime_name(self, short_pod_name: str) -> str:
+        """Returns the full runtime name of a static pod."""
+        return f"{short_pod_name}-{self.kubelet_node_short_hostname}"
+
     def stop_static_pod(self, pod_name: str, namespace: str) -> None:
         """Stop a static pod running in this kubelet."""
         self.assert_static_pod_is_defined(pod_name)
@@ -512,14 +516,16 @@ class KubeletController:
 
         try:
             # reset the metadata.creationTimestamp value
-            self.k8s_control.delete_pod(pod_name, namespace)
+            self.k8s_control.delete_pod(pod_name=self._static_pod_runtime_name(pod_name), namespace=namespace)
         except RemoteExecutionError:
             # we don't care if this fails, this step is actually optional
             pass
 
         try:
             self.assert_static_pod_is_defined(pod_name)
-            if self.k8s_control.is_pod_running(pod_name=pod_name, namespace=namespace, missing_ok=True):
+            if self.k8s_control.is_pod_running(
+                pod_name=self._static_pod_runtime_name(pod_name), namespace=namespace, missing_ok=True
+            ):
                 # pod is still running? we failed to stop it
                 raise KubeletUnableToStopStaticPod(f"we somehow failed to stop static pod {pod_name}")
         except KubeletStaticPodNotFound:
@@ -530,7 +536,9 @@ class KubeletController:
         """Start a previously stopped static pod."""
         try:
             self.assert_static_pod_is_defined(pod_name)
-            if self.k8s_control.is_pod_running(pod_name=pod_name, namespace=namespace, missing_ok=True):
+            if self.k8s_control.is_pod_running(
+                pod_name=self._static_pod_runtime_name(pod_name), namespace=namespace, missing_ok=True
+            ):
                 # pod is already running doing nothing
                 return
         except KubeletStaticPodNotFound:
@@ -555,7 +563,9 @@ class KubeletController:
         except KubeletStaticPodNotFound as e:
             raise KubeletUnableToStartStaticPod(f"we failed to start static pod {pod_name}: {str(e)}") from e
 
-        if not self.k8s_control.is_pod_running(pod_name=pod_name, namespace=namespace, missing_ok=True):
+        if not self.k8s_control.is_pod_running(
+            pod_name=self._static_pod_runtime_name(pod_name), namespace=namespace, missing_ok=True
+        ):
             raise KubeletUnableToStartStaticPod(f"we failed to start static pod {pod_name}")
 
     def restart_static_pod(self, pod_name: str, namespace: str) -> None:
