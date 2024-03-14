@@ -475,11 +475,18 @@ class KubeletController:
             # if this fails, there is usually nothing in here, ignore
             return
 
+        allowed_entries = [
+            f"{static_pod_path}/.",
+            f"{static_pod_path}/..",
+            # .kubelet-keep can exist after a package upgrade
+            f"{static_pod_path}/.kubelet-keep",
+        ]
+
         for line in raw_output.splitlines():
-            if line in [f"{static_pod_path}.", f"{static_pod_path}.."]:
+            if line in allowed_entries:
                 continue
 
-            raise KubeletUnexpectedStaticPodPathStatus(f"path '{static_pod_path}' contains cruft. Fix by hand.")
+            raise KubeletUnexpectedStaticPodPathStatus(f"path '{static_pod_path}' contains cruft. Fix by hand: {line}")
 
     def assert_static_pod_is_defined(self, pod_name: str) -> None:
         """Asserts whether a static pod is defined."""
