@@ -165,7 +165,9 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
         else:
             # We have to make sure in any case that the puppet config is refreshed to do the puppetservers switch.
             # The tag makes only run the puppet config related manifests.
-            run_one_raw(node=remote_host, command=Command("puppet agent --test --tags base::puppet", ok_codes=[]))
+            run_one_raw(
+                node=remote_host, command=Command("puppet agent --test --tags profile::puppet::agent", ok_codes=[])
+            )
 
         post_puppetservers = node_to_bootstrap.get_ca_servers()
         if post_puppetservers != pre_puppetservers:
