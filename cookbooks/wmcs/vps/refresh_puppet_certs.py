@@ -12,7 +12,7 @@ import logging
 from cumin.transports import Command
 from spicerack import RemoteHosts, Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
-from spicerack.puppet import PuppetHosts, PuppetMaster
+from spicerack.puppet import PuppetHosts, PuppetServer
 from spicerack.remote import RemoteExecutionError
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
@@ -21,18 +21,18 @@ from wmcs_libs.inventory import get_openstack_project_deployment
 LOGGER = logging.getLogger(__name__)
 
 
-def _get_puppetmaster(spicerack: Spicerack, remote_host: RemoteHosts, puppetmaster: str) -> PuppetMaster:
-    puppetmaster_fqdn = puppetmaster
-    if puppetmaster_fqdn == "puppet":
-        puppetmaster_fqdn = run_one_raw(
+def _get_puppetserver(spicerack: Spicerack, remote_host: RemoteHosts, puppetmaster: str) -> PuppetServer:
+    puppetserver_fqdn = puppetmaster
+    if puppetserver_fqdn == "puppet":
+        puppetserver_fqdn = run_one_raw(
             node=remote_host, command=["dig", "+short", "-x", "$(dig +short puppet)"]
         ).strip()
         # remove the extra dot that dig appends
-        puppetmaster_fqdn = puppetmaster_fqdn[:-1]
+        puppetserver_fqdn = puppetserver_fqdn[:-1]
 
-    return PuppetMaster(
+    return PuppetServer(
         server_host=spicerack.remote().query(
-            f"D{{{puppetmaster_fqdn}}}",
+            f"D{{{puppetserver_fqdn}}}",
             use_sudo=True,
         )
     )
@@ -42,23 +42,30 @@ def _refresh_cert(
     spicerack: Spicerack,
     remote_host: RemoteHosts,
 ) -> None:
-    """Takes care of the dance to remove and regenerate a cert on the host and it's puppetmaster."""
+    """Takes care of the dance to remove and regenerate a cert on the host and it's puppetserver."""
     node_to_bootstrap = PuppetHosts(remote_hosts=remote_host)
     fqdn = str(remote_host)
-    puppetmasters = node_to_bootstrap.get_ca_servers()
-    puppetmaster = _get_puppetmaster(
+    puppetservers = node_to_bootstrap.get_ca_servers()
+    puppetserver = _get_puppetserver(
         spicerack=spicerack,
         remote_host=remote_host,
-        puppetmaster=puppetmasters[fqdn],
+        puppetmaster=puppetservers[fqdn],
     )
-    puppetmaster.destroy(hostname=fqdn)
+    try:
+        puppetserver.destroy(hostname=fqdn)
+    except RemoteExecutionError:
+        LOGGER.warning(
+            "Ignoring certificate destruction failure, probably first run moving to new server", exc_info=True
+        )
+        # workaround T360293
+
     cert_fingerprint = node_to_bootstrap.regenerate_certificate()[fqdn]
-    cert = puppetmaster.get_certificate_metadata(hostname=fqdn)
-    if cert["state"] == PuppetMaster.PUPPET_CERT_STATE_SIGNED:
+    cert = puppetserver.get_certificate_metadata(hostname=fqdn)
+    if cert["state"] == PuppetServer.PUPPET_CERT_STATE_SIGNED:
         # the cert exists and is already signed
         return
 
-    puppetmaster.sign(
+    puppetserver.sign(
         hostname=fqdn,
         fingerprint=cert_fingerprint,
     )
@@ -132,17 +139,17 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
         """Main entry point.
 
         Basic process:
-            Refresh certs on current puppetmaster (in case the fqdn already existed)
-            Try to run puppet (pulls new puppetmaster if needed, might fail)
-            If there's new puppetmasters, refresh certs on those
-            If there was new puppetmasters or the first puppet run failed, run puppet again
+            Refresh certs on current puppetserver (in case the fqdn already existed)
+            Try to run puppet (pulls new puppetserver if needed, might fail)
+            If there is a new puppetserver, refresh certs on those
+            If there was a new puppetserver or the first puppet run failed, run puppet again
         """
         remote_host = self.spicerack.remote().query(f"D{{{self.fqdn}}}", use_sudo=True)
         node_to_bootstrap = PuppetHosts(remote_hosts=remote_host)
         pre_run_passed = False
 
         # For the first run, make sure that the current master has no cert with this fqdn
-        pre_puppetmasters = node_to_bootstrap.get_ca_servers()
+        pre_puppetservers = node_to_bootstrap.get_ca_servers()
         _refresh_cert(spicerack=self.spicerack, remote_host=remote_host)
 
         if self.pre_run_puppet:
@@ -156,15 +163,15 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
                     raise
 
         else:
-            # We have to make sure in any case that the puppet config is refreshed to do the puppetmaster switch.
+            # We have to make sure in any case that the puppet config is refreshed to do the puppetservers switch.
             # The tag makes only run the puppet config related manifests.
             run_one_raw(node=remote_host, command=Command("puppet agent --test --tags base::puppet", ok_codes=[]))
 
-        post_puppetmasters = node_to_bootstrap.get_ca_servers()
-        if post_puppetmasters != pre_puppetmasters:
+        post_puppetservers = node_to_bootstrap.get_ca_servers()
+        if post_puppetservers != pre_puppetservers:
             _refresh_cert(spicerack=self.spicerack, remote_host=remote_host)
 
-        if post_puppetmasters == pre_puppetmasters or not pre_run_passed:
+        if post_puppetservers == pre_puppetservers or not pre_run_passed:
             try:
                 node_to_bootstrap.run()
             except RemoteExecutionError:
