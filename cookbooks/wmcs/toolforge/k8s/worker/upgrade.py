@@ -225,6 +225,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
             # can show errors if they are started before the api-server by the kubelet. This is solved by another
             # manual restart in the right order, which this function should do
             kubelet = KubeletController(remote=remote, kubelet_node_fqdn=fqdn, k8s_control=kubectl)
+            LOGGER.info("Restarting static pods in kube-system namespace")
             kubelet.restart_all_static_pods(namespace="kube-system")
 
             ask_confirmation("As this is a control node, please check that control plane services work fine")
