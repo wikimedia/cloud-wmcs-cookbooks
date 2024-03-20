@@ -122,9 +122,8 @@ def add_instance_creation_options(parser: argparse.ArgumentParser) -> argparse.A
         required=False,
         default=None,
         help=(
-            "Extra security group to put the instance in, if it does not exist it will be created (will "
-            "always add the 'default' security group too). Will use '<project>-full-connectivity' if "
-            "not specified."
+            "Extra security group to put the instance in, in addition to the 'default' group. "
+            "The given security group will be created if it does not exist."
         ),
     )
     parser.add_argument(
@@ -257,7 +256,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         self.server_group = server_group if server_group is not None else self.prefix
         self.server_group_policy = server_group_policy
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.security_group = security_group or f"{self.common_opts.project}-full-connectivity"
+        self.security_group = security_group
         self.ssh_retries = ssh_retries
 
     @property
@@ -269,11 +268,25 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         """Main entry point"""
         self.create_instance()
 
-    def create_instance(self) -> CreateServerResponse:  # pylint: disable=too-many-locals
-        """We need this as `run` is an inherited function with a return type we should not override."""
-        self.openstack_api.security_group_ensure(
-            security_group=self.security_group,
+    def _get_security_group_id(self, name: str) -> str:
+        maybe_security_group = self.openstack_api.security_group_by_name(
+            name=name, cumin_params=CuminParams(print_output=False)
         )
+        if maybe_security_group is None:
+            raise Exception(
+                f"Unable to find a '{name}' security group for project {self.common_opts.project}, "
+                "though it should have been created before if not there."
+            )
+
+        return maybe_security_group["ID"]
+
+    def create_instance(self) -> CreateServerResponse:
+        """We need this as `run` is an inherited function with a return type we should not override."""
+        if self.security_group:
+            self.openstack_api.security_group_ensure(
+                security_group=self.security_group,
+            )
+
         self.openstack_api.server_group_ensure(
             server_group=self.server_group,
             policy=self.server_group_policy,
@@ -313,22 +326,10 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
             )
 
         new_prefix_member_name = f"{self.prefix}-{last_prefix_member_id + 1}"
-        maybe_security_group = self.openstack_api.security_group_by_name(
-            name=self.security_group, cumin_params=no_output
-        )
-        if maybe_security_group is None:
-            raise Exception(
-                f"Unable to find a '{self.security_group}' security group for project {self.common_opts.project}, "
-                "though it should have been created before if not there."
-            )
 
-        security_group_id: str = maybe_security_group["ID"]
-
-        maybe_default_security_group = self.openstack_api.security_group_by_name(name="default", cumin_params=no_output)
-        if maybe_default_security_group is None:
-            raise Exception(f"Unable to find a default security group for project {self.common_opts.project}")
-
-        default_security_group_id: str = maybe_default_security_group["ID"]
+        security_groups = [self._get_security_group_id("default")]
+        if self.security_group:
+            security_groups.append(self._get_security_group_id(self.security_group))
 
         maybe_server_group = self.openstack_api.server_group_by_name(name=self.server_group, cumin_params=no_output)
         if maybe_server_group is None:
@@ -341,7 +342,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
 
         new_instance_id = self.openstack_api.server_create(
             flavor=self.flavor or other_prefix_members[-1]["Flavor"],
-            security_group_ids=[default_security_group_id, security_group_id],
+            security_group_ids=security_groups,
             server_group_id=server_group_id,
             image=self.image or other_prefix_members[-1]["Image"],
             network=self.network or list(other_prefix_members[-1]["Networks"].keys())[0],
