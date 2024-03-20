@@ -921,7 +921,8 @@ class CephClusterController(CommandRunnerMixin):
 
         any_changes = False
         for osd_id in osd_ids:
-            any_changes = any_changes or self.crush_reweight_osd(osd_id=osd_id, new_weight=0.0)
+            new_changes = self.crush_reweight_osd(osd_id=osd_id, new_weight=0.0)
+            any_changes = any_changes or new_changes
 
         for osd_id in osd_ids:
             self.mark_osd_out(osd_id=osd_id)
