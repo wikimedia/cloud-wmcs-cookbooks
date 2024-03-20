@@ -25,6 +25,7 @@ PKI_FILES_TO_TRANSFER = [
     "front-proxy-client.key",
 ]
 
+HAPROXY_KEEPALIVED_PEERS_HIERA_KEY = "profile::toolforge::k8s::haproxy::keepalived_peers"
 KUBEADM_VERSION_COMPONENT_HIERA_KEY = "profile::wmcs::kubeadm::component"
 KUBERNETES_VERSION_HIERA_KEY = "profile::wmcs::kubeadm::kubernetes_version"
 
