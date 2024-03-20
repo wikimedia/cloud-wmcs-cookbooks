@@ -26,6 +26,7 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.remote import RemoteExecutionError
 from wmflib.decorators import retry
 
+from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 from wmcs_libs.common import (
     CommonOpts,
     CuminParams,
@@ -207,6 +208,11 @@ class CreateInstanceWithPrefix(CookbookBase):
                 "1min between tries."
             ),
         )
+        parser.add_argument(
+            "--sign-puppet-certs",
+            action="store_true",
+            help="Enroll the newly created instance on the project Puppet server",
+        )
 
         return parser
 
@@ -224,6 +230,7 @@ class CreateInstanceWithPrefix(CookbookBase):
             server_group=args.server_group,
             server_group_policy=args.server_group_policy,
             ssh_retries=args.ssh_retries,
+            sign_puppet_certs=args.sign_puppet_certs,
             spicerack=self.spicerack,
         )
 
@@ -239,6 +246,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         server_group_policy: OpenstackServerGroupPolicy,
         security_group: str,
         server_group: str | None = None,
+        sign_puppet_certs: bool = False,
         ssh_retries: int = 15,
     ):
         """Init"""
@@ -258,6 +266,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.security_group = security_group
         self.ssh_retries = ssh_retries
+        self.sign_puppet_certs = sign_puppet_certs
 
     @property
     def runtime_description(self) -> str:
@@ -280,7 +289,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
 
         return maybe_security_group["ID"]
 
-    def create_instance(self) -> CreateServerResponse:
+    def create_instance(self) -> CreateServerResponse:  # pylint: disable=too-many-locals
         """We need this as `run` is an inherited function with a return type we should not override."""
         if self.security_group:
             self.openstack_api.security_group_ensure(
@@ -369,5 +378,11 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
                 node=new_prefix_node,
                 command=["sed", "-i", "-e", "'s/mesg n || true/mesg n 2>/dev/null || true/'", "/root/.profile"],
             )
+
+        if self.sign_puppet_certs:
+            refresh_puppet_certs_cookbook = RefreshPuppetCerts(spicerack=self.spicerack)
+            refresh_puppet_certs_cookbook.get_runner(
+                args=refresh_puppet_certs_cookbook.argument_parser().parse_args(["--fqdn", new_instance_fqdn]),
+            ).run()
 
         return CreateServerResponse(server_id=new_instance_id, server_fqdn=new_instance_fqdn)
