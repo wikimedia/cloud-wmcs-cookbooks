@@ -193,15 +193,15 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         service_ip = run_one_raw(node=to_node, command=["dig", "+short", service_fqdn], last_line_only=True).strip()
         if not service_ip:
             raise Exception(f"Unable to resolve service ip for service name {service_fqdn}")
-        service_ip_port = self.openstack_api.port_get(service_ip)[0]
+        service_ip_port = self.openstack_api.port_get_by_ip(service_ip)[0]
 
-        if service_ip_port["Name"] != mount_name:
-            raise Exception(f"service ip name mismatch. Expected {mount_name}, found {service_ip_port['Name']}")
+        if service_ip_port.port_name != mount_name:
+            raise Exception(f"service ip name mismatch. Expected {mount_name}, found {service_ip_port.port_name}")
 
         to_ip = run_one_raw(node=to_node, command=["dig", "+short", self.to_fqdn], last_line_only=True).strip()
-        to_port = self.openstack_api.port_get(to_ip)
+        to_port = self.openstack_api.port_get_by_ip(to_ip)[0]
         from_ip = run_one_raw(node=to_node, command=["dig", "+short", self.from_fqdn], last_line_only=True).strip()
-        from_port = self.openstack_api.port_get(from_ip)
+        from_port = self.openstack_api.port_get_by_ip(from_ip)[0]
 
         # See if wmcs-prepare-cinder-volume has already been run on the target host
         volume_path = f"/srv/{mount_name}"
@@ -290,8 +290,8 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
 
         # Move the service ip
         try:
-            self.openstack_api.detach_service_ip(service_ip, from_port[0]["MAC Address"], from_port[0]["ID"])
-            self.openstack_api.attach_service_ip(service_ip, to_port[0]["ID"])
+            self.openstack_api.detach_service_ip(service_ip, from_port.mac_address, from_port.port_id)
+            self.openstack_api.attach_service_ip(service_ip, to_port.port_id)
         except Exception as error:  # pylint: disable=broad-except
             if not self.force:
                 LOGGER.warning("Ignoring exception due to --force: %s", error)

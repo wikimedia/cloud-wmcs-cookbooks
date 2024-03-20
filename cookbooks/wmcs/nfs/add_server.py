@@ -207,15 +207,13 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
             )
 
         if self.service_ip:
-            new_server_ip = run_one_raw(node=new_node, command=["dig", "+short", new_server.server_fqdn]).strip()
-
-            host_port = openstack_api.port_get(new_server_ip)
+            host_port = openstack_api.port_get_for_server(new_server.server_id)[0]
 
             service_ip_response = openstack_api.create_service_ip(self.volume, self.network)
             service_ip = service_ip_response["fixed_ips"][0]["ip_address"]
 
             logging.warning("The new service_ip is %s", service_ip)
-            openstack_api.attach_service_ip(service_ip, host_port[0]["ID"])
+            openstack_api.attach_service_ip(service_ip, host_port.port_id)
 
             zone_record = openstack_api.zone_get(f"svc.{self.project}.eqiad1.wikimedia.cloud.")
             openstack_api.recordset_create(

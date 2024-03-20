@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Callable, NamedTuple, Type, Union, cast
 
@@ -248,6 +249,23 @@ class OpenstackServerGroupPolicy(ArgparsableEnum):
     SOFT_AFFINITY = "soft-affinity"
 
 
+@dataclass(frozen=True)
+class NeutronPartialPort:
+    """Represents the details of a Neutron port that can be seen in 'openstack port list' output."""
+
+    port_id: OpenstackID
+    port_name: str
+    mac_address: str
+
+    @classmethod
+    def from_port_data(cls, port_data: dict[str, Any]) -> "NeutronPartialPort":
+        return cls(
+            port_id=port_data["ID"],
+            port_name=port_data["Name"],
+            mac_address=port_data["MAC Address"],
+        )
+
+
 class OpenstackAPI(CommandRunnerMixin):
     """Class to interact with the Openstack API (indirectly for now)."""
 
@@ -341,10 +359,17 @@ class OpenstackAPI(CommandRunnerMixin):
         """Return cinder's list of registered services"""
         return self.run_formatted_as_list("volume", "service", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
-    def port_get(self, ip_address) -> list[dict[str, Any]]:
-        """Get port for specified IP address"""
-        ip_filter = f'--fixed-ip="ip-address={ip_address}"'
-        return self.run_formatted_as_list("port", "list", ip_filter, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+    def _port_get(self, port_filter: list[str]) -> list[NeutronPartialPort]:
+        data = self.run_formatted_as_list("port", "list", *port_filter, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        return [NeutronPartialPort.from_port_data(port) for port in data]
+
+    def port_get_for_server(self, server_id: OpenstackID) -> list[NeutronPartialPort]:
+        """Get ports for a specified server."""
+        return self._port_get(port_filter=[f'--server="{server_id }"'])
+
+    def port_get_by_ip(self, ip_address: str) -> list[NeutronPartialPort]:
+        """Get ports for specified IP address"""
+        return self._port_get(port_filter=[f'--fixed-ip="ip-address={ip_address}"'])
 
     def zone_get(self, name) -> list[dict[str, Any]]:
         """Get zone record for specified dns zone"""
