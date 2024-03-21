@@ -13,23 +13,16 @@ from __future__ import annotations
 import argparse
 import logging
 import time
-from datetime import timedelta
-from typing import cast
+from typing import Callable, cast
 
-from spicerack import Spicerack
+from spicerack import RemoteHosts, Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
 
 from cookbooks.wmcs.ceph.reboot_node import RebootNode
-from wmcs_libs.ceph import (
-    CephClusterController,
-    CephOSDFlag,
-    CephOSDNodeController,
-    OSDClass,
-    OSDTreeOSDNode,
-    get_node_cluster_name,
-)
+from wmcs_libs.ceph import CephClusterController, CephOSDFlag, CephOSDNodeController, OSDClass, OSDTreeOSDNode
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.inventory.ceph import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,12 +41,19 @@ class BootstrapAndAdd(CookbookBase):
         )
         add_common_opts(parser)
         parser.add_argument(
-            "--new-osd-fqdn",
+            "--cluster-name",
+            required=True,
+            choices=list(CephClusterName),
+            type=CephClusterName,
+            help="Ceph cluster to roll restart.",
+        )
+        parser.add_argument(
+            "--osd-hostname",
             required=True,
             action="append",
             help=(
-                "FQDNs of the new OSDs to add. Repeat for each new OSD. If specifying more than one, consider passing "
-                "--yes-i-know-what-im-doing"
+                "Hostname of the new OSDs to add. Repeat for each new OSD. If specifying more "
+                "than one, consider passing --yes-i-know-what-im-doing"
             ),
         )
         parser.add_argument(
@@ -100,7 +100,8 @@ class BootstrapAndAdd(CookbookBase):
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
         return with_common_opts(self.spicerack, args, BootstrapAndAddRunner)(
-            new_osd_fqdns=args.new_osd_fqdn,
+            cluster_name=args.cluster_name,
+            osd_hostnames=args.osd_hostname,
             yes_i_know=args.yes_i_know_what_im_doing,
             skip_reboot=args.skip_reboot,
             wait_for_rebalance=args.wait_for_rebalance,
@@ -134,7 +135,8 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        new_osd_fqdns: list[str],
+        cluster_name: CephClusterName,
+        osd_hostnames: list[str],
         force: bool,
         yes_i_know: bool,
         skip_reboot: bool,
@@ -144,7 +146,9 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
     ):
         """Init"""
         self.common_opts = common_opts
-        self.new_osd_fqdns = new_osd_fqdns
+        self.osd_fqdns = [
+            hostname.split(".", 1)[0] + f".{cluster_name.get_site().get_domain()}" for hostname in osd_hostnames
+        ]
         self.force = force
         self.yes_i_know = yes_i_know
         self.skip_reboot = skip_reboot
@@ -152,7 +156,6 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         self.wait_for_rebalance = wait_for_rebalance
         self.only_check = only_check
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
-        cluster_name = get_node_cluster_name(self.new_osd_fqdns[0])
         self.cluster_controller = CephClusterController(
             remote=self.spicerack.remote(), cluster_name=cluster_name, spicerack=self.spicerack
         )
@@ -160,96 +163,128 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
     def run_with_proxy(self) -> None:
         """Main entry point"""
         self.sallogger.log(
-            message=f"Adding new OSDs {self.new_osd_fqdns} to the cluster",
+            message=f"Adding all available disks from nodes {self.osd_fqdns} to the cluster",
         )
-        if not self.only_check:
+        if self.only_check:
+            LOGGER.info("Skipping setting the cluster as norebalance")
+        else:
             # this avoids rebalancing after each osd is added
-            self.cluster_controller.set_osdmap_flag(CephOSDFlag("norebalance"))
+            self.cluster_controller.set_osdmap_flag(CephOSDFlag.NOREBALANCE)
+            self.cluster_controller.set_osdmap_flag(CephOSDFlag.NOIN)
 
-        for index, new_osd_fqdn in enumerate(self.new_osd_fqdns):
-            self.sallogger.log(
-                message=f"Adding OSD {new_osd_fqdn}... ({index + 1}/{len(self.new_osd_fqdns)})",
-            )
-            node = self.spicerack.remote().query(f"D{{{new_osd_fqdn}}}", use_sudo=True)
+        only_check_str = ""
+        if self.only_check:
+            only_check_str = "<only check>"
+
+        for index, new_osd_fqdn in enumerate(self.osd_fqdns):
+
+            def info(msg: str, osd_node: str = new_osd_fqdn) -> None:
+                LOGGER.info("[%s] %s %s", osd_node, only_check_str, msg)
+
+            def sal_info(msg: str, osd_node: str = new_osd_fqdn) -> None:
+                self.sallogger.log(f"[{osd_node}]{only_check_str} {msg}")
+
+            sal_info(f"Starting... ({index + 1}/{len(self.osd_fqdns)})")
+            node: RemoteHosts = self.spicerack.remote().query(f"D{{{new_osd_fqdn}}}", use_sudo=True)
             osd_controller = CephOSDNodeController(remote=self.spicerack.remote(), node_fqdn=new_osd_fqdn)
 
             if not self.skip_reboot:
-                LOGGER.info("Running puppet and rebooting to make sure we start from fresh boot.")
-                PuppetHosts(remote_hosts=node).run()
-                reboot_node_cookbook = RebootNode(spicerack=self.spicerack)
-                reboot_args = [
-                    "--skip-maintenance",
-                    "--fqdn-to-reboot",
-                    new_osd_fqdn,
-                ]
-                if self.force:
-                    reboot_args += ["--force"]
+                info("Running puppet and rebooting to make sure we start from fresh boot.")
+                self._do_reboot_and_puppet(node=node, host_fqdn=new_osd_fqdn)
 
-                reboot_args += self.common_opts.to_cli_args()
+            info("Doing some checks...")
+            self._do_checks(host_fqdn=new_osd_fqdn, osd_controller=osd_controller)
+            info("checks OK")
 
-                reboot_node_cookbook.get_runner(
-                    args=reboot_node_cookbook.argument_parser().parse_args(reboot_args)
-                ).run()
-                # Puppet adds the network routes to the cluster network on run
-                # so we need to run it once after reboot
-                PuppetHosts(remote_hosts=node).run()
-
-            LOGGER.info("Doing some checks...")
-            node_failures = self.cluster_controller.check_if_osd_ready_for_bootstrap(osd_controller=osd_controller)
-            if node_failures:
-                errors_str = "\n    ".join(node_failures)
-                error_msg = f"The node {new_osd_fqdn} is not suitable to be added as an osd:\n    {errors_str}"
-                LOGGER.error(error_msg)
-                raise Exception(error_msg)
-            LOGGER.info("...OK")
+            new_devices = osd_controller.get_available_devices()
+            info(f"Found available disks {new_devices} on node {new_osd_fqdn}")
 
             if self.only_check:
+                info("Skipping adding the new devices and fixing their class")
                 continue
 
             osd_controller.add_all_available_devices(interactive=(not self.yes_i_know))
-
-            new_osds = _wait_for_osds_to_show_up(
-                cluster_controller=self.cluster_controller, ceph_hostname=new_osd_fqdn.split(".", 1)[0]
-            )
-            wrongly_classified_osds = [osd for osd in new_osds if osd.device_class != OSDClass.SSD]
-            if wrongly_classified_osds:
-                LOGGER.info("Got some OSDs with the wrong classes, fixing:%s", wrongly_classified_osds)
-            for osd in wrongly_classified_osds:
-                self.cluster_controller.set_osd_class(osd_id=osd.osd_id, osd_class=OSDClass.SSD)
-
-            new_osds = _wait_for_osds_to_show_up(
-                cluster_controller=self.cluster_controller, ceph_hostname=new_osd_fqdn.split(".", 1)[0]
-            )
-            wrongly_classified_osds = [osd for osd in new_osds if osd.device_class != OSDClass.SSD]
-            if wrongly_classified_osds:
-                raise Exception(
-                    f"Something went wrong, I was unable to change the device class for osds {wrongly_classified_osds}"
-                )
-
-            self.sallogger.log(
-                message=f"Added OSD {new_osd_fqdn}... ({index + 1}/{len(self.new_osd_fqdns)})",
+            self._fix_osd_classes(host_fqdn=new_osd_fqdn, info=info)
+            sal_info(
+                f"Added all available disks ({new_devices}) from node {new_osd_fqdn}... "
+                f"({index + 1}/{len(self.osd_fqdns)})",
             )
 
-        if self.only_check:
-            return
+            if self.only_check:
+                info("Skipping undraining the new devices.")
+                continue
 
-        # Now we start rebalancing once all are in
-        self.cluster_controller.unset_osdmap_flag(CephOSDFlag("norebalance"))
+            info(
+                "The new OSDs are up and running, the cluster will now start rebalancing the data to them, that might "
+                "take quite a long time, you can follow the progress by running 'ceph status' on a control node."
+            )
+            info("We'll add the new osds in batches of 2, to avoid saturating the network")
+            self._undrain_in_batches(host_fqdn=new_osd_fqdn)
+
         self.sallogger.log(
-            message=f"Added {len(self.new_osd_fqdns)} new OSDs {self.new_osd_fqdns}",
-        )
-        LOGGER.info(
-            "The new OSDs are up and running, the cluster will now start rebalancing the data to them, that might "
-            "take quite a long time, you can follow the progress by running 'ceph status' on a control node."
+            message=f"Added {len(self.osd_fqdns)} new OSDs {self.osd_fqdns} \\o/",
         )
 
-        if self.wait_for_rebalance:
-            # the rebalance might take a very very long time, setting timeout to 12h
-            timeout = timedelta(hours=12)
-            LOGGER.info("Waiting for the cluster to rebalance all the data (timeout of {%s})...", timeout)
-            self.cluster_controller.wait_for_in_progress_events(timeout=timeout)
-            self.cluster_controller.wait_for_rebalance(timeout=timeout)
-            LOGGER.info("Rebalancing done.")
-            self.sallogger.log(
-                message=f"The cluster is now rebalanced after adding the new OSDs {self.new_osd_fqdns}",
+    def _do_reboot_and_puppet(self, node: RemoteHosts, host_fqdn: str) -> None:
+        PuppetHosts(remote_hosts=node).run()
+        reboot_node_cookbook = RebootNode(spicerack=self.spicerack)
+        reboot_args = [
+            "--skip-maintenance",
+            "--fqdn-to-reboot",
+            host_fqdn,
+        ]
+        if self.force:
+            reboot_args += ["--force"]
+
+        reboot_args += self.common_opts.to_cli_args()
+
+        reboot_node_cookbook.get_runner(args=reboot_node_cookbook.argument_parser().parse_args(reboot_args)).run()
+        # Puppet adds the network routes to the cluster network on run
+        # so we need to run it once after reboot
+        PuppetHosts(remote_hosts=node).run()
+
+    def _do_checks(self, host_fqdn: str, osd_controller: CephOSDNodeController) -> None:
+        node_failures = self.cluster_controller.check_if_osd_ready_for_bootstrap(osd_controller=osd_controller)
+        if node_failures:
+            errors_str = "\n    ".join(node_failures)
+            error_msg = f"The node {host_fqdn} is not suitable to be added as an osd:\n    {errors_str}"
+            LOGGER.error(error_msg)
+            raise Exception(error_msg)
+
+    def _fix_osd_classes(self, host_fqdn: str, info: Callable[[str], None]) -> None:
+        new_osds = _wait_for_osds_to_show_up(
+            cluster_controller=self.cluster_controller, ceph_hostname=host_fqdn.split(".", 1)[0]
+        )
+        wrongly_classified_osds = [osd for osd in new_osds if osd.device_class != OSDClass.SSD]
+        if wrongly_classified_osds:
+            info(f"Got some OSDs with the wrong classes, fixing: {wrongly_classified_osds}")
+        for osd in wrongly_classified_osds:
+            self.cluster_controller.set_osd_class(osd_id=osd.osd_id, osd_class=OSDClass.SSD)
+
+        new_osds = _wait_for_osds_to_show_up(
+            cluster_controller=self.cluster_controller, ceph_hostname=host_fqdn.split(".", 1)[0]
+        )
+        wrongly_classified_osds = [osd for osd in new_osds if osd.device_class != OSDClass.SSD]
+        if wrongly_classified_osds:
+            raise Exception(
+                f"Something went wrong, I was unable to change the device class for osds {wrongly_classified_osds}"
             )
+
+    def _undrain_in_batches(self, host_fqdn: str) -> None:
+        new_osds = _wait_for_osds_to_show_up(
+            cluster_controller=self.cluster_controller, ceph_hostname=host_fqdn.split(".", 1)[0]
+        )
+
+        # marking them all out first as they are in by default
+        for osd in new_osds:
+            self.cluster_controller.crush_reweight_osd(osd_id=osd.osd_id, new_weight=0.0)
+            self.cluster_controller.mark_osd_out(osd_id=osd.osd_id)
+
+        # Now we enable rebalancing
+        self.cluster_controller.unset_osdmap_flag(CephOSDFlag.NOREBALANCE)
+        self.cluster_controller.unset_osdmap_flag(CephOSDFlag.NOIN)
+
+        # And bring them in in batches
+        self.cluster_controller.undrain_osds_in_chunks(
+            osd_ids=[osd.osd_id for osd in new_osds], batch_size=2, wait=self.wait_for_rebalance
+        )

@@ -26,6 +26,10 @@ class SiteName(Enum):
         """String representation"""
         return self.value
 
+    def get_domain(self):
+        """Default machine domain for hardware hosted in this site."""
+        return f"{self}.wmnet"
+
 
 class ClusterName(ArgparsableEnum):
     """Base class for a cluster name."""

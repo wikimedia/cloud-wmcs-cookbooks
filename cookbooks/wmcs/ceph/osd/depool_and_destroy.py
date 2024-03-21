@@ -3,6 +3,7 @@ r"""WMCS Ceph - Destroy the OSD daemons on the given OSD Host
 Usage example:
     cookbook wmcs.ceph.osd.depool_and_destroy \
         --osd-hostname cloudcephosd1001 \
+        --cluster-name eqiad1 \
         --osd-id 22 \
         --osd-id 23 \
         --task-id T12345
@@ -27,14 +28,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmflib.interactive import ask_confirmation
 
-from wmcs_libs.ceph import (
-    CephClusterController,
-    CephException,
-    CephOSDFlag,
-    CephOSDNodeController,
-    OSDTreeOSDNode,
-    get_node_cluster_name,
-)
+from wmcs_libs.ceph import CephClusterController, CephException, CephOSDFlag, CephOSDNodeController, OSDTreeOSDNode
 from wmcs_libs.common import (
     CommonOpts,
     SALLogger,
@@ -43,6 +37,7 @@ from wmcs_libs.common import (
     parser_type_str_hostname,
     with_common_opts,
 )
+from wmcs_libs.inventory.ceph import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 
@@ -60,6 +55,13 @@ class DepoolAndDestroy(CookbookBase):
             formatter_class=ArgparseFormatter,
         )
         add_common_opts(parser)
+        parser.add_argument(
+            "--cluster-name",
+            required=True,
+            choices=list(CephClusterName),
+            type=CephClusterName,
+            help="Ceph cluster to roll restart.",
+        )
         parser.add_argument(
             "--osd-hostname",
             required=True,
@@ -98,6 +100,15 @@ class DepoolAndDestroy(CookbookBase):
             action="store_true",
             help="If passed, will destroy all osds registered on the host.",
         )
+        parser.add_argument(
+            "--be-mean-about-it",
+            required=False,
+            action="store_true",
+            help=(
+                "If passed, it will not wait for draining to happen, will act as if the host was ripped off the "
+                "cluster (that should be ok most of the time, though currently we are having issues see T348643)."
+            ),
+        )
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
@@ -107,10 +118,12 @@ class DepoolAndDestroy(CookbookBase):
 
         return with_common_opts(self.spicerack, args, DestroyRunner)(
             osd_hostname=args.osd_hostname,
+            cluster_name=args.cluster_name,
             yes_i_know=args.yes_i_know_what_im_doing,
             only_ids=args.osd_id,
             all_osds=args.all_osds,
             force=args.force,
+            be_mean_about_it=args.be_mean_about_it,
             only_check=self.spicerack.dry_run,
             spicerack=self.spicerack,
         )
@@ -122,7 +135,8 @@ def check_that_osds_belong_to_host(osd_ids: list[int], hostname: str, ceph_contr
     Will raise an exception if they are not.
     """
     host_tree_nodes = ceph_controller.get_osd_tree().get_nodes_by_type(wanted_type="host")
-    for host_entry in host_tree_nodes:
+    osd_hosts = list(host_tree_nodes)
+    for host_entry in osd_hosts:
         if host_entry.name != hostname:
             continue
 
@@ -134,7 +148,10 @@ def check_that_osds_belong_to_host(osd_ids: list[int], hostname: str, ceph_contr
             f"Not all the osds {osd_ids} are assigned to the host {hostname} (assigned osds are {gotten_osds_ids})"
         )
 
-    raise Exception(f"Unable to find host {hostname} on the cluster {ceph_controller.cluster_name}.")
+    raise Exception(
+        f"Unable to find host {hostname} on the cluster {ceph_controller.cluster_name}, "
+        f"got osds: {[host.name for host in osd_hosts]}."
+    )
 
 
 class DestroyRunner(WMCSCookbookRunnerBase):
@@ -143,12 +160,14 @@ class DestroyRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
+        cluster_name: CephClusterName,
         osd_hostname: str,
         force: bool,
         yes_i_know: bool,
         only_check: bool,
         only_ids: list[int],
         all_osds: bool,
+        be_mean_about_it: bool,
         spicerack: Spicerack,
     ):
         """Init"""
@@ -159,10 +178,10 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         self.only_check = only_check
         self.ids = only_ids
         self.all_osds = all_osds
+        self.be_mean_about_it = be_mean_about_it
 
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
-        cluster_name = get_node_cluster_name(self.osd_hostname)
         self.cluster_controller = CephClusterController(
             remote=self.spicerack.remote(), cluster_name=cluster_name, spicerack=self.spicerack
         )
@@ -212,20 +231,8 @@ class DestroyRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Skipping depooling the OSD daemons, note that it might fail the next check before destroying.")
         else:
             # we already checked that it was safe
-            self.cluster_controller.drain_osds(osd_ids=self.ids, be_unsafe=True)
-
-            # the rebalance might take a very very long time, setting timeout to 12h
-            timeout = timedelta(hours=12)
-            LOGGER.info("Waiting for the cluster to rebalance all the data (timeout of %s)...", timeout)
-            # first sleep to allow the cluster to start rebalancing
-            time.sleep(60)
-            self.cluster_controller.wait_for_in_progress_events(timeout=timeout)
-            self.cluster_controller.wait_for_rebalance(timeout=timeout)
-            LOGGER.info("Rebalancing done, will stop the OSD daemons service.")
-
-            osd_fqdn = f"{self.osd_hostname}.{self.cluster_controller.cluster_name.get_site().value}.wmnet"
-            osd_controller = CephOSDNodeController(remote=self.spicerack.remote(), node_fqdn=osd_fqdn)
-            osd_controller.stop_osds(osd_ids=self.ids)
+            self._depool_daemons(be_mean=self.be_mean_about_it)
+            self._stop_daemons()
 
         self.sallogger.log(
             message=(
@@ -237,19 +244,53 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         if failures:
             raise Exception("\n".join(failures))
 
-        removed_host_msg = ""
+        extra_message = ""
         if self.only_check:
             LOGGER.info("Skipping destroying the OSD daemons")
         else:
-            for osd_id in self.ids:
-                # we already checked that it was safe
-                self.cluster_controller.destroy_osd(osd_id=osd_id, be_unsafe=True)
+            extra_message = self._destroy_osds()
 
-            if not self.cluster_controller.get_host_osds(osd_host=self.osd_hostname):
-                LOGGER.info("Cleaning up empty host bucket in the CRUSH map.")
-                self.cluster_controller.remove_crush_bucket(bucket_name=self.osd_hostname)
-                removed_host_msg = f" and removed the OSD host {self.osd_hostname} from the CRUSH map"
-            else:
-                LOGGER.info("Not cleaning up host bucket, as it still has some OSDs in it")
+        self.sallogger.log(message=f"Depooled and destroyed OSD daemons {self.ids}{extra_message}.")
 
-        self.sallogger.log(message=f"Depooled and destroyed OSD daemons {self.ids}{removed_host_msg}.")
+    def _depool_daemons(self, be_mean: bool = False) -> None:
+        if be_mean:
+            batch_size = 0
+        else:
+            batch_size = 2
+        any_changes = self.cluster_controller.drain_osds_in_chunks(
+            osd_ids=self.ids, be_unsafe=True, batch_size=batch_size
+        )
+
+        if be_mean:
+            LOGGER.info("Not waiting for the cluster to rebalance (be_mean set)...")
+            return
+
+        if any_changes:
+            # the rebalance might take a very very long time, setting timeout to 12h
+            timeout = timedelta(hours=12)
+            LOGGER.info("Waiting for the cluster to rebalance all the data (timeout of %s)...", timeout)
+            # first sleep to allow the cluster to start rebalancing
+            time.sleep(60)
+            self.cluster_controller.wait_for_in_progress_events(timeout=timeout)
+            self.cluster_controller.wait_for_rebalance(timeout=timeout)
+            LOGGER.info("Rebalancing done, will stop the OSD daemons service.")
+        else:
+            LOGGER.info("No changes were made to the cluster, skipping waiting for rebalance.")
+
+    def _stop_daemons(self) -> None:
+        osd_fqdn = f"{self.osd_hostname}.{self.cluster_controller.cluster_name.get_site().get_domain()}"
+        osd_controller = CephOSDNodeController(remote=self.spicerack.remote(), node_fqdn=osd_fqdn)
+        osd_controller.stop_osds(osd_ids=self.ids)
+
+    def _destroy_osds(self) -> str:
+        for osd_id in self.ids:
+            # we already checked that it was safe
+            self.cluster_controller.destroy_osd(osd_id=osd_id, be_unsafe=True)
+
+        if not self.cluster_controller.get_host_osds(osd_host=self.osd_hostname):
+            LOGGER.info("Cleaning up empty host bucket in the CRUSH map.")
+            self.cluster_controller.remove_crush_bucket(bucket_name=self.osd_hostname)
+            return f" and removed the OSD host {self.osd_hostname} from the CRUSH map"
+
+        LOGGER.info("Not cleaning up host bucket, as it still has some OSDs in it")
+        return ""

@@ -300,12 +300,14 @@ class CephClusterStatus:
 
         if "OSDMAP_FLAGS" in temp_status["health"]["checks"] and len(temp_status["health"]["checks"]) == 1:
             current_flags = self.get_osdmap_set_flags()
-            return current_flags.issubset({CephOSDFlag("noout"), CephOSDFlag("norebalance")})
+            return current_flags.issubset({CephOSDFlag.NOOUT, CephOSDFlag.NOREBALANCE, CephOSDFlag.NOIN})
 
         return False
 
     def check_healthy(
-        self, consider_maintenance_healthy: bool = False, health_issues_to_ignore: Iterable[str] | None = None
+        self,
+        consider_maintenance_healthy: bool = False,
+        health_issues_to_ignore: Iterable[str] | None = None,
     ) -> None:
         """Check if the cluster is healthy."""
         # ignore temporary alert for octopus upgrade
@@ -915,8 +917,51 @@ class CephClusterController(CommandRunnerMixin):
 
         raise CephException(f"Unexpected response when marking osd {osd_id} out: {response}")
 
+    def drain_osds_in_chunks(
+        self, osd_ids: list[int], batch_size: int = 0, be_unsafe: bool = False, wait: bool = True
+    ) -> bool:
+        """Drains the given osds in chunks.
+
+        Return True if there were any osds removed (so you can decide if waiting for rebalancing or not).
+        """
+        start_time = datetime.now()
+        timeout = timedelta(hours=5)
+
+        if batch_size == 0:
+            batch_size = len(osd_ids)
+
+        chunk_start = 0
+
+        def info(msg, *args):
+            LOGGER.info(f"[%d/%d] {msg}", chunk_start, len(osd_ids), *args)
+
+        any_changes = False
+        info("Draining osds: %s", str(osd_ids))
+        for chunk_num in range(len(osd_ids) // batch_size):
+            chunk_start = chunk_num * batch_size
+            next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
+            info("Draining osd batch %d of %d: %s", chunk_num + 1, len(osd_ids) // batch_size, str(next_chunk))
+            had_changes = self.drain_osds(osd_ids=next_chunk, be_unsafe=be_unsafe)
+            if wait and had_changes:
+                info("Waiting for the cluster to shift data around...")
+                # give some time for the cluster to start shifting things around
+                while not self.wait_for_rebalance(timeout=timeout):
+                    info("Rebalancing has not started yet, sleeping another 10s for the rebalance to start")
+                    time.sleep(10)
+            elif not had_changes:
+                info("No changes to the cluster made, draining the next batch...")
+            elif had_changes:
+                any_changes = True
+
+        chunk_start = len(osd_ids)
+        end_time = datetime.now()
+        info("All osds drained (%s), took %s", osd_ids, (end_time - start_time))
+        return any_changes
+
     def drain_osds(self, osd_ids: list[int], be_unsafe: bool = False) -> bool:
         """Drains many OSD daemons by setting their weight to 0 and forcing ceph to rebalance it's data somewhere else.
+
+        NOTE: prefer using `drain_osds_in_chunks` to better control the load of the cluster and recovery rate.
 
         This is different from depooling them one by one as in it will check if the cluster is consistent when
         depooling them together, instead of one after the other.
@@ -944,8 +989,40 @@ class CephClusterController(CommandRunnerMixin):
 
         return any_changes
 
+    def undrain_osds_in_chunks(self, osd_ids: list[int], batch_size: int = 0, wait: bool = False) -> None:
+        start_time = datetime.now()
+        timeout = timedelta(hours=5)
+
+        if batch_size == 0:
+            batch_size = len(osd_ids)
+
+        chunk_start = 0
+
+        def info(msg, *args):
+            LOGGER.info(f"[%d/%d] {msg}", chunk_start, len(osd_ids), *args)
+
+        info("Undraining osds: %s", str(osd_ids))
+        for chunk_num in range(len(osd_ids) // batch_size):
+            chunk_start = chunk_num * batch_size
+            next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
+            info("Unraining osd batch %d of %d: %s", chunk_num + 1, len(osd_ids) // batch_size, str(next_chunk))
+            self.undrain_osds(osd_ids=next_chunk)
+            if wait:
+                info("Waiting for the cluster to shift data around...")
+                # give some time for the cluster to start shifting things around
+                while not self.wait_for_rebalance(timeout=timeout):
+                    info("Rebalancing has not started yet, sleeping another 10s for the rebalance to start")
+                    time.sleep(10)
+
+        chunk_start = len(osd_ids)
+        end_time = datetime.now()
+        info("All osds undrained (%s), took %s", osd_ids, (end_time - start_time))
+
     def undrain_osds(self, osd_ids: list[int], crush_weight: float = 0.0) -> None:
-        """Undrains OSD daemons by setting their weight to 1."""
+        """Undrains OSD daemons.
+
+        It sets their weight to whatever the current osds have (or falling back to `crush_weight`).
+        """
         osd_tree = self.get_osd_tree()
         osds = osd_tree.get_nodes_by_type(wanted_type="osd")
         pooled_weight = next((osd.crush_weight for osd in osds if osd.crush_weight > 0), crush_weight)
@@ -965,60 +1042,30 @@ class CephClusterController(CommandRunnerMixin):
 
     def drain_osd_node(self, osd_host: str, be_unsafe: bool = False, wait: bool = False, batch_size: int = 0) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
-        start_time = datetime.now()
-        timeout = timedelta(hours=5)
         osds = self.get_host_osds(osd_host=osd_host)
 
-        if batch_size == 0:
-            batch_size = len(osds)
-
-        chunk_start = 0
-
-        def info(msg, *args):
-            LOGGER.info(f"[%d/%d] {msg}", chunk_start, len(osds), *args)
-
-        info("Draining osds from host %s: %s", osd_host, str(osds))
-        for chunk_num in range(len(osds) // batch_size):
-            chunk_start = chunk_num * batch_size
-            next_chunk = osds[chunk_start : chunk_start + batch_size]
-            info("Draining osd batch %d of %d: %s", chunk_num + 1, len(osds) // batch_size, str(next_chunk))
-            had_changes = self.drain_osds(osd_ids=next_chunk, be_unsafe=be_unsafe)
-            if wait and had_changes:
-                info("Waiting for the cluster to shift data around...")
-                # give some time for the cluster to start shifting things around
-                while not self.wait_for_rebalance(timeout=timeout):
-                    info("Rebalancing has not started yet, sleeping another 10s for the rebalance to start")
-                    time.sleep(10)
-            elif had_changes:
-                info("No changes to the cluster made, draining the next batch...")
-
-        chunk_start = len(osds)
-        end_time = datetime.now()
-        info("All osds drained on node %s, took %s", osd_host, (end_time - start_time))
+        LOGGER.info("Draining osds from host %s: %s", osd_host, str(osds))
+        self.drain_osds_in_chunks(
+            osd_ids=osds,
+            batch_size=batch_size,
+            be_unsafe=be_unsafe,
+            wait=wait,
+        )
+        LOGGER.info("All osds drained on node %s", osd_host)
 
     def undrain_osd_node(
         self,
         osd_host: str,
-        crush_weight: float = 0.0,
         wait: bool = False,
         batch_size: int = 0,
     ) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
-        timeout = timedelta(hours=5)
         osds = self.get_host_osds(osd_host=osd_host)
 
         if not batch_size:
             batch_size = len(osds)
 
-        for chunk_num in range(len(osds) // batch_size):
-            chunk_start = chunk_num * batch_size
-            next_chunk = osds[chunk_start : chunk_start + batch_size]
-            self.undrain_osds(osd_ids=next_chunk, crush_weight=crush_weight)
-            if wait:
-                LOGGER.info("Waiting for the cluster to shift data around...")
-                # give some time for the cluster to start shifting things around
-                while not self.wait_for_rebalance(timeout=timeout):
-                    time.sleep(10)
+        self.undrain_osds_in_chunks(osd_ids=osds, batch_size=batch_size, wait=wait)
 
     def remove_crush_bucket(self, bucket_name: str) -> None:
         """Remove a CRUSH bucket (host/rack/...).
@@ -1119,10 +1166,33 @@ class CephClusterController(CommandRunnerMixin):
         """
         failures: list[str] = []
 
-        LOGGER.info("Checking that jumbo frames are allowed to all other nodes in the cluster...")
-        for other_node_ip in self.get_all_osd_ips():
+        other_nodes = self.get_all_osd_ips()
+        total_num = len(other_nodes)
+        ok = 0
+        failed = 0
+        LOGGER.info(
+            "Checking that jumbo frames are allowed to all other nodes in the cluster (%d of them)...",
+            len(other_nodes),
+        )
+        for other_node_ip in other_nodes:
             if not osd_controller.check_jumbo_frames_to(other_node_ip):
                 failures.append(f"Unable to send jumbo frames to {other_node_ip} from node {osd_controller.node_fqdn}")
+                failed += 1
+                LOGGER.info(
+                    "  [%d ok/%d error/%d pending] Got failure",
+                    ok,
+                    failed,
+                    total_num - (ok + failed),
+                )
+
+            ok += 1
+            LOGGER.info(
+                "  [%d ok/%d error/%d pending] Got pass for %s",
+                ok,
+                failed,
+                total_num - (ok + failed),
+                other_node_ip,
+            )
 
         LOGGER.info("Checking that we have the right amount of drives in the host...")
         host_devices = osd_controller.do_lsblk()
