@@ -1,5 +1,8 @@
 """Library for manipulating Puppet ENC data."""
-from typing import Any, ClassVar, Dict
+from __future__ import annotations
+
+import json
+from typing import Any, ClassVar
 
 import yaml
 from spicerack import Remote, RemoteHosts
@@ -32,7 +35,7 @@ class EncPrefix(CommandRunnerMixin):
             *command,
         ]
 
-    def get_current_hiera(self) -> Dict[str, Any]:
+    def get_current_hiera(self) -> dict[str, Any]:
         """Retrieves the current hieradata."""
         result = self.run_formatted_as_dict(
             "get_prefix_hiera",
@@ -44,7 +47,7 @@ class EncPrefix(CommandRunnerMixin):
 
         return yaml.safe_load(result["hiera"])
 
-    def replace_hiera(self, hiera: Dict[str, Any]) -> None:
+    def replace_hiera(self, hiera: dict[str, Any]) -> None:
         """Replaces the hieradata with the given argument."""
         with with_temporary_file(
             dst_node=self.command_runner_node, contents=yaml.safe_dump(hiera), cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT
@@ -58,11 +61,35 @@ class EncPrefix(CommandRunnerMixin):
                 cumin_params=CUMIN_UNSAFE_WITH_OUTPUT,
             )
 
-    def set_hiera_values(self, values: Dict[str, Any]) -> None:
+    def set_hiera_values(self, values: dict[str, Any]) -> None:
         """Updates the hieradata with the given values, leaving everything else as is."""
         hiera = self.get_current_hiera()
         hiera.update(values)
         self.replace_hiera(hiera)
+
+    def get_current_roles(self) -> list[str]:
+        """Retrieves the current hieradata."""
+        result = self.run_formatted_as_dict(
+            "get_prefix_roles",
+            self.prefix_name,
+            project_as_arg=True,
+            try_format=OutputFormat.YAML,
+            cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+        )
+
+        return result["roles"]
+
+    def replace_roles(self, roles: list[str]) -> None:
+        """Replaces the roles for this prefix with the given list."""
+        roles_json = json.dumps(roles)
+        self.run_formatted_as_dict(
+            "set_prefix_roles",
+            self.prefix_name,
+            f"'{roles_json}'",
+            project_as_arg=True,
+            try_format=OutputFormat.YAML,
+            cumin_params=CUMIN_UNSAFE_WITH_OUTPUT,
+        )
 
 
 class Enc:

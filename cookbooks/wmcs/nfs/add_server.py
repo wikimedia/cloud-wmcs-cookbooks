@@ -8,12 +8,12 @@ Usage example:
         toolsbeta-home toolsbeta-project
 
 """
-# pylint: disable=too-many-locals,too-many-arguments
+# pylint: disable=too-many-arguments
 from __future__ import annotations
 
 import argparse
-import json
 import logging
+from typing import Any
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
@@ -26,16 +26,15 @@ from cookbooks.wmcs.vps.create_instance_with_prefix import (
 )
 from wmcs_libs.common import (
     CommonOpts,
-    OutputFormat,
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
-    run_one_as_dict,
     run_one_raw,
     with_common_opts,
 )
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackID
+from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -137,22 +136,16 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
             new_volume = openstack_api.volume_create(OpenstackID(self.prefix), self.create_storage_volume_size)
 
             openstack_api.volume_attach(new_server.server_id, new_volume)
+        # TODO: check for the volume existing if not creating one
 
-        control_node = openstack_api.control_node
-        # Get current puppet config
-        response = run_one_as_dict(
-            command=[
-                "wmcs-enc-cli",
-                "--openstack-project",
-                self.project,
-                "get_node_consolidated_info",
-                new_server.server_fqdn,
-            ],
-            node=control_node,
-            try_format=OutputFormat.YAML,
-        )
-        current_hiera = response["hiera"]
-        current_roles = response["roles"]
+        enc = Enc(remote=self.spicerack.remote(), cluster_name=openstack_api.cluster_name)
+        enc_prefix = enc.prefix(self.project, new_server.server_fqdn)
+
+        # We assume new hosts don't have any host-specific hiera (as the methods
+        #   to get that data crash if the prefix does not exist.)
+        # TODO: fix those methods crashing
+        current_hiera: dict[str, Any] = {}
+        current_roles = []
 
         # Add nfs volume
         current_hiera["profile::wmcs::nfs::standalone::volumes"] = [self.volume]
@@ -162,35 +155,11 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
             current_hiera["profile::wmcs::nfs::standalone::cinder_attached"] = False
         current_hiera["mount_nfs"] = False
 
-        current_hiera_str = json.dumps(current_hiera)
-        response = run_one_as_dict(
-            command=[
-                "wmcs-enc-cli",
-                "--openstack-project",
-                self.project,
-                "set_prefix_hiera",
-                new_server.server_fqdn,
-                f"'{current_hiera_str}'",
-            ],
-            node=control_node,
-            try_format=OutputFormat.YAML,
-        )
+        enc_prefix.replace_hiera(current_hiera)
 
         # Add nfs server puppet role
         current_roles.append("role::wmcs::nfs::standalone")
-        current_roles_str = json.dumps(current_roles)
-        response = run_one_as_dict(
-            command=[
-                "wmcs-enc-cli",
-                "--openstack-project",
-                self.project,
-                "set_prefix_roles",
-                new_server.server_fqdn,
-                f"'{current_roles_str}'",
-            ],
-            node=control_node,
-            try_format=OutputFormat.YAML,
-        )
+        enc_prefix.replace_roles(current_roles)
 
         if self.create_storage_volume_size > 0:
             run_one_raw(
