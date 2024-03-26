@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import argparse
-from abc import ABCMeta, abstractmethod
-from datetime import timedelta
+from abc import ABCMeta
 
-from spicerack import RemoteHosts, Spicerack
+from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts
+from wmcs_libs.batch import WMCSCookbookBatchRunnerBase
+from wmcs_libs.common import CommonOpts, add_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import get_node_cluster_name
 
@@ -44,14 +44,8 @@ class CloudvirtBatchBase(CookbookBase, metaclass=ABCMeta):
         return parser
 
 
-class CloudvirtBatchRunnerBase(WMCSCookbookRunnerBase, metaclass=ABCMeta):
+class CloudvirtBatchRunnerBase(WMCSCookbookBatchRunnerBase, metaclass=ABCMeta):
     """Base cookbook runner class for batch operations on cloudvirt nodes."""
-
-    downtime_reason: str | None = None
-    """If set to a string, the hosts being operated will be downtimed with that reason."""
-
-    downtime_duration: timedelta = timedelta(minutes=30)
-    """Duration to downtime hosts for."""
 
     def __init__(
         self,
@@ -60,8 +54,7 @@ class CloudvirtBatchRunnerBase(WMCSCookbookRunnerBase, metaclass=ABCMeta):
         spicerack: Spicerack,
     ):
         """Init"""
-        self.common_opts = common_opts
-
+        super().__init__(common_opts, spicerack)
         if args.fqdn:
             self.query = f"D{{{args.fqdn}}}"
             self.cluster = get_node_cluster_name(args.fqdn)
@@ -74,39 +67,3 @@ class CloudvirtBatchRunnerBase(WMCSCookbookRunnerBase, metaclass=ABCMeta):
             )
         else:
             raise ValueError("Either --fqdn or --cluster-name must be specified")
-
-        super().__init__(spicerack=spicerack, common_opts=common_opts)
-
-    @property
-    def runtime_description(self) -> str:
-        """Return a nicely formatted string that represents the cookbook action."""
-        return f"on hosts matched by '{self.query}'"
-
-    def run_batch_operation(self) -> int | None:
-        result = self.spicerack.remote().query(self.query, use_sudo=True)
-
-        # TODO: make batch size configurable
-        for hosts in result.split(len(result)):
-            am_hosts = None
-            downtime_id = None
-            if self.downtime_reason:
-                am_hosts = self.spicerack.alertmanager_hosts(hosts.hosts)
-                downtime_id = am_hosts.downtime(
-                    reason=self.spicerack.admin_reason(self.downtime_reason, self.common_opts.task_id),
-                    duration=self.downtime_duration,
-                )
-
-            self.run_on_hosts(hosts)
-
-            if am_hosts and downtime_id:
-                am_hosts.remove_downtime(downtime_id)
-
-        return 0
-
-    def run_with_proxy(self) -> int | None:
-        # With proxy for PuppetDB access.
-        return self.run_batch_operation()
-
-    @abstractmethod
-    def run_on_hosts(self, hosts: RemoteHosts) -> None:
-        pass
