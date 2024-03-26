@@ -173,10 +173,9 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         service_ip = run_one_raw(node=to_node, command=["dig", "+short", service_fqdn], last_line_only=True).strip()
         if not service_ip:
             raise Exception(f"Unable to resolve service ip for service name {service_fqdn}")
-        service_ip_port = self.openstack_api.port_get_by_ip(service_ip)[0]
-
-        if service_ip_port.port_name != mount_name:
-            raise Exception(f"service ip name mismatch. Expected {mount_name}, found {service_ip_port.port_name}")
+        service_ip_port = self.openstack_api.port_get_by_ip(service_ip)
+        if not service_ip_port:
+            raise Exception(f"Did not find port for service IP {service_ip} ({service_fqdn})")
 
         to_ip = run_one_raw(node=to_node, command=["dig", "+short", self.to_fqdn], last_line_only=True).strip()
         to_port = self.openstack_api.port_get_by_ip(to_ip)[0]
