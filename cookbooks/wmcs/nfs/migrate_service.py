@@ -13,7 +13,6 @@ calls such that they have the same puppet/hiera config.
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 from typing import Union
 
@@ -22,18 +21,10 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
 
-from wmcs_libs.common import (
-    CUMIN_SAFE_WITH_OUTPUT,
-    CommonOpts,
-    OutputFormat,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    run_one_as_dict,
-    run_one_raw,
-    with_common_opts,
-)
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -126,16 +117,11 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         to_node = self.spicerack.remote().query(f"D{{{self.to_fqdn}}}", use_sudo=True)
 
         # Verify that puppet/hiera config agrees between the two hosts
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
-        response = run_one_as_dict(
-            node=control_node,
-            command=["wmcs-enc-cli", "--openstack-project", self.project, "get_node_consolidated_info", self.from_fqdn],
-            try_format=OutputFormat.YAML,
-            cumin_params=CUMIN_SAFE_WITH_OUTPUT,
-        )
+        enc = Enc(remote=self.spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1)
 
-        from_hiera = response["hiera"]
-        from_roles = response["roles"]
+        from_enc_prefix = enc.prefix(self.project, self.from_fqdn)
+        from_hiera = from_enc_prefix.get_current_hiera()
+        from_roles = from_enc_prefix.get_current_roles()
 
         if "role::wmcs::nfs::standalone" not in from_roles:
             raise Exception(
@@ -153,15 +139,9 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
 
         mount_name = from_hiera["profile::wmcs::nfs::standalone::volumes"][0]
 
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
-        response = run_one_as_dict(
-            node=control_node,
-            command=["wmcs-enc-cli", "--openstack-project", self.project, "get_node_consolidated_info", self.to_fqdn],
-            try_format=OutputFormat.YAML,
-            cumin_params=CUMIN_SAFE_WITH_OUTPUT,
-        )
-        to_hiera = response["hiera"]
-        to_roles = response["roles"]
+        to_enc_prefix = enc.prefix(self.project, self.to_fqdn)
+        to_hiera = to_enc_prefix.get_current_hiera()
+        to_roles = to_enc_prefix.get_current_roles()
 
         if "role::wmcs::nfs::standalone" not in to_roles:
             raise Exception(
@@ -254,39 +234,10 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
 
         # Tell puppet that cinder is detached on the old host and attached on the new one
         from_hiera["profile::wmcs::nfs::standalone::cinder_attached"] = False
-        from_hiera_str = json.dumps(from_hiera)
-
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
-        response = run_one_as_dict(
-            node=control_node,
-            command=[
-                "wmcs-enc-cli",
-                "--openstack-project",
-                self.project,
-                "set_prefix_hiera",
-                self.from_fqdn,
-                _quote(from_hiera_str),
-            ],
-            cumin_params=CUMIN_SAFE_WITH_OUTPUT,
-            try_format=OutputFormat.YAML,
-        )
+        from_enc_prefix.set_hiera_values(from_hiera)
 
         to_hiera["profile::wmcs::nfs::standalone::cinder_attached"] = True
-        to_hiera_str = json.dumps(to_hiera)
-        control_node = self.spicerack.remote().query("D{cloudcontrol1005.eqiad.wmnet}", use_sudo=True)
-        response = run_one_as_dict(
-            node=control_node,
-            command=[
-                "wmcs-enc-cli",
-                "--openstack-project",
-                self.project,
-                "set_prefix_hiera",
-                self.to_fqdn,
-                _quote(to_hiera_str),
-            ],
-            cumin_params=CUMIN_SAFE_WITH_OUTPUT,
-            try_format=OutputFormat.YAML,
-        )
+        to_enc_prefix.set_hiera_values(to_hiera)
 
         # Move the service ip
         try:
