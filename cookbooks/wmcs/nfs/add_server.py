@@ -172,6 +172,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
                     "--mountpoint",
                     f"'/srv/{self.volume}'",
                     "--force",
+                    "--allow-unattended-format",
                 ],
                 node=new_node,
             )
