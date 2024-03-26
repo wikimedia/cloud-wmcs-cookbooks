@@ -120,6 +120,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
             prefix,
             "--security-group",
             "nfs",
+            "--sign-puppet-certs",
         ] + self.instance_creation_opts.to_cli_args()
 
         create_instance_cookbook = CreateInstanceWithPrefix(spicerack=self.spicerack)
