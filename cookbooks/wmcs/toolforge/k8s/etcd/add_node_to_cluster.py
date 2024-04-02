@@ -162,7 +162,7 @@ def _fix_kubeadm(
             etcd_members=existing_etcd_members + [new_etcd_member_fqdn],
         )
         # give time for etcd to stabilize
-        time.sleep(10)
+        time.sleep(60)
 
     # just pick the first, any should do
     k8s_control_node = remote.query(f"D{{{k8s_control_members[0]}}}", use_sudo=True)
@@ -216,7 +216,7 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
             ),
         ).add_node_to_hiera()
         LOGGER.info("Give some time for caches to flush")
-        time.sleep(30)
+        time.sleep(60)
 
         etcd_members = list(sorted(hiera_data["profile::toolforge::k8s::etcd_nodes"], key=natural_sort_key))
         if self.skip_puppet_bootstrap:
