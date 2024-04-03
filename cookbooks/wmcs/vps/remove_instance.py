@@ -13,7 +13,7 @@ import logging
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
-from spicerack.puppet import PuppetServer
+from spicerack.puppet import PuppetHosts, PuppetServer
 from spicerack.remote import RemoteExecutionError, RemoteHosts
 
 from wmcs_libs.common import (
@@ -26,6 +26,7 @@ from wmcs_libs.common import (
 )
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,19 +45,17 @@ class RemoveInstance(CookbookBase):
         )
         add_common_opts(parser)
         parser.add_argument(
-            "--revoke-puppet-certs",
-            action="store_true",
-            help="If set, the Puppet certificates of this server will be revoked on a custom Puppetmaster",
+            "--cluster-name",
+            required=False,
+            choices=list(OpenstackClusterName),
+            type=OpenstackClusterName,
+            default=OpenstackClusterName.EQIAD1,
+            help="Openstack cluster_name where the VM is hosted.",
         )
         parser.add_argument(
             "--server-name",
             required=True,
             help="Name of the server to remove (without domain, ex. toolsbeta-test-k8s-etcd-9).",
-        )
-        parser.add_argument(
-            "--already-off",
-            action="store_true",
-            help="Pass this if the server is turned off already, will skip some steps.",
         )
 
         return parser
@@ -64,9 +63,8 @@ class RemoveInstance(CookbookBase):
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
         return with_common_opts(self.spicerack, args, RemoveInstanceRunner,)(
+            cluster_name=args.cluster_name,
             name_to_remove=args.server_name,
-            revoke_puppet_certs=args.revoke_puppet_certs,
-            already_off=args.already_off,
             spicerack=self.spicerack,
         )
 
@@ -77,22 +75,20 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
+        cluster_name: OpenstackClusterName,
         name_to_remove: str,
-        revoke_puppet_certs: bool,
-        already_off: bool,
         spicerack: Spicerack,
     ):
         """Init"""
         self.common_opts = common_opts
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
-            cluster_name=OpenstackClusterName.EQIAD1,
+            cluster_name=cluster_name,
             project=self.common_opts.project,
         )
 
+        self.cluster_name = cluster_name
         self.name_to_remove = name_to_remove
-        self.revoke_puppet_certs = revoke_puppet_certs
-        self.already_off = already_off
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     @property
@@ -100,29 +96,37 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         """Return a nicely formatted string that represents the cookbook action."""
         return f"for instance {self.name_to_remove}"
 
-    def _guess_puppet_cert_hostname(self, remote: RemoteHosts, node_fqdn: str) -> str:
-        try:
-            # for legacy VMs in .eqiad.wmflabs
-            result = run_one_raw(
-                command=["hostname", "-f"],
-                node=remote,
-                cumin_params=CuminParams(print_output=False, print_progress_bars=False),
-            )
+    def _guess_puppet_cert_hostname(self, remote: RemoteHosts | None, node_fqdn: str) -> str:
+        if remote:
+            try:
+                # for legacy VMs in .eqiad.wmflabs
+                result = run_one_raw(
+                    command=["hostname", "-f"],
+                    node=remote,
+                    cumin_params=CuminParams(print_output=False, print_progress_bars=False),
+                )
 
-            # idk why this is needed but it filters out 'mesg: ttyname failed: Inappropriate ioctl for device'
-            return [
-                line for line in result.splitlines() if line.endswith(".wikimedia.cloud") or line.endswith(".wmflabs")
-            ][0]
-        except IndexError:
-            LOGGER.warning("Failed to query the hostname, falling back to the generated one")
-            return node_fqdn
+                # idk why this is needed but it filters out 'mesg: ttyname failed: Inappropriate ioctl for device'
+                return [
+                    line
+                    for line in result.splitlines()
+                    if line.endswith(".wikimedia.cloud") or line.endswith(".wmflabs")
+                ][0]
+            except IndexError:
+                LOGGER.warning("Failed to query the hostname, falling back to the generated one")
+        return node_fqdn
 
-    def _find_puppetserver(self, remote: RemoteHosts, node_fqdn: str) -> str:
-        puppet = self.spicerack.puppet(remote)
-        puppet.disable(self.spicerack.admin_reason("host is being removed"))
-        return puppet.get_ca_servers()[node_fqdn]
+    def _find_puppetserver(self, puppet_hosts: PuppetHosts | None, node_fqdn: str) -> str:
+        if puppet_hosts:
+            try:
+                return puppet_hosts.get_ca_servers()[node_fqdn]
+            except RemoteExecutionError:
+                # Ignore, VM is probably broken or something. Just fall back to the hiera lookup below.
+                LOGGER.warning("Failed to query the current Puppet server, falling back to Hiera")
+        enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name)
+        return enc.node_config(self.common_opts.project, self.name_to_remove).hiera.get("puppetmaster", "puppet")
 
-    def run(self) -> None:
+    def run(self) -> int:
         """Main entry point"""
         if not self.openstack_api.server_exists(self.name_to_remove, cumin_params=CuminParams(print_output=False)):
             LOGGER.warning(
@@ -130,24 +134,32 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
                 self.name_to_remove,
                 self.common_opts.project,
             )
-            return
+            return 1
 
-        if self.revoke_puppet_certs and not self.already_off:
-            node_fqdn = f"{self.name_to_remove}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
+        node_fqdn = f"{self.name_to_remove}.{self.common_opts.project}.{self.cluster_name.value}.wikimedia.cloud"
+        if self.openstack_api.server_show(vm_name=self.name_to_remove).get("status") == "SHUTOFF":
+            LOGGER.info("Server is shutoff")
+            remote = None
+            puppet_hosts = None
+        else:
+            LOGGER.info("Server is running, disabling Puppet agent")
             remote = self.spicerack.remote().query(f"D{{{node_fqdn}}}", use_sudo=True)
 
-            puppet_server_hostname = self._find_puppetserver(node_fqdn=node_fqdn, remote=remote)
+            puppet_hosts = self.spicerack.puppet(remote)
+            puppet_hosts.disable(self.spicerack.admin_reason("host is being removed"))
 
-            # if it's the central puppetmaster, this will be handled by wmf_sink
-            if puppet_server_hostname not in ("puppet", "puppetmaster.cloudinfra.wmflabs.org"):
-                puppet_server = PuppetServer(
-                    self.spicerack.remote().query(f"D{{{puppet_server_hostname}}}", use_sudo=True)
-                )
-                puppet_cert_hostname = self._guess_puppet_cert_hostname(remote, node_fqdn)
-                try:
-                    puppet_server.delete(puppet_cert_hostname)
-                except RemoteExecutionError:
-                    # workaround T360293
-                    LOGGER.warning("Ignoring certificate destruction failure", exc_info=True)
+        puppet_server_hostname = self._find_puppetserver(node_fqdn=node_fqdn, puppet_hosts=puppet_hosts)
+        LOGGER.info("Found Puppet server %s", puppet_server_hostname)
+
+        # if it's the central puppetmaster, this will be handled by wmf_sink
+        if puppet_server_hostname not in ("puppet", "puppetmaster.cloudinfra.wmflabs.org"):
+            puppet_server = PuppetServer(self.spicerack.remote().query(f"D{{{puppet_server_hostname}}}", use_sudo=True))
+            puppet_cert_hostname = self._guess_puppet_cert_hostname(remote, node_fqdn)
+            try:
+                puppet_server.delete(puppet_cert_hostname)
+            except RemoteExecutionError:
+                # workaround T360293
+                LOGGER.warning("Ignoring certificate destruction failure", exc_info=True)
 
         self.openstack_api.server_delete(name_to_remove=self.name_to_remove)
+        return 0

@@ -199,7 +199,6 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
                 [
                     "--server-name",
                     self.hostname_to_remove,
-                    "--revoke-puppet-certs",  # so it will also be removed from puppetdb
                 ]
                 + self.common_opts.to_cli_args(),
             ),

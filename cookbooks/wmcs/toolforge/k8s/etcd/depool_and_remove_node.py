@@ -257,7 +257,6 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
                     self.common_opts.project,
                     "--server-name",
                     fqdn_to_remove.split(".", 1)[0],
-                    "--revoke-puppet-certs",
                 ],
             ),
         ).run()

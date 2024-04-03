@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from typing import Any, ClassVar
 
 import yaml
@@ -13,10 +14,19 @@ from wmcs_libs.common import (
     CUMIN_UNSAFE_WITHOUT_OUTPUT,
     CommandRunnerMixin,
     OutputFormat,
+    run_one_as_dict,
     with_temporary_file,
 )
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import get_control_nodes
+
+
+@dataclass(frozen=True)
+class EncNodeConfig:
+    """Data class to hold information about the running configuration on a node."""
+
+    roles: list[str]
+    hiera: dict[str, Any]
 
 
 class EncPrefix(CommandRunnerMixin):
@@ -110,3 +120,17 @@ class Enc:
     def prefix(self, project_id: str, prefix_name: str) -> EncPrefix:
         """Gets a EncPrefix object to interact with a specific prefix."""
         return EncPrefix(command_runner_node=self.control_node, project_id=project_id, prefix_name=prefix_name)
+
+    def node_config(self, project_id: str, instance_name: str) -> EncNodeConfig:
+        """Get the running configuration on a specific node."""
+        data = run_one_as_dict(
+            node=self.control_node,
+            command=["wmcs-enc-cli", "--openstack-project", project_id, "get_node_consolidated_info", instance_name],
+            try_format=OutputFormat.YAML,
+            cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+        )
+
+        return EncNodeConfig(
+            hiera=data["hiera"],
+            roles=data["roles"],
+        )
