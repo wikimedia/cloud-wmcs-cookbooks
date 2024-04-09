@@ -9,13 +9,12 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from spicerack import Spicerack
+from spicerack import RemoteHosts, Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.alerts import downtime_alert, downtime_host, uptime_alert, uptime_host
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.openstack.common import OpenstackAPI, get_node_cluster_name
 from wmcs_libs.openstack.neutron import NetworkUnhealthy, NeutronAgentType, NeutronAlerts, NeutronController
 
@@ -72,8 +71,9 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         self.common_opts = common_opts
         self.fqdn_to_reboot = fqdn_to_reboot
         self.force = force
+
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+
         cluster_name = get_node_cluster_name(node=self.fqdn_to_reboot)
         self.openstack_api = OpenstackAPI(
             remote=self.spicerack.remote(),
@@ -94,6 +94,10 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
                 ) from error
 
             LOGGER.warning("Some agents are down, will continue due to --force: \n%s", error)
+
+    @property
+    def runtime_description(self) -> str:
+        return f"for host {self.fqdn_to_reboot}"
 
     def _check_network_setup_as_expected(self) -> None:
         l3_agents = [
@@ -116,24 +120,9 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
             if len(routers) != 1:
                 raise Exception(f"Got more than one router on agent {agent.host}: {routers}")
 
-    def run_with_proxy(self) -> None:
-        """Main entry point"""
-        self.sallogger.log(f"Rebooting cloudnet host {self.fqdn_to_reboot}")
-        silence_id = downtime_alert(
-            spicerack=self.spicerack,
-            alert_name=NeutronAlerts.NEUTRON_AGENT_DOWN.value,
-            task_id=self.common_opts.task_id,
-            comment=f"Rebooting cloudnet {self.fqdn_to_reboot}",
-        )
-
-        node = self.spicerack.remote().query(f"D{{{self.fqdn_to_reboot}}}", use_sudo=True)
+    def _do_reboot(self, node: RemoteHosts) -> None:
+        """Perform the actual reboot."""
         host_name = self.fqdn_to_reboot.split(".", 1)[0]
-        host_silence_id = downtime_host(
-            spicerack=self.spicerack,
-            host_name=host_name,
-            comment="Rebooting with wmcs.openstack.cloudnet.reboot_node",
-            task_id=self.common_opts.task_id,
-        )
 
         LOGGER.info("Taking the node out of the cluster (setting admin-state-down to all it's agents)")
         self.neutron_controller.cloudnet_set_admin_down(cloudnet_host=host_name)
@@ -167,8 +156,22 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         else:
             LOGGER.warning("Skipping waiting for the network alive due to --force passed")
 
-        uptime_host(spicerack=self.spicerack, host_name=host_name, silence_id=host_silence_id)
-        uptime_alert(spicerack=self.spicerack, silence_id=silence_id)
-        LOGGER.info("Silences removed.")
+    def run_with_proxy(self) -> None:
+        """Main entry point"""
+        node = self.spicerack.remote().query(f"D{{{self.fqdn_to_reboot}}}", use_sudo=True)
 
-        self.sallogger.log(f"Rebooted cloudnet host {self.fqdn_to_reboot}")
+        alertmanager = self.spicerack.alertmanager()
+        alertmanager_hosts = self.spicerack.alertmanager_hosts(node.hosts)
+        reason = self.spicerack.admin_reason(
+            f"Rebooting {self.fqdn_to_reboot} with the wmcs.openstack.cloudnet.reboot_node cookbook",
+            task_id=self.common_opts.task_id,
+        )
+        downtime_duration = timedelta(hours=1)
+
+        with alertmanager_hosts.downtimed(reason=reason, duration=downtime_duration):
+            with alertmanager.downtimed(
+                reason=reason,
+                duration=downtime_duration,
+                matchers=[{"name": "alertname", "value": NeutronAlerts.NEUTRON_AGENT_DOWN.value, "isRegex": False}],
+            ):
+                self._do_reboot(node)
