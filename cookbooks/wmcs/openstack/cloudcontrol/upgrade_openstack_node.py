@@ -8,22 +8,14 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from cumin.transports import Command
 from spicerack import RemoteHosts, Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from cookbooks.wmcs.openstack.network.tests import NetworkTests
-from wmcs_libs.alerts import downtime_host, uptime_host
-from wmcs_libs.common import (
-    CommonOpts,
-    SALLogger,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    run_one_raw,
-    with_common_opts,
-)
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 
 LOGGER = logging.getLogger(__name__)
@@ -97,7 +89,6 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         self.fqdn_to_upgrade = fqdn_to_upgrade
         self.spicerack = spicerack
         self.upgrade_dbs = upgrade_dbs
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.common_opts = common_opts
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
@@ -106,19 +97,9 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         """Return a nicely formatted string that represents the cookbook action."""
         return f"on host '{self.fqdn_to_upgrade}'"
 
-    def run(self) -> None:
-        """Main entry point."""
-        node_to_upgrade = self.spicerack.remote().query(f"D{{{self.fqdn_to_upgrade}}}", use_sudo=True)
-
-        host_name = self.fqdn_to_upgrade.split(".", 1)[0]
+    def do_upgrade(self, node_to_upgrade: RemoteHosts) -> None:
+        """Perform the actual upgrade."""
         puppet = self.spicerack.puppet(node_to_upgrade)
-        host_silence_id = downtime_host(
-            spicerack=self.spicerack,
-            host_name=host_name,
-            comment="Rebooting with wmcs.openstack.cloudcontrol.reboot_node",
-            task_id=self.common_opts.task_id,
-        )
-        LOGGER.info("Silenced node %s with ID %s", self.fqdn_to_upgrade, host_silence_id)
 
         if self.upgrade_dbs:
             # Back things up before upgrading. If we're upgrading a cloudcontrol, the
@@ -230,7 +211,16 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
             self.fqdn_to_upgrade,
         )
 
-        uptime_host(spicerack=self.spicerack, host_name=host_name, silence_id=host_silence_id)
-        LOGGER.info("Silences removed.")
+    def run(self) -> None:
+        """Main entry point."""
+        node_to_upgrade = self.spicerack.remote().query(f"D{{{self.fqdn_to_upgrade}}}", use_sudo=True)
+        alertmanager_hosts = self.spicerack.alertmanager_hosts(node_to_upgrade.hosts)
 
-        self.sallogger.log(f"Upgraded and rebooted host {self.fqdn_to_upgrade}")
+        with alertmanager_hosts.downtimed(
+            reason=self.spicerack.admin_reason(
+                reason="Upgrading with wmcs.openstack.cloudcontrol.upgrade_openstack_node",
+                task_id=self.common_opts.task_id,
+            ),
+            duration=timedelta(hours=1),
+        ):
+            self.do_upgrade(node_to_upgrade=node_to_upgrade)
