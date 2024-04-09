@@ -9,14 +9,13 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from cookbooks.wmcs.openstack.network.tests import NetworkTests
-from wmcs_libs.alerts import downtime_host, uptime_host
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import get_gateway_nodes, get_node_cluster_name
 
@@ -82,7 +81,6 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         self.fqdn_to_reboot = fqdn_to_reboot
         self.skip_checks = skip_checks
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
         self.cluster_name = get_node_cluster_name(node=self.fqdn_to_reboot)
 
@@ -106,33 +104,31 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
             check_network_ok(cluster_name=self.cluster_name, spicerack=self.spicerack)
             LOGGER.info("Network up and running!")
 
+    @property
+    def runtime_description(self) -> str:
+        return f"for host {self.fqdn_to_reboot}"
+
     def run_with_proxy(self) -> None:
         """Main entry point"""
-        self.sallogger.log(f"Rebooting cloudgw host {self.fqdn_to_reboot}")
         node = self.spicerack.remote().query(f"D{{{self.fqdn_to_reboot}}}", use_sudo=True)
-        host_name = self.fqdn_to_reboot.split(".", 1)[0]
-        host_silence_id = downtime_host(
-            spicerack=self.spicerack,
-            host_name=host_name,
-            comment="Rebooting with wmcs.openstack.cloudgw.reboot_node",
-            task_id=self.common_opts.task_id,
-        )
+        am_hosts = self.spicerack.alertmanager_hosts(node.hosts)
 
-        reboot_time = datetime.utcnow()
-        node.reboot()
+        with am_hosts.downtimed(
+            reason=self.spicerack.admin_reason(
+                "Rebooting with wmcs.openstack.cloudgw.reboot_node", task_id=self.common_opts.task_id
+            ),
+            duration=timedelta(hours=1),
+        ):
+            reboot_time = datetime.utcnow()
+            node.reboot()
 
-        node.wait_reboot_since(since=reboot_time)
-        LOGGER.info(
-            "Rebooted node %s, waiting for cluster to stabilize...",
-            self.fqdn_to_reboot,
-        )
+            node.wait_reboot_since(since=reboot_time)
+            LOGGER.info(
+                "Rebooted node %s, waiting for cluster to stabilize...",
+                self.fqdn_to_reboot,
+            )
 
-        if not self.skip_checks:
-            LOGGER.info("Checking if the network is up and running")
-            check_network_ok(cluster_name=self.cluster_name, spicerack=self.spicerack)
-            LOGGER.info("Network up and running!")
-
-        uptime_host(spicerack=self.spicerack, host_name=host_name, silence_id=host_silence_id)
-        LOGGER.info("Silences removed.")
-
-        self.sallogger.log(f"Rebooted cloudgw host {self.fqdn_to_reboot}")
+            if not self.skip_checks:
+                LOGGER.info("Checking if the network is up and running")
+                check_network_ok(cluster_name=self.cluster_name, spicerack=self.spicerack)
+                LOGGER.info("Network up and running!")
