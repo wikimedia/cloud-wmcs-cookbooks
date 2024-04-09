@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+from datetime import timedelta
 
-from spicerack import Spicerack
+from spicerack import Spicerack, SpicerackError
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts, PuppetServer
 from spicerack.remote import RemoteExecutionError, RemoteHosts
@@ -96,6 +97,8 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         self.name_to_remove = name_to_remove
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
+        self.admin_reason = self.spicerack.admin_reason("host is being removed", self.common_opts.task_id)
+
     @property
     def runtime_description(self) -> str:
         """Return a nicely formatted string that represents the cookbook action."""
@@ -131,6 +134,29 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name)
         return enc.node_config(self.common_opts.project, self.name_to_remove).hiera.get("puppetmaster", "puppet")
 
+    def _downtime(self) -> None:
+        """Set a short downtime to prevent InstanceDown alerts before Prometheus notices the server was removed."""
+        # TODO: eventually we should have an AlertmanagerHosts-style interface that supports Cloud VPS instances.
+        # For now this is quite manual and not very DRY.
+
+        try:
+            alertmanager = self.spicerack.alertmanager(instance_name=f"metricsinfra-{self.cluster_name.value}")
+        except SpicerackError as e:
+            # Most likely this means we're running in codfw1dev, or on a local setup with no metricsinfra configuration.
+            LOGGER.info("Not downtiming alerts because Alertmanager is not available: %s", str(e))
+            return
+
+        silence_id = alertmanager.downtime(
+            reason=self.admin_reason,
+            matchers=[
+                {"name": "project", "value": self.common_opts.project, "isRegex": False},
+                {"name": "instance", "value": self.name_to_remove, "isRegex": False},
+            ],
+            duration=timedelta(minutes=10),
+        )
+
+        LOGGER.info("Set Alertmanager silence %s", silence_id)
+
     def run(self) -> int:
         """Main entry point"""
         if not self.openstack_api.server_exists(self.name_to_remove, cumin_params=CuminParams(print_output=False)):
@@ -151,7 +177,7 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
             remote = self.spicerack.remote().query(f"D{{{node_fqdn}}}", use_sudo=True)
 
             puppet_hosts = self.spicerack.puppet(remote)
-            puppet_hosts.disable(self.spicerack.admin_reason("host is being removed"))
+            puppet_hosts.disable(self.admin_reason)
 
         puppet_server_hostname = self._find_puppetserver(node_fqdn=node_fqdn, puppet_hosts=puppet_hosts)
         LOGGER.info("Found Puppet server %s", puppet_server_hostname)
@@ -165,6 +191,8 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
             except RemoteExecutionError:
                 # workaround T360293
                 LOGGER.warning("Ignoring certificate destruction failure", exc_info=True)
+
+        self._downtime()
 
         self.openstack_api.server_delete(name_to_remove=self.name_to_remove)
         return 0
