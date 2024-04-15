@@ -7,6 +7,7 @@ Usage example: wmcs.openstack.add_flavor \
     --vcpus 8 \
     --disk-gb 2
 """
+
 from __future__ import annotations
 
 import argparse

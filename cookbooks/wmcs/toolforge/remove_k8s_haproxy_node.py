@@ -6,6 +6,7 @@ Usage example:
         --hostname-to-remove toolsbeta-test-k8s-haproxy-0
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,7 +53,11 @@ class ToolforgeRemoveK8sHaproxyNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeRemoveK8sHaproxyNodeRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            ToolforgeRemoveK8sHaproxyNodeRunner,
+        )(
             spicerack=self.spicerack,
             hostname_to_remove=args.hostname_to_remove,
         )

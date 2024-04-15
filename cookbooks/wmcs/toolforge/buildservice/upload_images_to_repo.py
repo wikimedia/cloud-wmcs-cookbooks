@@ -7,6 +7,7 @@ Usage example:
         --lifecycle-version 0.10.2
 
 """
+
 # pylint: disable=too-many-arguments
 from __future__ import annotations
 

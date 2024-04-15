@@ -5,6 +5,7 @@ Usage example: wmcs.openstack.cloudvirt.vm_console \
     --project admin-monitoring
 
 """
+
 from __future__ import annotations
 
 import argparse

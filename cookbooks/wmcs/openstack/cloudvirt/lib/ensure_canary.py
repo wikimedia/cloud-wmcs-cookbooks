@@ -5,6 +5,7 @@ This cookbook makes sure a canary VM exists in each of the specified cloudvirts.
 Usage example: wmcs.openstack.cloudvirt.lib.ensure_canary \
     --hostname-list cloudvirt1013 cloudvirt1040
 """
+
 from __future__ import annotations
 
 import argparse
@@ -71,7 +72,11 @@ class EnsureCanaryVM(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, EnsureCanaryVMRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            EnsureCanaryVMRunner,
+        )(
             hostname_list=args.hostname_list,
             deployment=args.deployment,
             recreate=args.recreate,

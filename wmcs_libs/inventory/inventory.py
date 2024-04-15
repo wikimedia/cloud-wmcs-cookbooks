@@ -1,4 +1,5 @@
 """Module that holds knowledge of what hosts exist in our deployments."""
+
 from __future__ import annotations
 
 import re

@@ -6,6 +6,7 @@ Usage example:
         --server-name toolsbeta-k8s-test-etcd-08
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -62,7 +63,11 @@ class RemoveInstance(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, RemoveInstanceRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            RemoveInstanceRunner,
+        )(
             cluster_name=args.cluster_name,
             name_to_remove=args.server_name,
             spicerack=self.spicerack,

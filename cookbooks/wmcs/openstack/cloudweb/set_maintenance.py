@@ -4,6 +4,7 @@ Usage example: wmcs.openstack.cloudweb.set_maintenance \
     --deployment eqiad1
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,7 +46,11 @@ class SetMaintenance(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, SetMaintenanceRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            SetMaintenanceRunner,
+        )(
             deployment=args.deployment,
             spicerack=self.spicerack,
         )

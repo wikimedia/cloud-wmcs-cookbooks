@@ -1,4 +1,5 @@
 """Base classes for implementing cookbooks that run batch operations on server clusters."""
+
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod

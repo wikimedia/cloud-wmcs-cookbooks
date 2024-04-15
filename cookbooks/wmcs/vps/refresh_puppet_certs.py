@@ -4,6 +4,7 @@ Usage example: wmcs.vps.refresh_puppet_certs \
     --fqdn tools-host.tools.eqiad1.wikimedia.cloud
 
 """
+
 from __future__ import annotations
 
 import argparse

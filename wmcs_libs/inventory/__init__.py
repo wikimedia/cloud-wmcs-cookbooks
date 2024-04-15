@@ -1,4 +1,5 @@
 """Inventory and related classes and functions."""
+
 from wmcs_libs.inventory.inventory import (
     generic_get_node_cluster_name,
     get_inventory,

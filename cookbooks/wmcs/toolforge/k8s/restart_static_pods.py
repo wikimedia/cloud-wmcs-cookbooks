@@ -6,6 +6,7 @@ Usage example:
         --hostname tools-k8s-something-1
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,7 +53,11 @@ class ToolforgeK8sRestartStaticPods(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeK8sRestartStaticPodsRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            ToolforgeK8sRestartStaticPodsRunner,
+        )(
             spicerack=self.spicerack,
             hostname=args.hostname,
         )

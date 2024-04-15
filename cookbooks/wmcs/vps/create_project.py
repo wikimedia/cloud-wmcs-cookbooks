@@ -6,6 +6,7 @@ Usage example:
         --project my_fancy_new_project
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -67,7 +68,11 @@ class CreateProject(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, CreateProjectRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            CreateProjectRunner,
+        )(
             description=args.description,
             cluster_name=args.cluster_name,
             trove_only=args.trove_only,

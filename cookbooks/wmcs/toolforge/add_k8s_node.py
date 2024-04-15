@@ -5,6 +5,7 @@ Usage example:
         --cluster-name toolsbeta \
         --role worker
 """
+
 # pylint: disable=too-many-arguments
 from __future__ import annotations
 
@@ -90,7 +91,11 @@ class ToolforgeAddK8sNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeAddK8sNodeRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            ToolforgeAddK8sNodeRunner,
+        )(
             image=args.image,
             flavor=args.flavor,
             network=args.network,

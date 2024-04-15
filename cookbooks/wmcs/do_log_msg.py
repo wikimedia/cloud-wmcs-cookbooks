@@ -5,6 +5,7 @@ Usage example: wmcs.do_log_msg \
     --task-id T424242
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,7 +42,11 @@ class Dologmsg(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, DologmsgRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            DologmsgRunner,
+        )(
             msg=args.msg,
             spicerack=self.spicerack,
         )

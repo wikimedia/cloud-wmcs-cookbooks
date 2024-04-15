@@ -5,6 +5,7 @@ Usage example:
         --to-upgrade-fqdn cloudcephosd2001-dev.codfw.wmnet
 
 """
+
 from __future__ import annotations
 
 import argparse

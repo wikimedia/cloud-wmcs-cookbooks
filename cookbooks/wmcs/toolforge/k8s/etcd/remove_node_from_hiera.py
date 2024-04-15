@@ -6,6 +6,7 @@ Usage examples:
         --fqdn-to-remove toolsbeta-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -48,7 +49,11 @@ class RemoveNodeFromHiera(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> "RemoveNodeFromHieraRunner":
         """Get Runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, RemoveNodeFromHieraRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            RemoveNodeFromHieraRunner,
+        )(
             fqdn_to_remove=args.fqdn_to_remove,
             spicerack=self.spicerack,
         )

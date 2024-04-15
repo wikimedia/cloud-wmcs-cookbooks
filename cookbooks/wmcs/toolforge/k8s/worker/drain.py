@@ -5,6 +5,7 @@ Usage example:
         --cluster-name toolsbeta \
         --hostname-to-drain toolsbeta-test-worker-4
 """
+
 from __future__ import annotations
 
 import argparse
@@ -48,7 +49,11 @@ class Drain(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, DrainRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            DrainRunner,
+        )(
             hostname_to_drain=args.hostname_to_drain,
             spicerack=self.spicerack,
         )

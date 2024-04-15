@@ -7,6 +7,7 @@ Usage example:
         --user dcaro
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,7 +53,11 @@ class RemoveUserFromProject(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, RemoveUserFromProjectRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            RemoveUserFromProjectRunner,
+        )(
             user=args.user,
             cluster_name=args.cluster_name,
             spicerack=self.spicerack,

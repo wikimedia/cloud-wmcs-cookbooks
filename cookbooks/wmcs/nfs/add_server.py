@@ -8,6 +8,7 @@ Usage example:
         toolsbeta-home toolsbeta-project
 
 """
+
 # pylint: disable=too-many-arguments
 from __future__ import annotations
 

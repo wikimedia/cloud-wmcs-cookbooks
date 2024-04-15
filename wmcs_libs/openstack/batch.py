@@ -1,4 +1,5 @@
 """Base classes for implementing cookbooks that run batch operations on OpenStack related servers."""
+
 from __future__ import annotations
 
 import argparse

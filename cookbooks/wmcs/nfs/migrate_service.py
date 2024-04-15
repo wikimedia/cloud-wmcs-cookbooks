@@ -10,6 +10,7 @@ Usage example:
 the old and new hosts must already have been created using similar add_server
 calls such that they have the same puppet/hiera config.
 """
+
 from __future__ import annotations
 
 import argparse

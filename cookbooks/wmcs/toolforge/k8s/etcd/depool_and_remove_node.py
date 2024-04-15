@@ -6,6 +6,7 @@ Usage example:
         --node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -74,7 +75,11 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> "ToolforgeDepoolAndRemoveNodeRunner":
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeDepoolAndRemoveNodeRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            ToolforgeDepoolAndRemoveNodeRunner,
+        )(
             fqdn_to_remove=args.fqdn_to_remove,
             skip_etcd_certs_refresh=args.skip_etcd_certs_refresh,
             spicerack=self.spicerack,

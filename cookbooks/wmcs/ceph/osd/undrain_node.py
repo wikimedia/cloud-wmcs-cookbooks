@@ -5,6 +5,7 @@ Usage example:
         --hostname cloudcephosd2001-dev
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -71,7 +72,11 @@ class UndrainNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, UndrainNodeRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            UndrainNodeRunner,
+        )(
             hosts_to_undrain=args.node,
             set_maintenance=args.set_maintenance,
             force=args.force,

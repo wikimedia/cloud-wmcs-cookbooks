@@ -1,4 +1,5 @@
 """Library for manipulating Puppet ENC data."""
+
 from __future__ import annotations
 
 import json

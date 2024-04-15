@@ -5,6 +5,7 @@ Usage example:
         --rack D5
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -84,7 +85,11 @@ class DrainRack(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, DrainRackRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            DrainRackRunner,
+        )(
             rack_to_drain=args.rack,
             set_maintenance=args.set_maintenance,
             cluster_name=args.cluster_name,

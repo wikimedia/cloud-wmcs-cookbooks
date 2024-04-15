@@ -6,6 +6,7 @@ Usage example:
         --node cloudcephosd2002-dev
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -71,7 +72,11 @@ class DrainNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, DrainNodeRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            DrainNodeRunner,
+        )(
             hosts_to_drain=args.node,
             set_maintenance=args.set_maintenance,
             force=args.force,

@@ -8,6 +8,7 @@ Documentation:
   https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Network/Tests
 
 """
+
 from __future__ import annotations
 
 import argparse

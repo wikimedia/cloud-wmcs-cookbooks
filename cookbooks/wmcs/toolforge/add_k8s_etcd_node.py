@@ -5,6 +5,7 @@ Usage example:
         --cluster-name toolsbeta
 
 """
+
 # pylint: disable=too-many-arguments
 from __future__ import annotations
 
@@ -73,7 +74,11 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeAddK8sEtcdNodeRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            ToolforgeAddK8sEtcdNodeRunner,
+        )(
             skip_puppet_bootstrap=args.skip_puppet_bootstrap,
             image=args.image,
             flavor=args.flavor,

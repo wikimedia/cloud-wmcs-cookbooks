@@ -6,6 +6,7 @@ Usage examples:
         --fqdn-to-add toolsbeta-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -48,7 +49,11 @@ class AddNodeToHiera(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> "AddNodeToHieraRunner":
         """Get Runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, AddNodeToHieraRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            AddNodeToHieraRunner,
+        )(
             fqdn_to_add=args.fqdn_to_add,
             spicerack=self.spicerack,
         )

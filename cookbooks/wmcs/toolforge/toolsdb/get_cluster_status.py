@@ -4,6 +4,7 @@ Usage example:
     cookbook wmcs.toolforge.toolsdb.get_cluster_status \
         --project tools
 """
+
 from __future__ import annotations
 
 import argparse

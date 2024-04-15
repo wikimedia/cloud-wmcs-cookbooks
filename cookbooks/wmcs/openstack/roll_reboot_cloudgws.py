@@ -4,6 +4,7 @@ Usage example:
     cookbook wmcs.openstack.roll_reboot_cloudgws --cluster_name eqiad1
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,7 +53,11 @@ class RollRebootCloudgws(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, RollRebootCloudgwsRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            RollRebootCloudgwsRunner,
+        )(
             force=args.force,
             cluster_name=args.cluster_name,
             spicerack=self.spicerack,

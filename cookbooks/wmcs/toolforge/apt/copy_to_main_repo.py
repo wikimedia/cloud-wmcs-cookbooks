@@ -5,6 +5,7 @@ Usage example:
         --package toolforge-jobs-framework-cli \
         --version 12
 """
+
 from __future__ import annotations
 
 import argparse
@@ -59,7 +60,11 @@ class ToolforgeCopyAptPackageToMainRepo(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, ToolforgeCopyAptPackageToMainRepoRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            ToolforgeCopyAptPackageToMainRepoRunner,
+        )(
             aptly_hostname=args.aptly_hostname,
             package=args.package,
             version=args.version,

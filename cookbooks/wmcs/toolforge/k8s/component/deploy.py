@@ -5,6 +5,7 @@ Usage example:
         --cluster-name toolsbeta \
         --component jobs-api
 """
+
 from __future__ import annotations
 
 import argparse

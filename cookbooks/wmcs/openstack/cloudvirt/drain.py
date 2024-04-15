@@ -4,6 +4,7 @@ Usage example: wmcs.openstack.cloudvirt.drain \
     --fqdn cloudvirt1013.eqiad.wmnet
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,7 +43,11 @@ class Drain(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, DrainRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            DrainRunner,
+        )(
             fqdn=args.fqdn,
             spicerack=self.spicerack,
         )

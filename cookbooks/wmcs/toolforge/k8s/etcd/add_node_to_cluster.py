@@ -8,6 +8,7 @@ Usage example:
         --cluster-name toolsbeta
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -73,7 +74,11 @@ class AddNodeToCluster(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, AddNodeToClusterRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            AddNodeToClusterRunner,
+        )(
             new_member_fqdn=args.new_member_fqdn,
             skip_puppet_bootstrap=args.skip_puppet_bootstrap,
             spicerack=self.spicerack,

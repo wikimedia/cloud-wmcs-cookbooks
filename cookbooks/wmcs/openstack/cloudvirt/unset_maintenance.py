@@ -4,6 +4,7 @@ Usage example: wmcs.openstack.cloudvirt.unset_maintenance \
     --fqdn cloudvirt1013.eqiad.wmnet
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -50,7 +51,11 @@ class UnsetMaintenance(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, UnsetMaintenanceRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            UnsetMaintenanceRunner,
+        )(
             fqdn=args.fqdn,
             aggregates=args.aggregates,
             spicerack=self.spicerack,

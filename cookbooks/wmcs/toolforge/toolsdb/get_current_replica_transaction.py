@@ -3,6 +3,7 @@ r"""WMCS Toolforge - ToolsDB - get cluster status
 Usage example:
     cookbook wmcs.toolforge.toolsdb.get_current_replica_transaction
 """
+
 from __future__ import annotations
 
 import argparse

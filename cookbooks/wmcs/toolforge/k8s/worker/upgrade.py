@@ -8,6 +8,7 @@ Usage example:
         --dst-version 1.23.15
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -67,7 +68,11 @@ class Upgrade(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, UpgradeRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            UpgradeRunner,
+        )(
             hostname=args.hostname,
             src_version=args.src_version,
             dst_version=args.dst_version,

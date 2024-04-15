@@ -9,6 +9,7 @@ Usage example: wmcs.openstack.quota_increase \
     --instances 5
 
 """
+
 from __future__ import annotations
 
 import argparse

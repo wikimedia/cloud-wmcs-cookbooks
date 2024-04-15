@@ -7,6 +7,7 @@ Usage example:
         --hostname-to-remove toolsbeta-test-worker-4
 
 """
+
 from __future__ import annotations
 
 import logging

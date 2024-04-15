@@ -9,6 +9,7 @@ See Also:
     https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/#manual-certificate-renewal
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -55,7 +56,11 @@ class ToolforgeK8sKubeadmCertRenew(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, ToolforgeK8sKubeadmCertRenewRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            ToolforgeK8sKubeadmCertRenewRunner,
+        )(
             spicerack=self.spicerack,
             control_hostname_list=args.control_hostname_list,
         )

@@ -5,6 +5,7 @@ Usage example:
     --fqdn-to-reboot cloudgw1002.eqiad.wmnet
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -51,7 +52,11 @@ class RebootNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, RebootNodeRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            RebootNodeRunner,
+        )(
             fqdn_to_reboot=args.fqdn_to_reboot,
             skip_checks=args.skip_checks,
             spicerack=self.spicerack,

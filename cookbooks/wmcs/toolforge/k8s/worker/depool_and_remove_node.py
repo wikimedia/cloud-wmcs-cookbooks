@@ -7,6 +7,7 @@ Usage example:
         --hostname-to-remove toolsbeta-test-worker-4
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -64,7 +65,11 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeDepoolAndRemoveNodeRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            ToolforgeDepoolAndRemoveNodeRunner,
+        )(
             hostname_to_remove=args.hostname_to_remove,
             role=args.role,
             spicerack=self.spicerack,

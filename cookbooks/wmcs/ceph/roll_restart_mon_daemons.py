@@ -6,6 +6,7 @@ Usage example:
         --interactive
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -76,7 +77,11 @@ class RollRestartMonDaemons(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, RollRestartMonDaemonsRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            RollRestartMonDaemonsRunner,
+        )(
             cluster_name=args.cluster_name,
             ignore_current_health_issues=args.ignore_current_health_issues,
             force=args.force,

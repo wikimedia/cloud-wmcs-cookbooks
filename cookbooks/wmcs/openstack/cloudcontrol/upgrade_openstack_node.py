@@ -4,6 +4,7 @@ Usage example: wmcs.openstack.cloudvirt.upgrade_openstack_node \
     --fqdn-to-upgrade cloudvirt1013.eqiad.wmnet
 
 """
+
 from __future__ import annotations
 
 import argparse

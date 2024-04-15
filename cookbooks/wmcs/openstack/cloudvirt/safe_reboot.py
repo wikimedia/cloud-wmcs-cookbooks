@@ -6,6 +6,7 @@ Usage example: wmcs.openstack.cloudvirt.safe_reboot \
     --fqdn cloudvirt1013.eqiad.wmnet
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -30,7 +31,11 @@ class SafeReboot(CloudvirtBatchBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, SafeRebootRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            SafeRebootRunner,
+        )(
             args=args,
             spicerack=self.spicerack,
         )

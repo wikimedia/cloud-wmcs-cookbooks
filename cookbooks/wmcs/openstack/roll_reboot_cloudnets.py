@@ -5,6 +5,7 @@ Usage example:
         --cluster-name eqiad1
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -53,7 +54,11 @@ class RollRebootCloudnets(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, RollRebootCloudnetsRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            RollRebootCloudnetsRunner,
+        )(
             cluster_name=args.cluster_name,
             force=args.force,
             spicerack=self.spicerack,

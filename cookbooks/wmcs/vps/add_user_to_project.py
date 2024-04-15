@@ -8,6 +8,7 @@ Usage example:
         --as-member
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -59,7 +60,11 @@ class AddUserToProject(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, AddUserToProjectRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            AddUserToProjectRunner,
+        )(
             user=args.user,
             cluster_name=args.cluster_name,
             as_member=args.as_member,

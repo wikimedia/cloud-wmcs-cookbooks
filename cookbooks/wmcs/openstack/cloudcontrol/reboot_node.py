@@ -5,6 +5,7 @@ Usage example:
         --fqdn cloudcontrol1005.eqiad.wmnet
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -26,7 +27,11 @@ class RebootNode(CloudcontrolBatchBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_common_opts(self.spicerack, args, RebootNodeRunner,)(
+        return with_common_opts(
+            self.spicerack,
+            args,
+            RebootNodeRunner,
+        )(
             args=args,
             spicerack=self.spicerack,
         )

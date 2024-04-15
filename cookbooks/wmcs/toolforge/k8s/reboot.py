@@ -10,6 +10,7 @@ Usage example:
         --all
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -67,7 +68,11 @@ class ToolforgeK8sReboot(CookbookBase):
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
-        return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeK8sRebootRunner,)(
+        return with_toolforge_kubernetes_cluster_opts(
+            self.spicerack,
+            args,
+            ToolforgeK8sRebootRunner,
+        )(
             spicerack=self.spicerack,
             hostname_list=args.hostname_list,
             do_all=args.all,
