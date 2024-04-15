@@ -11,7 +11,6 @@ from pathlib import Path
 
 import requests
 from spicerack import Spicerack
-from spicerack.alertmanager import ALERTMANAGER_URLS
 from wmflib.config import load_yaml_config
 
 BASE64_PUPPET_CA_URL = (
@@ -27,7 +26,7 @@ DEFAULT_PROXY_VIA_HOST = "cloudcumin1001.eqiad.wmnet"
 def _is_proxy_working(port: int) -> bool:
     try:
         requests.get(
-            ALERTMANAGER_URLS[0],
+            "http://alertmanager-eqiad.wikimedia.org",
             proxies=dict(
                 http=f"socks5h://127.0.0.1:{port}",
                 https=f"socks5h://127.0.0.1:{port}",
