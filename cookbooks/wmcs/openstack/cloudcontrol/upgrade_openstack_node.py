@@ -194,7 +194,6 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
                 run_one_raw(node=node_to_upgrade, command=Command("heat-manage db_sync"))
                 run_one_raw(node=node_to_upgrade, command=Command("magnum-db-manage upgrade heads"))
                 run_one_raw(node=node_to_upgrade, command=Command("trove-manage db_sync"))
-            elif "services" in self.fqdn_to_upgrade:
                 run_one_raw(node=node_to_upgrade, command=Command("designate-manage database sync"))
 
         puppet.run()
