@@ -9,7 +9,9 @@ import pytest
 from wmcs_libs.common import CUMIN_SAFE_WITHOUT_OUTPUT, UtilsForTesting
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import (
+    NeutronAgentHAState,
     NeutronAgentType,
+    NeutronAgentWithHAState,
     NeutronPartialAgent,
     NeutronPartialRouter,
     NeutronRouterStatus,
@@ -379,6 +381,117 @@ def test_OpenstackAPI_get_neutron_agents_works(neutron_output: str, expected_age
     fake_run_sync.assert_called_with(
         cumin.transports.Command(
             "env OS_PROJECT_ID=admin-monitoring wmcs-openstack network agent list -f json --os-cloud novaadmin",
+            ok_codes=[0],
+        ),
+        is_safe=True,
+        print_output=False,
+        print_progress_bars=False,
+        success_threshold=1,
+        batch_size=None,
+        batch_sleep=None,
+    )
+
+
+@pytest.mark.parametrize(
+    **UtilsForTesting.to_parametrize(
+        test_cases={
+            "No nodes": {
+                # neutron expects a first spurious line
+                "neutron_output": "\n[]",
+                "expected_agents": [],
+            },
+            "One node": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "3f54b3c2-503f-4667-8263-859a259b3b21",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent",
+                            "HA State": "standby"
+                        }
+                    ]
+                """,
+                "expected_agents": [
+                    NeutronAgentWithHAState(
+                        agent_type=NeutronAgentType.L3_AGENT,
+                        agent_id="3f54b3c2-503f-4667-8263-859a259b3b21",
+                        host="cloudnet1006",
+                        admin_state_up=True,
+                        alive=True,
+                        ha_state=NeutronAgentHAState.STANDBY,
+                        availability_zone="nova",
+                        binary="neutron-l3-agent",
+                    ),
+                ],
+            },
+            "Many nodes": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "3f54b3c2-503f-4667-8263-859a259b3b21",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent",
+                            "HA State": "standby"
+                        },
+                        {
+                            "ID": "6a88c860-29fb-4a85-8aea-6a8877c2e035",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1005",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent",
+                            "HA State": "active"
+                        }
+                    ]
+                """,
+                "expected_agents": [
+                    NeutronAgentWithHAState(
+                        agent_id="3f54b3c2-503f-4667-8263-859a259b3b21",
+                        host="cloudnet1006",
+                        admin_state_up=True,
+                        alive=True,
+                        ha_state=NeutronAgentHAState.STANDBY,
+                        agent_type=NeutronAgentType.L3_AGENT,
+                        availability_zone="nova",
+                        binary="neutron-l3-agent",
+                    ),
+                    NeutronAgentWithHAState(
+                        agent_id="6a88c860-29fb-4a85-8aea-6a8877c2e035",
+                        host="cloudnet1005",
+                        admin_state_up=True,
+                        alive=True,
+                        ha_state=NeutronAgentHAState.ACTIVE,
+                        agent_type=NeutronAgentType.L3_AGENT,
+                        availability_zone="nova",
+                        binary="neutron-l3-agent",
+                    ),
+                ],
+            },
+        }
+    )
+)
+def test_NeutronController_list_agents_hosting_router_works(
+    neutron_output: str, expected_agents: list[dict[str, NeutronAgentWithHAState]]
+):
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
+    my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
+    fake_run_sync = fake_remote.query.return_value.run_sync
+
+    gotten_agents = my_api.get_neutron_agents_for_router(router_id="dummy_router")
+
+    assert gotten_agents == expected_agents
+    fake_run_sync.assert_called_with(
+        cumin.transports.Command(
+            "env OS_PROJECT_ID=admin-monitoring wmcs-openstack network agent list --long --router=dummy_router -f json --os-cloud novaadmin",  # noqa: E501
             ok_codes=[0],
         ),
         is_safe=True,

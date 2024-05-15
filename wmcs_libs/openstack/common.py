@@ -262,6 +262,13 @@ class NeutronAgentType(Enum):
     METADATA_AGENT = "Metadata agent"
 
 
+class NeutronAgentHAState(Enum):
+    """HA state for a neutron agent."""
+
+    ACTIVE = "active"
+    STANDBY = "standby"
+
+
 @dataclass(frozen=True)
 class NeutronPartialAgent:
     """Represents the details of a Neutron agent that can be seen in 'openstack network agent list' output."""
@@ -284,6 +291,26 @@ class NeutronPartialAgent:
             alive=agent_data["Alive"],
             admin_state_up=agent_data["State"],
             binary=agent_data["Binary"],
+        )
+
+
+@dataclass(frozen=True)
+class NeutronAgentWithHAState(NeutronPartialAgent):
+    """Represents a Neutron agent with a known HA status."""
+
+    ha_state: NeutronAgentHAState
+
+    @classmethod
+    def from_agent_data(cls, agent_data: dict[str, Any]) -> "NeutronAgentWithHAState":
+        return cls(
+            agent_id=agent_data["ID"],
+            agent_type=NeutronAgentType(agent_data["Agent Type"]),
+            host=agent_data["Host"],
+            availability_zone=agent_data["Availability Zone"],
+            alive=agent_data["Alive"],
+            admin_state_up=agent_data["State"],
+            binary=agent_data["Binary"],
+            ha_state=NeutronAgentHAState(agent_data["HA State"]),
         )
 
 
@@ -459,6 +486,12 @@ class OpenstackAPI(CommandRunnerMixin):
             "network", "agent", "list", *filter_args, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
         )
         return [NeutronPartialAgent.from_agent_data(agent) for agent in data]
+
+    def get_neutron_agents_for_router(self, router_id: OpenstackIdentifier) -> list[NeutronAgentWithHAState]:
+        data = self.run_formatted_as_list(
+            "network", "agent", "list", "--long", f"--router={router_id}", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
+        )
+        return [NeutronAgentWithHAState.from_agent_data(agent) for agent in data]
 
     def get_routers(self) -> list[NeutronPartialRouter]:
         """Return neutron's list of registered services"""

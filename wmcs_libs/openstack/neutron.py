@@ -15,12 +15,12 @@ from wmcs_libs.common import (
     OutputFormat,
 )
 from wmcs_libs.openstack.common import (
+    NeutronAgentHAState,
     NeutronAgentType,
     NeutronPartialAgent,
     OpenstackAPI,
     OpenstackError,
     OpenstackID,
-    OpenstackIdentifier,
     wait_for_it,
 )
 
@@ -55,13 +55,6 @@ class NeutronAlerts(Enum):
     """list of neutron alerts and their names."""
 
     NEUTRON_AGENT_DOWN = "NeutronAgentDown"
-
-
-class NeutronAgentHAState(Enum):
-    """HA state for a neutron agent."""
-
-    ACTIVE = "active"
-    STANDBY = "standby"
 
 
 @dataclass(frozen=True)
@@ -214,15 +207,6 @@ class NeutronController(CommandRunnerMixin):
             condition_failed_msg_fn=lambda: "Some cloudnet agents did not turn admin up.",
         )
 
-    def list_agents_hosting_router(self, router: OpenstackIdentifier) -> list[NeutronAgent]:
-        """Get the list of nodes hosting a given router routers."""
-        return [
-            NeutronAgent.from_agent_data(agent_data={**agent_data, "agent_type": NeutronAgentType.L3_AGENT.value})
-            for agent_data in self.run_formatted_as_list(
-                "l3-agent-list-hosting-router", router, cumin_params=CUMIN_SAFE_WITH_OUTPUT
-            )
-        ]
-
     def get_cloudnets(self) -> list[str]:
         """Retrieves the known cloudnets.
 
@@ -267,7 +251,7 @@ class NeutronController(CommandRunnerMixin):
             routers_down = []
             routers = self.openstack_api.get_routers()
             for router in routers:
-                agents_on_router = self.list_agents_hosting_router(router=router.router_id)
+                agents_on_router = self.openstack_api.get_neutron_agents_for_router(router_id=router.router_id)
                 if not any(
                     agent.admin_state_up and agent.alive and agent.ha_state == NeutronAgentHAState.ACTIVE
                     for agent in agents_on_router
@@ -290,7 +274,7 @@ class NeutronController(CommandRunnerMixin):
         """
         routers = self.openstack_api.get_routers()
         for router in routers:
-            agents_on_router = self.list_agents_hosting_router(router=router.router_id)
+            agents_on_router = self.openstack_api.get_neutron_agents_for_router(router_id=router.router_id)
             for agent in agents_on_router:
                 if agent.admin_state_up and agent.alive and agent.ha_state == NeutronAgentHAState.ACTIVE:
                     return agent.host

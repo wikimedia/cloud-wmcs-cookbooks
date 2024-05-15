@@ -87,7 +87,7 @@ class ShowRunner(WMCSCookbookRunnerBase):
         routers = self.openstack_api.get_routers()
         routers_str = ""
         for router in routers:
-            agents_on_router = self.neutron_controller.list_agents_hosting_router(router=router.router_id)
+            agents_on_router = self.openstack_api.get_neutron_agents_for_router(router_id=router.router_id)
             routers_str += f"{router}\n        "
             routers_str += "\n        ".join(str(agent) for agent in agents_on_router)
 
