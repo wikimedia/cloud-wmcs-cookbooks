@@ -3,21 +3,13 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from wmcs_libs.common import (
-    CUMIN_SAFE_WITH_OUTPUT,
-    CUMIN_UNSAFE_WITHOUT_OUTPUT,
-    CommandRunnerMixin,
-    CuminParams,
-    OutputFormat,
-)
+from wmcs_libs.common import CUMIN_UNSAFE_WITHOUT_OUTPUT, CommandRunnerMixin, CuminParams, OutputFormat
 from wmcs_libs.openstack.common import (
     NeutronAgentHAState,
     NeutronAgentType,
-    NeutronPartialAgent,
     OpenstackAPI,
     OpenstackError,
     OpenstackID,
@@ -55,39 +47,6 @@ class NeutronAlerts(Enum):
     """list of neutron alerts and their names."""
 
     NEUTRON_AGENT_DOWN = "NeutronAgentDown"
-
-
-@dataclass(frozen=True)
-class NeutronAgent(NeutronPartialAgent):
-    """Full Neutron agent info."""
-
-    ha_state: NeutronAgentHAState | None = None
-
-    @classmethod
-    def from_agent_data(cls, agent_data: dict[str, Any]) -> "NeutronAgent":
-        """Get a NetworkAgent passing the agent_data as returned by the neutron cli."""
-        return cls(
-            host=agent_data["host"],
-            agent_type=NeutronAgentType(agent_data["agent_type"]),
-            admin_state_up=agent_data["admin_state_up"],
-            alive=agent_data["alive"] == ":-)",
-            agent_id=agent_data["id"],
-            # This will only be null on (broken) things still using the Neutron CLI.
-            binary=agent_data.get("binary", ""),
-            availability_zone=agent_data.get("availability_zone", None),
-            ha_state=NeutronAgentHAState(agent_data["ha_state"]) if "ha_state" in agent_data else None,
-        )
-
-    def __str__(self) -> str:
-        """Return the string representation of this class."""
-        return (
-            f"{self.host} ({self.agent_type}): "
-            f"{'ADMIN_UP' if self.admin_state_up else 'ADMIN_DOWN'} "
-            f"{'ALIVE' if self.alive else 'DEAD'} "
-            f"ha_state:{self.ha_state if self.ha_state is not None else 'NotFetched'} "
-            f"id:{self.agent_id} "
-            f"binary:{self.binary if self.binary is not None else 'NotFetched'}"
-        )
 
 
 class NeutronController(CommandRunnerMixin):
@@ -213,10 +172,6 @@ class NeutronController(CommandRunnerMixin):
         Currently does that by checking the neutron agents running on those.
         """
         return [agent.host for agent in self.openstack_api.get_neutron_agents(agent_type=NeutronAgentType.L3_AGENT)]
-
-    def list_routers_on_agent(self, agent_id: OpenstackID) -> list[dict[str, Any]]:
-        """Get the list of routers hosted a given agent."""
-        return self.run_formatted_as_list("router-list-on-l3-agent", agent_id, cumin_params=CUMIN_SAFE_WITH_OUTPUT)
 
     def check_if_network_is_alive(self) -> None:
         """Check if the network is in a working state (all agents up and running, all routers up and running).

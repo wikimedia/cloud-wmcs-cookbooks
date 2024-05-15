@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import cumin
@@ -8,24 +7,28 @@ import pytest
 
 from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.inventory.openstack import OpenstackClusterName
-from wmcs_libs.openstack.common import NeutronAgentType, NeutronPartialRouter, NeutronRouterStatus, OpenstackAPI
-from wmcs_libs.openstack.neutron import NetworkUnhealthy, NeutronAgent, NeutronAgentHAState, NeutronController
+from wmcs_libs.openstack.common import (
+    NeutronAgentType,
+    NeutronPartialAgent,
+    NeutronPartialRouter,
+    NeutronRouterStatus,
+    OpenstackAPI,
+)
+from wmcs_libs.openstack.neutron import NetworkUnhealthy, NeutronController
 
 
 def get_stub_agent(
     agent_id: str = "dummyagentid",
     agent_type: NeutronAgentType = NeutronAgentType.L3_AGENT,
-    ha_state: NeutronAgentHAState | None = None,
     host: str = "dummyhost",
     availability_zone: str | None = "dummyavailabilityzone",
     binary: str | None = "dummybinary",
     admin_state_up: bool = True,
     alive: bool = True,
-) -> NeutronAgent:
-    return NeutronAgent(
+) -> NeutronPartialAgent:
+    return NeutronPartialAgent(
         agent_id=agent_id,
         agent_type=agent_type,
-        ha_state=ha_state,
         host=host,
         availability_zone=availability_zone,
         binary=binary,
@@ -47,137 +50,6 @@ def get_stub_router(
         name="cloudinstances2b-gw",
         status=status,
         tenant_id="admin",
-    )
-
-
-@pytest.mark.parametrize(
-    **UtilsForTesting.to_parametrize(
-        test_cases={
-            "No nodes": {
-                # neutron expects a first spurious line
-                "neutron_output": "\n[]",
-                "expected_routers": [],
-            },
-            "One router": {
-                "neutron_output": """
-                    [
-                          {
-                            "id": "d93771ba-2711-4f88-804a-8df6fd03978a",
-                            "name": "cloudinstances2b-gw",
-                            "tenant_id": "admin",
-                            "external_gateway_info": {
-                            "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75123",
-                            "external_fixed_ips": [
-                                {
-                                "subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f51",
-                                "ip_address": "185.15.56.238"
-                                }
-                            ],
-                            "enable_snat": false
-                            }
-                        }
-                    ]
-                """,
-                "expected_routers": [
-                    {
-                        "id": "d93771ba-2711-4f88-804a-8df6fd03978a",
-                        "name": "cloudinstances2b-gw",
-                        "tenant_id": "admin",
-                        "external_gateway_info": {
-                            "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75123",
-                            "external_fixed_ips": [
-                                {"subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f51", "ip_address": "185.15.56.238"}
-                            ],
-                            "enable_snat": False,
-                        },
-                    }
-                ],
-            },
-            "Many routers": {
-                "neutron_output": """
-                    [
-                          {
-                            "id": "d93771ba-2711-4f88-804a-8df6fd03978a",
-                            "name": "cloudinstances2b-gw",
-                            "tenant_id": "admin",
-                            "external_gateway_info": {
-                            "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75123",
-                            "external_fixed_ips": [
-                                {
-                                "subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f51",
-                                "ip_address": "185.15.56.238"
-                                }
-                            ],
-                            "enable_snat": false
-                            }
-                        },
-                          {
-                            "id": "d93771ba-2711-4f88-804a-8df6fd03978b",
-                            "name": "cloudinstances2c-gw",
-                            "tenant_id": "admin",
-                            "external_gateway_info": {
-                            "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75124",
-                            "external_fixed_ips": [
-                                {
-                                "subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f52",
-                                "ip_address": "185.15.56.239"
-                                }
-                            ],
-                            "enable_snat": false
-                            }
-                        }
-                    ]
-                """,
-                "expected_routers": [
-                    {
-                        "id": "d93771ba-2711-4f88-804a-8df6fd03978a",
-                        "name": "cloudinstances2b-gw",
-                        "tenant_id": "admin",
-                        "external_gateway_info": {
-                            "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75123",
-                            "external_fixed_ips": [
-                                {"subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f51", "ip_address": "185.15.56.238"}
-                            ],
-                            "enable_snat": False,
-                        },
-                    },
-                    {
-                        "id": "d93771ba-2711-4f88-804a-8df6fd03978b",
-                        "name": "cloudinstances2c-gw",
-                        "tenant_id": "admin",
-                        "external_gateway_info": {
-                            "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75124",
-                            "external_fixed_ips": [
-                                {"subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f52", "ip_address": "185.15.56.239"}
-                            ],
-                            "enable_snat": False,
-                        },
-                    },
-                ],
-            },
-        }
-    )
-)
-def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expected_routers: list[dict[str, Any]]):
-    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
-    my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
-    my_controller = NeutronController(openstack_api=my_api)
-    fake_run_sync = fake_remote.query.return_value.run_sync
-
-    gotten_nodes = my_controller.list_routers_on_agent(agent_id="some-agent-id")
-
-    assert gotten_nodes == expected_routers
-    fake_run_sync.assert_called_with(
-        cumin.transports.Command(
-            "bash -c 'source /root/novaenv.sh && neutron router-list-on-l3-agent some-agent-id --format json'",
-            ok_codes=[0],
-        ),
-        is_safe=True,
-        print_output=False,
-        print_progress_bars=False,
-        success_threshold=1,
-        batch_size=None,
-        batch_sleep=None,
     )
 
 
@@ -277,7 +149,7 @@ def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_clo
     )
 )
 def test_NeutronController_check_if_network_is_alive_does_not_raise(
-    agents: list[NeutronAgent], routers: list[NeutronPartialRouter]
+    agents: list[NeutronPartialAgent], routers: list[NeutronPartialRouter]
 ):
     # just in case a call gets through
     fake_remote = UtilsForTesting.get_fake_remote(responses=[])
@@ -338,7 +210,7 @@ def test_NeutronController_check_if_network_is_alive_does_not_raise(
     )
 )
 def test_NeutronController_check_if_network_is_alive_raises(
-    agents: list[NeutronAgent], routers: list[NeutronPartialRouter]
+    agents: list[NeutronPartialAgent], routers: list[NeutronPartialRouter]
 ):
     # just in case a call gets through
     fake_remote = UtilsForTesting.get_fake_remote(responses=[])

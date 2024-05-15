@@ -119,10 +119,6 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
             if agent.host not in cloudnets:
                 raise Exception(f"Agent {agent.host} not in cloudnets ({cloudnets})")
 
-            routers = self.neutron_controller.list_routers_on_agent(agent.agent_id)
-            if len(routers) != 1:
-                raise Exception(f"Got more than one router on agent {agent.host}: {routers}")
-
     def _do_reboot(self, node: RemoteHosts) -> None:
         """Perform the actual reboot."""
         host_name = self.fqdn_to_reboot.split(".", 1)[0]
