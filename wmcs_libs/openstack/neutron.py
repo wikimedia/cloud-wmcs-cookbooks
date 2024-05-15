@@ -7,14 +7,7 @@ from enum import Enum
 from typing import Any
 
 from wmcs_libs.common import CUMIN_UNSAFE_WITHOUT_OUTPUT, CommandRunnerMixin, CuminParams, OutputFormat
-from wmcs_libs.openstack.common import (
-    NeutronAgentHAState,
-    NeutronAgentType,
-    OpenstackAPI,
-    OpenstackError,
-    OpenstackID,
-    wait_for_it,
-)
+from wmcs_libs.openstack.common import NeutronAgentHAState, NeutronAgentType, OpenstackAPI, OpenstackError, wait_for_it
 
 LOGGER = logging.getLogger(__name__)
 
@@ -110,20 +103,12 @@ class NeutronController(CommandRunnerMixin):
         """Run a neutron command on a control node returning the raw string."""
         return super().run_raw(*command, json_output=json_output, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
-    def agent_set_admin_up(self, agent_id: OpenstackID) -> None:
-        """Set the given agent as admin-state-up (online)."""
-        self._run_one_raw("agent-update", "--admin-state-up", agent_id, json_output=False)
-
-    def agent_set_admin_down(self, agent_id: OpenstackID) -> None:
-        """Set the given agent as admin-state-down (offline)."""
-        self._run_one_raw("agent-update", "--admin-state-down", agent_id, json_output=False)
-
     def cloudnet_set_admin_down(self, cloudnet_host: str) -> None:
         """Given a cloudnet hostname, set all it's agents down, usually for maintenance or reboot."""
         cloudnet_agents = self.openstack_api.get_neutron_agents(host=cloudnet_host)
         for agent in cloudnet_agents:
             if agent.admin_state_up:
-                self.agent_set_admin_down(agent_id=agent.agent_id)
+                self.openstack_api.neutron_agent_set_admin_down(agent_id=agent.agent_id)
 
         self.wait_for_cloudnet_admin_down(cloudnet_host=cloudnet_host)
 
@@ -132,7 +117,7 @@ class NeutronController(CommandRunnerMixin):
         cloudnet_agents = self.openstack_api.get_neutron_agents(host=cloudnet_host)
         for agent in cloudnet_agents:
             if not agent.admin_state_up:
-                self.agent_set_admin_up(agent_id=agent.agent_id)
+                self.openstack_api.neutron_agent_set_admin_up(agent_id=agent.agent_id)
 
         self.wait_for_cloudnet_admin_up(cloudnet_host=cloudnet_host)
 

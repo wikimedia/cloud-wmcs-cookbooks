@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-lines
 """Openstack generic related code."""
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from spicerack.remote import Remote, RemoteHosts
 
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
+    CUMIN_UNSAFE_WITHOUT_OUTPUT,
     ArgparsableEnum,
     CommandRunnerMixin,
     CuminParams,
@@ -505,6 +506,24 @@ class OpenstackAPI(CommandRunnerMixin):
             "network", "agent", "list", *filter_args, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
         )
         return [NeutronPartialAgent.from_agent_data(agent) for agent in data]
+
+    def neutron_agent_set_admin_up(self, agent_id: OpenstackID) -> None:
+        """Set the given agent as admin-state-up (online)."""
+        self.run_raw(
+            "network", "agent", "set", "--enable", agent_id, json_output=False, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT
+        )
+
+    def neutron_agent_set_admin_down(self, agent_id: OpenstackID) -> None:
+        """Set the given agent as admin-state-down (offline)."""
+        self.run_raw(
+            "network",
+            "agent",
+            "set",
+            "--disable",
+            agent_id,
+            json_output=False,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
+        )
 
     def get_neutron_agents_for_router(self, router_id: OpenstackIdentifier) -> list[NeutronAgentWithHAState]:
         data = self.run_formatted_as_list(
