@@ -256,6 +256,7 @@ class NeutronAgentType(Enum):
     """
 
     L3_AGENT = "L3 agent"
+    OVS_AGENT = "Open vSwitch agent"
     LINUX_BRIDGE_AGENT = "Linux bridge agent"
     DHCP_AGENT = "DHCP agent"
     METADATA_AGENT = "Metadata agent"

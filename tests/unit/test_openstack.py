@@ -215,6 +215,32 @@ def test_summing_up_two_quota_entries(
                     ),
                 ],
             },
+            "OVS agent": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "ad1f63bc-8acb-4d2f-a07c-13d8f8c1c7bb",
+                            "Agent Type": "Open vSwitch agent",
+                            "Host": "cloudnet2005-dev",
+                            "Availability Zone": null,
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-openvswitch-agent"
+                        }
+                    ]
+                """,
+                "expected_agents": [
+                    NeutronPartialAgent(
+                        agent_id="ad1f63bc-8acb-4d2f-a07c-13d8f8c1c7bb",
+                        agent_type=NeutronAgentType.OVS_AGENT,
+                        host="cloudnet2005-dev",
+                        availability_zone=None,
+                        alive=True,
+                        admin_state_up=True,
+                        binary="neutron-openvswitch-agent",
+                    ),
+                ],
+            },
             "Metadata agent": {
                 "neutron_output": """
                     [

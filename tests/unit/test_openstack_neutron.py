@@ -451,6 +451,22 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
                 """,
                 "expected_cloudnets": [],
             },
+            "OVS agent": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "ad1f63bc-8acb-4d2f-a07c-13d8f8c1c7bb",
+                            "Agent Type": "Open vSwitch agent",
+                            "Host": "cloudnet2005-dev",
+                            "Availability Zone": null,
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-openvswitch-agent"
+                        }
+                    ]
+                """,
+                "expected_cloudnets": [],
+            },
             "Metadata agent": {
                 "neutron_output": """
                     [
