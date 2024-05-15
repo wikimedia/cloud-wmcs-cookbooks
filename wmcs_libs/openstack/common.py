@@ -287,6 +287,66 @@ class NeutronPartialAgent:
         )
 
 
+class NeutronRouterStatus(Enum):
+    """Status of a neutron router.
+
+    Gotten from https://github.com/openstack/neutron-lib/blob/master/neutron_lib/constants.py#L427
+    """
+
+    ACTIVE = "ACTIVE"
+    ALLOCATING = "ALLOCATING"
+    ERROR = "ERROR"
+
+
+@dataclass(frozen=True)
+class NeutronPartialRouter:
+    """Represents the details of a Neutron router that can be seen in 'openstack router list' output.
+
+    We are only storing the fields we are using, if you need more please add them.
+    """
+
+    name: str
+    router_id: OpenstackID
+    tenant_id: OpenstackID
+    has_ha: bool
+    status: NeutronRouterStatus
+    admin_state_up: bool
+
+    @classmethod
+    def from_router_data(cls, data: dict[str, Any]) -> "NeutronPartialRouter":
+        """Creates a NeutronPartialRouter from the json output of 'openstack router list'.
+
+        Note that we only get the fields we use/find useful, add new whenever needed.
+
+        Example of list_data:
+        {
+            "ID": "d93771ba-2711-4f88-804a-8df6fd03978a",
+            "Name": "cloudinstances2b-gw",
+            "Status": "ACTIVE",
+            "State": true,
+            "Project": "admin",
+            "Distributed": false,
+            "HA": true
+        }
+        """
+        return cls(
+            router_id=data["ID"],
+            name=data["Name"],
+            tenant_id=data["Project"],
+            has_ha=data["HA"],
+            status=NeutronRouterStatus(data["Status"]),
+            admin_state_up=data["State"],
+        )
+
+    def __str__(self) -> str:
+        """Return the string representation of this class."""
+        return f"{self.name}: router_id:{self.router_id} tenant_id:{self.tenant_id} status:{self.status} has_ha:{self.has_ha}"  # noqa: E501
+
+    def is_healthy(self) -> bool:
+        """Given a router, check if it's up."""
+        return self.status == NeutronRouterStatus.ACTIVE and self.has_ha and self.admin_state_up
+
+
 @dataclass(frozen=True)
 class NeutronPartialPort:
     """Represents the details of a Neutron port that can be seen in 'openstack port list' output."""
@@ -393,6 +453,11 @@ class OpenstackAPI(CommandRunnerMixin):
         """Return neutron's list of registered services"""
         data = self.run_formatted_as_list("network", "agent", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
         return [NeutronPartialAgent.from_agent_data(agent) for agent in data]
+
+    def get_routers(self) -> list[NeutronPartialRouter]:
+        """Return neutron's list of registered services"""
+        data = self.run_formatted_as_list("router", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        return [NeutronPartialRouter.from_router_data(router) for router in data]
 
     def get_cinder_services(self) -> list[dict[str, Any]]:
         """Return cinder's list of registered services"""

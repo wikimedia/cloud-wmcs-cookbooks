@@ -64,130 +64,6 @@ class NeutronAgentHAState(Enum):
     STANDBY = "standby"
 
 
-class NeutronRouterStatus(Enum):
-    """Status of a neutron router.
-
-    Gotten from https://github.com/openstack/neutron-lib/blob/master/neutron_lib/constants.py#L427
-    """
-
-    ACTIVE = "ACTIVE"
-    ALLOCATING = "ALLOCATING"
-    ERROR = "ERROR"
-
-
-@dataclass(frozen=True)
-class NeutronPartialRouter:
-    """Partial info for a router as returned by router_list.
-
-    We are only storing the fields we are using, if you need more please add them.
-    """
-
-    name: str
-    router_id: str
-    tenant_id: str
-    has_ha: bool
-
-    @classmethod
-    def from_data(cls, data: dict[str, Any]) -> "NeutronPartialRouter":
-        """Creates a NeutronPartialRouter from the json output of neutron router-list.
-
-        Note that we only get the fields we use/find useful, add new whenever needed.
-
-        Example of list_data:
-        {
-            "id": "5712e22e-134a-40d3-a75a-1c9b441717ad",
-            "name": "cloudinstances2b-gw",
-            "tenant_id": "admin",
-            "external_gateway_info": {
-            "network_id": "57017d7c-3817-429a-8aa3-b028de82cdcc",
-            "external_fixed_ips": [
-                {
-                "subnet_id": "2596edb4-5a40-41b9-9e67-f1f9e40e329c",
-                "ip_address": "185.15.57.10"
-                }
-            ],
-            "enable_snat": false
-            },
-            "distributed": false,
-            "ha": true
-        }
-        """
-        return cls(
-            name=data["name"],
-            router_id=data["id"],
-            tenant_id=data["tenant_id"],
-            has_ha=data["ha"],
-        )
-
-    def __str__(self) -> str:
-        """Return the string representation of this class."""
-        return f"{self.name}: router_id:{self.router_id} tenant_id:{self.tenant_id} has_ha:{self.has_ha}"
-
-
-@dataclass(frozen=True)
-class NeutronRouter(NeutronPartialRouter):
-    """Full Neutron router representation.
-
-    Only storing the field we are using, if you need more please add them.
-    """
-
-    admin_state_up: bool
-    status: NeutronRouterStatus
-
-    def is_healthy(self) -> bool:
-        """Given a router, check if it's up."""
-        if self.admin_state_up is None or self.status is None:
-            raise IncompleteData("Can't run is_healthy on a router returned by router_list, use router_show instead.")
-
-        return bool(self.status == NeutronRouterStatus.ACTIVE and self.has_ha and self.admin_state_up)
-
-    @classmethod
-    def from_data(cls, data: dict[str, Any]) -> "NeutronRouter":
-        """Create
-
-        Example of show_data:
-        {
-            "admin_state_up": true,
-            "availability_zone_hints": [],
-            "availability_zones": [
-                "nova"
-            ],
-            "created_at": "2018-03-29T14:18:50Z",
-            "description": "",
-            "distributed": false,
-            "external_gateway_info": {
-                "network_id": "57017d7c-3817-429a-8aa3-b028de82cdcc",
-                "external_fixed_ips": [
-                {
-                    "subnet_id": "2596edb4-5a40-41b9-9e67-f1f9e40e329c",
-                    "ip_address": "185.15.57.10"
-                }
-                ],
-                "enable_snat": false
-            },
-            "flavor_id": null,
-            "ha": true,
-            "id": "5712e22e-134a-40d3-a75a-1c9b441717ad",
-            "name": "cloudinstances2b-gw",
-            "project_id": "admin",
-            "revision_number": 24,
-            "routes": [],
-            "status": "ACTIVE",
-            "tags": [],
-            "tenant_id": "admin",
-            "updated_at": "2022-04-27T16:35:05Z"
-            }
-        """
-        return cls(
-            name=data["name"],
-            router_id=data["id"],
-            tenant_id=data["tenant_id"],
-            has_ha=data["ha"],
-            admin_state_up=data["admin_state_up"],
-            status=NeutronRouterStatus(data["status"]),
-        )
-
-
 @dataclass(frozen=True)
 class NeutronAgent(NeutronPartialAgent):
     """Full Neutron agent info."""
@@ -338,19 +214,6 @@ class NeutronController(CommandRunnerMixin):
             condition_failed_msg_fn=lambda: "Some cloudnet agents did not turn admin up.",
         )
 
-    def router_list(self) -> list[NeutronPartialRouter]:
-        """Get the list of neutron routers."""
-        return [
-            NeutronPartialRouter.from_data(data=list_data)
-            for list_data in self.run_formatted_as_list("router-list", cumin_params=CUMIN_SAFE_WITH_OUTPUT)
-        ]
-
-    def router_show(self, router: OpenstackIdentifier) -> NeutronRouter:
-        """Show details of the given router."""
-        return NeutronRouter.from_data(
-            data=self.run_formatted_as_dict("router-show", router, cumin_params=CUMIN_SAFE_WITH_OUTPUT)
-        )
-
     def list_agents_hosting_router(self, router: OpenstackIdentifier) -> list[NeutronAgent]:
         """Get the list of nodes hosting a given router routers."""
         return [
@@ -389,11 +252,10 @@ class NeutronController(CommandRunnerMixin):
                 agents_str = "\n".join(str(agent) for agent in cloudnet_agents)
                 raise NetworkUnhealthy(f"Some agents are not healthy:\n{agents_str}")
 
-        all_routers = self.router_list()
-        for partial_router in all_routers:
-            full_router = self.router_show(router=partial_router.name)
-            if not full_router.is_healthy():
-                raise NetworkUnhealthy(f"Router {full_router.name} is not healthy:\n{full_router}")
+        all_routers = self.openstack_api.get_routers()
+        for router in all_routers:
+            if not router.is_healthy():
+                raise NetworkUnhealthy(f"Router {router.name} is not healthy:\n{router}")
 
     def wait_for_l3_handover(self):
         """Wait until there's one primary for all l3 agents.
@@ -403,7 +265,7 @@ class NeutronController(CommandRunnerMixin):
 
         def all_routers_have_active_agent() -> bool:
             routers_down = []
-            routers = self.router_list()
+            routers = self.openstack_api.get_routers()
             for router in routers:
                 agents_on_router = self.list_agents_hosting_router(router=router.router_id)
                 if not any(
@@ -426,7 +288,7 @@ class NeutronController(CommandRunnerMixin):
         NOTE: We expect all the routers to have the same primary (we only have one router for now), once we have more
         or the primaries are mixed, this should be changed.
         """
-        routers = self.router_list()
+        routers = self.openstack_api.get_routers()
         for router in routers:
             agents_on_router = self.list_agents_hosting_router(router=router.router_id)
             for agent in agents_on_router:
@@ -455,8 +317,3 @@ class NeutronController(CommandRunnerMixin):
             condition_failed_msg_fn=lambda: "Some agents are not running",
             timeout_seconds=timeout_seconds,
         )
-
-    def is_router_healthy(self, router_id: OpenstackIdentifier) -> bool:
-        """Given a router, check if it's up."""
-        router = self.router_show(router=router_id)
-        return bool(router.status == NeutronRouterStatus.ACTIVE and router.has_ha and router.admin_state_up)

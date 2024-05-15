@@ -11,6 +11,8 @@ from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import (
     NeutronAgentType,
     NeutronPartialAgent,
+    NeutronPartialRouter,
+    NeutronRouterStatus,
     OpenstackAPI,
     OpenstackBadQuota,
     OpenstackQuotaEntry,
@@ -377,6 +379,106 @@ def test_OpenstackAPI_get_neutron_agents_works(neutron_output: str, expected_age
     fake_run_sync.assert_called_with(
         cumin.transports.Command(
             "env OS_PROJECT_ID=admin-monitoring wmcs-openstack network agent list -f json --os-cloud novaadmin",
+            ok_codes=[0],
+        ),
+        is_safe=True,
+        print_output=False,
+        print_progress_bars=False,
+        success_threshold=1,
+        batch_size=None,
+        batch_sleep=None,
+    )
+
+
+@pytest.mark.parametrize(
+    **UtilsForTesting.to_parametrize(
+        test_cases={
+            "No routers": {
+                # neutron expects a first line that will be discarded
+                "neutron_output": "\n[]",
+                "expected_routers": [],
+            },
+            "One router": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "5712e22e-134a-40d3-a75a-1c9b441717ad",
+                            "Name": "cloudinstances2b-gw",
+                            "Status": "ACTIVE",
+                            "State": true,
+                            "Project": "admin",
+                            "Distributed": false,
+                            "HA": true
+                        }
+                    ]
+                """,
+                "expected_routers": [
+                    NeutronPartialRouter(
+                        router_id="5712e22e-134a-40d3-a75a-1c9b441717ad",
+                        name="cloudinstances2b-gw",
+                        tenant_id="admin",
+                        has_ha=True,
+                        admin_state_up=True,
+                        status=NeutronRouterStatus.ACTIVE,
+                    ),
+                ],
+            },
+            "Many routers": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "4663da98-bd3d-4f5b-a91d-afc23ca507f6",
+                            "Name": "cloudinstances3-flat-gw",
+                            "Status": "ACTIVE",
+                            "State": true,
+                            "Project": "admin",
+                            "Distributed": false,
+                            "HA": true
+                        },
+                        {
+                            "ID": "5712e22e-134a-40d3-a75a-1c9b441717ad",
+                            "Name": "cloudinstances2b-gw",
+                            "Status": "ACTIVE",
+                            "State": true,
+                            "Project": "admin",
+                            "Distributed": false,
+                            "HA": true
+                        }
+                    ]
+                """,
+                "expected_routers": [
+                    NeutronPartialRouter(
+                        router_id="4663da98-bd3d-4f5b-a91d-afc23ca507f6",
+                        name="cloudinstances3-flat-gw",
+                        tenant_id="admin",
+                        has_ha=True,
+                        admin_state_up=True,
+                        status=NeutronRouterStatus.ACTIVE,
+                    ),
+                    NeutronPartialRouter(
+                        router_id="5712e22e-134a-40d3-a75a-1c9b441717ad",
+                        name="cloudinstances2b-gw",
+                        tenant_id="admin",
+                        has_ha=True,
+                        admin_state_up=True,
+                        status=NeutronRouterStatus.ACTIVE,
+                    ),
+                ],
+            },
+        }
+    )
+)
+def test_NeutronController_router_list_works(neutron_output: str, expected_routers: list[NeutronPartialAgent]):
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
+    my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
+    fake_run_sync = fake_remote.query.return_value.run_sync
+
+    gotten_routers = my_api.get_routers()
+
+    assert gotten_routers == expected_routers
+    fake_run_sync.assert_called_with(
+        cumin.transports.Command(
+            "env OS_PROJECT_ID=admin-monitoring wmcs-openstack router list -f json --os-cloud novaadmin",
             ok_codes=[0],
         ),
         is_safe=True,

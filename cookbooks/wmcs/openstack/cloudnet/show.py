@@ -84,7 +84,7 @@ class ShowRunner(WMCSCookbookRunnerBase):
             str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.LINUX_BRIDGE_AGENT
         ]
         cloudnets = self.neutron_controller.get_cloudnets()
-        routers = self.neutron_controller.router_list()
+        routers = self.openstack_api.get_routers()
         routers_str = ""
         for router in routers:
             agents_on_router = self.neutron_controller.list_agents_hosting_router(router=router.router_id)

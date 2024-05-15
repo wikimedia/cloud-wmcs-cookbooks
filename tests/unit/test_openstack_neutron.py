@@ -8,16 +8,8 @@ import pytest
 
 from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.inventory.openstack import OpenstackClusterName
-from wmcs_libs.openstack.common import NeutronAgentType, OpenstackAPI
-from wmcs_libs.openstack.neutron import (
-    NetworkUnhealthy,
-    NeutronAgent,
-    NeutronAgentHAState,
-    NeutronController,
-    NeutronPartialRouter,
-    NeutronRouter,
-    NeutronRouterStatus,
-)
+from wmcs_libs.openstack.common import NeutronAgentType, NeutronPartialRouter, NeutronRouterStatus, OpenstackAPI
+from wmcs_libs.openstack.neutron import NetworkUnhealthy, NeutronAgent, NeutronAgentHAState, NeutronController
 
 
 def get_stub_agent(
@@ -42,147 +34,19 @@ def get_stub_agent(
     )
 
 
-def partial_router_from_full_router(router: NeutronRouter) -> NeutronPartialRouter:
-    return NeutronPartialRouter(
-        has_ha=router.has_ha,
-        router_id=router.router_id,
-        name=router.name,
-        tenant_id=router.tenant_id,
-    )
-
-
 def get_stub_router(
     router_id: str = "dummyrouterid",
     status: NeutronRouterStatus = NeutronRouterStatus.ACTIVE,
     has_ha: bool = True,
     admin_state_up: bool = True,
-) -> NeutronRouter:
-    return NeutronRouter(
+) -> NeutronPartialRouter:
+    return NeutronPartialRouter(
         admin_state_up=admin_state_up,
         has_ha=has_ha,
         router_id=router_id,
         name="cloudinstances2b-gw",
         status=status,
         tenant_id="admin",
-    )
-
-
-@pytest.mark.parametrize(
-    **UtilsForTesting.to_parametrize(
-        test_cases={
-            "No routers": {
-                # neutron expects a first line that will be discarded
-                "neutron_output": "\n[]",
-                "expected_routers": [],
-            },
-            "One router": {
-                "neutron_output": """
-                    [
-                        {
-                            "id": "d93771ba-2711-4f88-804a-8df6fd03978a",
-                            "name": "cloudinstances2b-gw",
-                            "tenant_id": "admin",
-                            "external_gateway_info": {
-                                "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75123",
-                                "external_fixed_ips": [
-                                    {
-                                    "subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f51",
-                                    "ip_address": "185.15.56.238"
-                                    }
-                                ],
-                                "enable_snat": false
-                            },
-                            "distributed": false,
-                            "ha": true
-                        }
-                    ]
-                """,
-                "expected_routers": [
-                    NeutronPartialRouter(
-                        router_id="d93771ba-2711-4f88-804a-8df6fd03978a",
-                        name="cloudinstances2b-gw",
-                        tenant_id="admin",
-                        has_ha=True,
-                    )
-                ],
-            },
-            "Many routers": {
-                "neutron_output": """
-                    [
-                        {
-                            "id": "d93771ba-2711-4f88-804a-8df6fd03978a",
-                            "name": "cloudinstances2b-gw",
-                            "tenant_id": "admin",
-                            "external_gateway_info": {
-                                "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75123",
-                                "external_fixed_ips": [
-                                    {
-                                    "subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f51",
-                                    "ip_address": "185.15.56.238"
-                                    }
-                                ],
-                                "enable_snat": false
-                            },
-                            "distributed": false,
-                            "ha": true
-                        },
-                        {
-                            "id": "d93771ba-2711-4f88-804a-8df6fd03978b",
-                            "name": "cloudinstances2c-gw",
-                            "tenant_id": "admin",
-                            "external_gateway_info": {
-                                "network_id": "5c9ee953-3a19-4e84-be0f-069b5da75124",
-                                "external_fixed_ips": [
-                                    {
-                                    "subnet_id": "77dba34f-c8f2-4706-a0b6-2a8ed4d91f52",
-                                    "ip_address": "185.15.56.239"
-                                    }
-                                ],
-                                "enable_snat": false
-                            },
-                            "distributed": false,
-                            "ha": true
-                        }
-                    ]
-                """,
-                "expected_routers": [
-                    NeutronPartialRouter(
-                        router_id="d93771ba-2711-4f88-804a-8df6fd03978a",
-                        name="cloudinstances2b-gw",
-                        tenant_id="admin",
-                        has_ha=True,
-                    ),
-                    NeutronPartialRouter(
-                        router_id="d93771ba-2711-4f88-804a-8df6fd03978b",
-                        name="cloudinstances2c-gw",
-                        tenant_id="admin",
-                        has_ha=True,
-                    ),
-                ],
-            },
-        }
-    )
-)
-def test_NeutronController_router_list_works(neutron_output: str, expected_routers: list[NeutronAgent]):
-    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
-    my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
-    my_controller = NeutronController(openstack_api=my_api)
-    fake_run_sync = fake_remote.query.return_value.run_sync
-
-    gotten_routers = my_controller.router_list()
-
-    assert gotten_routers == expected_routers
-    fake_run_sync.assert_called_with(
-        cumin.transports.Command(
-            "bash -c 'source /root/novaenv.sh && neutron router-list --format json'",
-            ok_codes=[0],
-        ),
-        is_safe=True,
-        print_output=False,
-        print_progress_bars=False,
-        success_threshold=1,
-        batch_size=None,
-        batch_sleep=None,
     )
 
 
@@ -587,17 +451,16 @@ def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_clo
     )
 )
 def test_NeutronController_check_if_network_is_alive_does_not_raise(
-    agents: list[NeutronAgent], routers: list[NeutronRouter]
+    agents: list[NeutronAgent], routers: list[NeutronPartialRouter]
 ):
     # just in case a call gets through
     fake_remote = UtilsForTesting.get_fake_remote(responses=[])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
-    partial_routers = [partial_router_from_full_router(router) for router in routers]
 
     with patch.object(my_api, "get_neutron_agents", MagicMock(return_value=agents)), patch.object(
-        my_controller, "router_list", MagicMock(return_value=partial_routers)
-    ), patch.object(my_controller, "router_show", MagicMock(side_effect=routers)):
+        my_api, "get_routers", MagicMock(return_value=routers)
+    ):
         # assert it does not raise
         my_controller.check_if_network_is_alive()
 
@@ -648,15 +511,16 @@ def test_NeutronController_check_if_network_is_alive_does_not_raise(
         }
     )
 )
-def test_NeutronController_check_if_network_is_alive_raises(agents: list[NeutronAgent], routers: list[NeutronRouter]):
+def test_NeutronController_check_if_network_is_alive_raises(
+    agents: list[NeutronAgent], routers: list[NeutronPartialRouter]
+):
     # just in case a call gets through
     fake_remote = UtilsForTesting.get_fake_remote(responses=[])
     my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
     my_controller = NeutronController(openstack_api=my_api)
-    partial_routers = [partial_router_from_full_router(router) for router in routers]
 
     with patch.object(my_api, "get_neutron_agents", MagicMock(return_value=agents)), patch.object(
-        my_controller, "router_list", MagicMock(return_value=partial_routers)
-    ), patch.object(my_controller, "router_show", MagicMock(side_effect=routers)):
+        my_api, "get_routers", MagicMock(return_value=routers)
+    ):
         with pytest.raises(NetworkUnhealthy):
             my_controller.check_if_network_is_alive()
