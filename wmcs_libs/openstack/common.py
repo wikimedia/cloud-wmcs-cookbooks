@@ -249,6 +249,43 @@ class OpenstackServerGroupPolicy(ArgparsableEnum):
     SOFT_AFFINITY = "soft-affinity"
 
 
+class NeutronAgentType(Enum):
+    """list of neutron agent types and their 'agent type' string.
+
+    Extracted from 'wmcs-openstack network agent list' on a full installation. Note that they are case sensitive.
+    """
+
+    L3_AGENT = "L3 agent"
+    LINUX_BRIDGE_AGENT = "Linux bridge agent"
+    DHCP_AGENT = "DHCP agent"
+    METADATA_AGENT = "Metadata agent"
+
+
+@dataclass(frozen=True)
+class NeutronPartialAgent:
+    """Represents the details of a Neutron agent that can be seen in 'openstack network agent list' output."""
+
+    agent_id: OpenstackID
+    agent_type: NeutronAgentType
+    host: str
+    availability_zone: str | None
+    alive: bool
+    admin_state_up: bool
+    binary: str
+
+    @classmethod
+    def from_agent_data(cls, agent_data: dict[str, Any]) -> "NeutronPartialAgent":
+        return cls(
+            agent_id=agent_data["ID"],
+            agent_type=NeutronAgentType(agent_data["Agent Type"]),
+            host=agent_data["Host"],
+            availability_zone=agent_data["Availability Zone"],
+            alive=agent_data["Alive"],
+            admin_state_up=agent_data["State"],
+            binary=agent_data["Binary"],
+        )
+
+
 @dataclass(frozen=True)
 class NeutronPartialPort:
     """Represents the details of a Neutron port that can be seen in 'openstack port list' output."""
@@ -351,9 +388,10 @@ class OpenstackAPI(CommandRunnerMixin):
         """Return designate's list of registered services"""
         return self.run_formatted_as_list("dns", "service", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
-    def get_neutron_services(self) -> list[dict[str, Any]]:
+    def get_neutron_agents(self) -> list[NeutronPartialAgent]:
         """Return neutron's list of registered services"""
-        return self.run_formatted_as_list("network", "agent", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        data = self.run_formatted_as_list("network", "agent", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        return [NeutronPartialAgent.from_agent_data(agent) for agent in data]
 
     def get_cinder_services(self) -> list[dict[str, Any]]:
         """Return cinder's list of registered services"""

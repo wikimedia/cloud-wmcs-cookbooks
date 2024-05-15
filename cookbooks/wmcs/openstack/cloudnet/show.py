@@ -16,8 +16,8 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
-from wmcs_libs.openstack.common import OpenstackAPI
-from wmcs_libs.openstack.neutron import NeutronAgentType, NeutronController
+from wmcs_libs.openstack.common import NeutronAgentType, OpenstackAPI
+from wmcs_libs.openstack.neutron import NeutronController
 
 LOGGER = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class ShowRunner(WMCSCookbookRunnerBase):
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
-        all_agents = self.neutron_controller.agent_list()
+        all_agents = self.openstack_api.get_neutron_agents()
         l3_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.L3_AGENT]
         dhcp_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.DHCP_AGENT]
         metadata_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.METADATA_AGENT]

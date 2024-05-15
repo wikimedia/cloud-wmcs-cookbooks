@@ -8,12 +8,11 @@ import pytest
 
 from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.inventory.openstack import OpenstackClusterName
-from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.common import NeutronAgentType, OpenstackAPI
 from wmcs_libs.openstack.neutron import (
     NetworkUnhealthy,
     NeutronAgent,
     NeutronAgentHAState,
-    NeutronAgentType,
     NeutronController,
     NeutronPartialRouter,
     NeutronRouter,
@@ -65,185 +64,6 @@ def get_stub_router(
         name="cloudinstances2b-gw",
         status=status,
         tenant_id="admin",
-    )
-
-
-@pytest.mark.parametrize(
-    **UtilsForTesting.to_parametrize(
-        test_cases={
-            "No agents": {
-                # neutron expects a first spurious line
-                "neutron_output": "\n[]",
-                "expected_agents": [],
-            },
-            "L3 agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "id": "4be214c8-76ef-40f8-9d5d-4c344d213311",
-                            "agent_type": "L3 agent",
-                            "host": "cloudnet1003",
-                            "availability_zone": "nova",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-l3-agent"
-                        }
-                    ]
-                """,
-                "expected_agents": [
-                    NeutronAgent(
-                        agent_id="4be214c8-76ef-40f8-9d5d-4c344d213311",
-                        agent_type=NeutronAgentType.L3_AGENT,
-                        host="cloudnet1003",
-                        availability_zone="nova",
-                        alive=True,
-                        admin_state_up=True,
-                        binary="neutron-l3-agent",
-                    )
-                ],
-            },
-            "Linux bridge agent": {
-                "neutron_output": """
-                    [
-                          {
-                            "id": "ce4f0afc-d0c0-411b-9faa-9e4f83c746b0",
-                            "agent_type": "Linux bridge agent",
-                            "host": "cloudvirt1036",
-                            "availability_zone": "",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-linuxbridge-agent"
-                        }
-                    ]
-                """,
-                "expected_agents": [
-                    NeutronAgent(
-                        agent_id="ce4f0afc-d0c0-411b-9faa-9e4f83c746b0",
-                        agent_type=NeutronAgentType.LINUX_BRIDGE_AGENT,
-                        host="cloudvirt1036",
-                        availability_zone="",
-                        alive=True,
-                        admin_state_up=True,
-                        binary="neutron-linuxbridge-agent",
-                    )
-                ],
-            },
-            "Metadata agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "id": "d475e07d-52b3-476e-9a4f-e63b21e1075e",
-                            "agent_type": "Metadata agent",
-                            "host": "cloudnet1004",
-                            "availability_zone": "",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-metadata-agent"
-                        }
-                    ]
-                """,
-                "expected_agents": [
-                    NeutronAgent(
-                        agent_id="d475e07d-52b3-476e-9a4f-e63b21e1075e",
-                        agent_type=NeutronAgentType.METADATA_AGENT,
-                        host="cloudnet1004",
-                        availability_zone="",
-                        alive=True,
-                        admin_state_up=True,
-                        binary="neutron-metadata-agent",
-                    )
-                ],
-            },
-            "DHCP agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "id": "0b2f519f-a5ab-4188-82bf-01431810d55a",
-                            "agent_type": "DHCP agent",
-                            "host": "cloudnet1003",
-                            "availability_zone": "nova",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-dhcp-agent"
-                        }
-                    ]
-                """,
-                "expected_agents": [
-                    NeutronAgent(
-                        agent_id="0b2f519f-a5ab-4188-82bf-01431810d55a",
-                        agent_type=NeutronAgentType.DHCP_AGENT,
-                        host="cloudnet1003",
-                        availability_zone="nova",
-                        alive=True,
-                        admin_state_up=True,
-                        binary="neutron-dhcp-agent",
-                    )
-                ],
-            },
-            "More than one agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "id": "0b2f519f-a5ab-4188-82bf-01431810d55a",
-                            "agent_type": "DHCP agent",
-                            "host": "cloudnet1003",
-                            "availability_zone": "nova",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-dhcp-agent"
-                        },
-                        {
-                            "id": "d475e07d-52b3-476e-9a4f-e63b21e1075e",
-                            "agent_type": "Metadata agent",
-                            "host": "cloudnet1004",
-                            "availability_zone": "",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-metadata-agent"
-                        }
-                    ]
-                """,
-                "expected_agents": [
-                    NeutronAgent(
-                        agent_id="0b2f519f-a5ab-4188-82bf-01431810d55a",
-                        agent_type=NeutronAgentType.DHCP_AGENT,
-                        host="cloudnet1003",
-                        availability_zone="nova",
-                        alive=True,
-                        admin_state_up=True,
-                        binary="neutron-dhcp-agent",
-                    ),
-                    NeutronAgent(
-                        agent_id="d475e07d-52b3-476e-9a4f-e63b21e1075e",
-                        agent_type=NeutronAgentType.METADATA_AGENT,
-                        host="cloudnet1004",
-                        availability_zone="",
-                        alive=True,
-                        admin_state_up=True,
-                        binary="neutron-metadata-agent",
-                    ),
-                ],
-            },
-        }
-    )
-)
-def test_NeutronController_agent_list_works(neutron_output: str, expected_agents: list[NeutronAgent]):
-    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
-    my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
-    my_controller = NeutronController(openstack_api=my_api)
-    fake_run_sync = fake_remote.query.return_value.run_sync
-
-    gotten_agents = my_controller.agent_list()
-
-    assert gotten_agents == expected_agents
-    fake_run_sync.assert_called_with(
-        cumin.transports.Command("bash -c 'source /root/novaenv.sh && neutron agent-list --format json'", ok_codes=[0]),
-        is_safe=True,
-        print_output=False,
-        print_progress_bars=False,
-        success_threshold=1,
-        batch_size=None,
-        batch_sleep=None,
     )
 
 
@@ -394,6 +214,8 @@ def test_NeutronController_router_list_works(neutron_output: str, expected_route
                         admin_state_up=True,
                         alive=True,
                         ha_state=NeutronAgentHAState.STANDBY,
+                        availability_zone=None,
+                        binary="",
                     ),
                 ],
             },
@@ -424,6 +246,8 @@ def test_NeutronController_router_list_works(neutron_output: str, expected_route
                         alive=True,
                         ha_state=NeutronAgentHAState.STANDBY,
                         agent_type=NeutronAgentType.L3_AGENT,
+                        availability_zone=None,
+                        binary="",
                     ),
                     NeutronAgent(
                         agent_id="970df1d1-505d-47a4-8d35-1b13c0dfe098",
@@ -432,6 +256,8 @@ def test_NeutronController_router_list_works(neutron_output: str, expected_route
                         alive=True,
                         ha_state=NeutronAgentHAState.ACTIVE,
                         agent_type=NeutronAgentType.L3_AGENT,
+                        availability_zone=None,
+                        binary="",
                     ),
                 ],
             },
@@ -603,14 +429,23 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
             "Linux bridge agent": {
                 "neutron_output": """
                     [
-                          {
-                            "id": "ce4f0afc-d0c0-411b-9faa-9e4f83c746b0",
-                            "agent_type": "Linux bridge agent",
-                            "host": "cloudvirt1036",
-                            "availability_zone": "",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-linuxbridge-agent"
+                        {
+                            "ID": "29547916-33cd-45d8-b33c-4947921ba728",
+                            "Agent Type": "Linux bridge agent",
+                            "Host": "cloudnet1005",
+                            "Availability Zone": null,
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-linuxbridge-agent"
+                        },
+                        {
+                            "ID": "fe76faf1-f9f4-4d27-ba31-345441e7b655",
+                            "Agent Type": "Linux bridge agent",
+                            "Host": "cloudvirt1056",
+                            "Availability Zone": null,
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-linuxbridge-agent"
                         }
                     ]
                 """,
@@ -620,13 +455,13 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
                 "neutron_output": """
                     [
                         {
-                            "id": "d475e07d-52b3-476e-9a4f-e63b21e1075e",
-                            "agent_type": "Metadata agent",
-                            "host": "cloudnet1004",
-                            "availability_zone": "",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-metadata-agent"
+                            "ID": "97b30d69-fd14-4061-a7df-601186626a3c",
+                            "Agent Type": "Metadata agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": null,
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-metadata-agent"
                         }
                     ]
                 """,
@@ -636,13 +471,13 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
                 "neutron_output": """
                     [
                         {
-                            "id": "0b2f519f-a5ab-4188-82bf-01431810d55a",
-                            "agent_type": "DHCP agent",
-                            "host": "cloudnet1003",
-                            "availability_zone": "nova",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-dhcp-agent"
+                            "ID": "e4f71e5d-e182-487d-8c5f-eb15f1ff2bf6",
+                            "Agent Type": "DHCP agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-dhcp-agent"
                         }
                     ]
                 """,
@@ -652,60 +487,42 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
                 "neutron_output": """
                     [
                         {
-                            "id": "4be214c8-76ef-40f8-9d5d-4c344d213311",
-                            "agent_type": "L3 agent",
-                            "host": "cloudnet1003",
-                            "availability_zone": "nova",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-l3-agent"
+                            "ID": "3f54b3c2-503f-4667-8263-859a259b3b21",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent"
                         }
                     ]
                 """,
-                "expected_cloudnets": ["cloudnet1003"],
+                "expected_cloudnets": ["cloudnet1006"],
             },
             "More than one agent": {
                 "neutron_output": """
                     [
                         {
-                            "id": "0b2f519f-a5ab-4188-82bf-01431810d55a",
-                            "agent_type": "DHCP agent",
-                            "host": "cloudnet1003",
-                            "availability_zone": "nova",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-dhcp-agent"
+                            "ID": "6a88c860-29fb-4a85-8aea-6a8877c2e035",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1005",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent"
                         },
                         {
-                            "id": "4be214c8-76ef-40f8-9d5d-4c344d213311",
-                            "agent_type": "L3 agent",
-                            "host": "cloudnet1004",
-                            "availability_zone": "nova",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-l3-agent"
-                        },
-                        {
-                            "id": "4be214c8-76ef-40f8-9d5d-4c344d213311",
-                            "agent_type": "L3 agent",
-                            "host": "cloudnet1003",
-                            "availability_zone": "nova",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-l3-agent"
-                        },
-                        {
-                            "id": "d475e07d-52b3-476e-9a4f-e63b21e1075e",
-                            "agent_type": "Metadata agent",
-                            "host": "cloudnet1004",
-                            "availability_zone": "",
-                            "alive": ":-)",
-                            "admin_state_up": true,
-                            "binary": "neutron-metadata-agent"
+                            "ID": "3f54b3c2-503f-4667-8263-859a259b3b21",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent"
                         }
                     ]
                 """,
-                "expected_cloudnets": ["cloudnet1003", "cloudnet1004"],
+                "expected_cloudnets": ["cloudnet1005", "cloudnet1006"],
             },
         }
     )
@@ -721,7 +538,7 @@ def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_clo
     assert sorted(gotten_agents) == sorted(expected_cloudnets)
     fake_run_sync.assert_called_with(
         cumin.transports.Command(
-            "bash -c 'source /root/novaenv.sh && neutron agent-list --format json'",
+            "env OS_PROJECT_ID=admin-monitoring wmcs-openstack network agent list -f json --os-cloud novaadmin",
             ok_codes=[0],
         ),
         is_safe=True,
@@ -762,7 +579,7 @@ def test_NeutronController_check_if_network_is_alive_does_not_raise(
     my_controller = NeutronController(openstack_api=my_api)
     partial_routers = [partial_router_from_full_router(router) for router in routers]
 
-    with patch.object(my_controller, "agent_list", MagicMock(return_value=agents)), patch.object(
+    with patch.object(my_api, "get_neutron_agents", MagicMock(return_value=agents)), patch.object(
         my_controller, "router_list", MagicMock(return_value=partial_routers)
     ), patch.object(my_controller, "router_show", MagicMock(side_effect=routers)):
         # assert it does not raise
@@ -822,7 +639,7 @@ def test_NeutronController_check_if_network_is_alive_raises(agents: list[Neutron
     my_controller = NeutronController(openstack_api=my_api)
     partial_routers = [partial_router_from_full_router(router) for router in routers]
 
-    with patch.object(my_controller, "agent_list", MagicMock(return_value=agents)), patch.object(
+    with patch.object(my_api, "get_neutron_agents", MagicMock(return_value=agents)), patch.object(
         my_controller, "router_list", MagicMock(return_value=partial_routers)
     ), patch.object(my_controller, "router_show", MagicMock(side_effect=routers)):
         with pytest.raises(NetworkUnhealthy):

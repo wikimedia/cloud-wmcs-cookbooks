@@ -16,8 +16,8 @@ from spicerack import RemoteHosts, Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.openstack.common import OpenstackAPI, get_node_cluster_name
-from wmcs_libs.openstack.neutron import NetworkUnhealthy, NeutronAgentType, NeutronAlerts, NeutronController
+from wmcs_libs.openstack.common import NeutronAgentType, OpenstackAPI, get_node_cluster_name
+from wmcs_libs.openstack.neutron import NetworkUnhealthy, NeutronAlerts, NeutronController
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
 
     def _check_network_setup_as_expected(self) -> None:
         l3_agents = [
-            agent for agent in self.neutron_controller.agent_list() if agent.agent_type == NeutronAgentType.L3_AGENT
+            agent for agent in self.openstack_api.get_neutron_agents() if agent.agent_type == NeutronAgentType.L3_AGENT
         ]
         # currently this is the same, but adding the check in case anything changes
         cloudnets = self.neutron_controller.get_cloudnets()
@@ -132,7 +132,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         LOGGER.info("Taking the node out of the cluster (setting admin-state-down to all it's agents)")
         self.neutron_controller.cloudnet_set_admin_down(cloudnet_host=host_name)
         if not self.force:
-            agents_on_cloudnet = [agent for agent in self.neutron_controller.agent_list() if agent.host == host_name]
+            agents_on_cloudnet = [agent for agent in self.openstack_api.get_neutron_agents() if agent.host == host_name]
             if any(agent.agent_type == NeutronAgentType.L3_AGENT for agent in agents_on_cloudnet):
                 LOGGER.info("This is an L3 agent node, waiting for the router handover if needed...")
                 self.neutron_controller.wait_for_l3_handover()

@@ -18,7 +18,7 @@ from wmcs_libs.common import (
     with_common_opts,
 )
 from wmcs_libs.inventory.openstack import OpenstackClusterName, OpenstackNodeRoleName
-from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.common import NeutronAgentType, OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
 
@@ -112,9 +112,9 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
 
     def get_neutron_service_list(self):
         """Get a list of registered neutron services + hosts from OpenStack"""
-        service_info = self.openstack_api.get_neutron_services()
+        agents = self.openstack_api.get_neutron_agents()
         # We never want to automatically restart the l3 agents, that can cause downtime.
-        return [(service["Host"], service["Binary"]) for service in service_info if "l3-agent" not in service["Binary"]]
+        return [(agent.host, agent.binary) for agent in agents if agent.agent_type != NeutronAgentType.L3_AGENT]
 
     def get_cinder_service_list(self):
         """Get a list of registered cinder services + hosts from OpenStack"""

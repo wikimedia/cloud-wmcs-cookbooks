@@ -14,7 +14,15 @@ from wmcs_libs.common import (
     CuminParams,
     OutputFormat,
 )
-from wmcs_libs.openstack.common import OpenstackAPI, OpenstackError, OpenstackID, OpenstackIdentifier, wait_for_it
+from wmcs_libs.openstack.common import (
+    NeutronAgentType,
+    NeutronPartialAgent,
+    OpenstackAPI,
+    OpenstackError,
+    OpenstackID,
+    OpenstackIdentifier,
+    wait_for_it,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,18 +49,6 @@ class CloudnetAdminUp(NeutronError):
 
 class NetworkUnhealthy(NeutronError):
     """Happens when there's not enough agents in one of the types to serve requests."""
-
-
-class NeutronAgentType(Enum):
-    """list of neutron agent types and their 'agent type' string.
-
-    Extracted from 'neutron agent-list --format json' on a full installation. Note that they are case sensitive.
-    """
-
-    L3_AGENT = "L3 agent"
-    LINUX_BRIDGE_AGENT = "Linux bridge agent"
-    DHCP_AGENT = "DHCP agent"
-    METADATA_AGENT = "Metadata agent"
 
 
 class NeutronAlerts(Enum):
@@ -193,16 +189,9 @@ class NeutronRouter(NeutronPartialRouter):
 
 
 @dataclass(frozen=True)
-class NeutronAgent:
-    """Neutron agent info."""
+class NeutronAgent(NeutronPartialAgent):
+    """Full Neutron agent info."""
 
-    agent_id: OpenstackID
-    agent_type: NeutronAgentType
-    host: str
-    alive: bool
-    admin_state_up: bool
-    availability_zone: str | None = None
-    binary: str | None = None
     ha_state: NeutronAgentHAState | None = None
 
     @classmethod
@@ -214,7 +203,8 @@ class NeutronAgent:
             admin_state_up=agent_data["admin_state_up"],
             alive=agent_data["alive"] == ":-)",
             agent_id=agent_data["id"],
-            binary=agent_data.get("binary", None),
+            # This will only be null on (broken) things still using the Neutron CLI.
+            binary=agent_data.get("binary", ""),
             availability_zone=agent_data.get("availability_zone", None),
             ha_state=NeutronAgentHAState(agent_data["ha_state"]) if "ha_state" in agent_data else None,
         )
@@ -229,10 +219,6 @@ class NeutronAgent:
             f"id:{self.agent_id} "
             f"binary:{self.binary if self.binary is not None else 'NotFetched'}"
         )
-
-    def is_healthy(self) -> bool:
-        """Check if the agent is healthy."""
-        return self.alive and self.admin_state_up
 
 
 class NeutronController(CommandRunnerMixin):
@@ -296,13 +282,6 @@ class NeutronController(CommandRunnerMixin):
         """Run a neutron command on a control node returning the raw string."""
         return super().run_raw(*command, json_output=json_output, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
-    def agent_list(self) -> list[NeutronAgent]:
-        """Get the list of neutron agents."""
-        return [
-            NeutronAgent.from_agent_data(agent_data=agent_data)
-            for agent_data in self.run_formatted_as_list("agent-list", cumin_params=CUMIN_SAFE_WITH_OUTPUT)
-        ]
-
     def agent_set_admin_up(self, agent_id: OpenstackID) -> None:
         """Set the given agent as admin-state-up (online)."""
         self._run_one_raw("agent-update", "--admin-state-up", agent_id, json_output=False)
@@ -313,7 +292,7 @@ class NeutronController(CommandRunnerMixin):
 
     def cloudnet_set_admin_down(self, cloudnet_host: str) -> None:
         """Given a cloudnet hostname, set all it's agents down, usually for maintenance or reboot."""
-        cloudnet_agents = [agent for agent in self.agent_list() if agent.host == cloudnet_host]
+        cloudnet_agents = [agent for agent in self.openstack_api.get_neutron_agents() if agent.host == cloudnet_host]
         for agent in cloudnet_agents:
             if agent.admin_state_up:
                 self.agent_set_admin_down(agent_id=agent.agent_id)
@@ -322,7 +301,7 @@ class NeutronController(CommandRunnerMixin):
 
     def cloudnet_set_admin_up(self, cloudnet_host: str) -> None:
         """Given a cloudnet hostname, set all it's agents up, usually after maintenance or reboot."""
-        cloudnet_agents = [agent for agent in self.agent_list() if agent.host == cloudnet_host]
+        cloudnet_agents = [agent for agent in self.openstack_api.get_neutron_agents() if agent.host == cloudnet_host]
         for agent in cloudnet_agents:
             if not agent.admin_state_up:
                 self.agent_set_admin_up(agent_id=agent.agent_id)
@@ -333,7 +312,7 @@ class NeutronController(CommandRunnerMixin):
         """Wait until the given cloudnet is set as admin down."""
 
         def cloudnet_admin_down():
-            all_agents = self.agent_list()
+            all_agents = self.openstack_api.get_neutron_agents()
             cloudnet_agents = [agent for agent in all_agents if agent.host == cloudnet_host]
             return all(not agent.admin_state_up for agent in cloudnet_agents)
 
@@ -348,7 +327,7 @@ class NeutronController(CommandRunnerMixin):
         """Wait until the given cloudnet is set as admin up."""
 
         def cloudnet_admin_up():
-            all_agents = self.agent_list()
+            all_agents = self.openstack_api.get_neutron_agents()
             cloudnet_agents = [agent for agent in all_agents if agent.host == cloudnet_host]
             return all(agent.admin_state_up for agent in cloudnet_agents)
 
@@ -386,7 +365,11 @@ class NeutronController(CommandRunnerMixin):
 
         Currently does that by checking the neutron agents running on those.
         """
-        return [agent.host for agent in self.agent_list() if agent.agent_type == NeutronAgentType.L3_AGENT]
+        return [
+            agent.host
+            for agent in self.openstack_api.get_neutron_agents()
+            if agent.agent_type == NeutronAgentType.L3_AGENT
+        ]
 
     def list_routers_on_agent(self, agent_id: OpenstackID) -> list[dict[str, Any]]:
         """Get the list of routers hosted a given agent."""
@@ -400,7 +383,7 @@ class NeutronController(CommandRunnerMixin):
 
         """
         cloudnets = self.get_cloudnets()
-        cloudnet_agents = [agent for agent in self.agent_list() if agent.host in cloudnets]
+        cloudnet_agents = [agent for agent in self.openstack_api.get_neutron_agents() if agent.host in cloudnets]
         for agent in cloudnet_agents:
             if not agent.admin_state_up or not agent.alive:
                 agents_str = "\n".join(str(agent) for agent in cloudnet_agents)

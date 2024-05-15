@@ -8,7 +8,15 @@ import pytest
 
 from wmcs_libs.common import CUMIN_SAFE_WITHOUT_OUTPUT, UtilsForTesting
 from wmcs_libs.inventory.openstack import OpenstackClusterName
-from wmcs_libs.openstack.common import OpenstackAPI, OpenstackBadQuota, OpenstackQuotaEntry, OpenstackQuotaName, Unit
+from wmcs_libs.openstack.common import (
+    NeutronAgentType,
+    NeutronPartialAgent,
+    OpenstackAPI,
+    OpenstackBadQuota,
+    OpenstackQuotaEntry,
+    OpenstackQuotaName,
+    Unit,
+)
 
 
 @pytest.mark.parametrize(
@@ -172,6 +180,186 @@ def test_summing_up_two_quota_entries(
     entry1 = OpenstackQuotaEntry.from_human_spec(name=quota_name, human_spec=human_spec1)
     entry2 = OpenstackQuotaEntry.from_human_spec(name=quota_name, human_spec=human_spec2)
     assert int(entry1.value) + int(entry2.value) == expected_sum
+
+
+@pytest.mark.parametrize(
+    **UtilsForTesting.to_parametrize(
+        test_cases={
+            "No cloudnets": {
+                "neutron_output": "[]",
+                "expected_agents": [],
+            },
+            "Linux bridge agent": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "29547916-33cd-45d8-b33c-4947921ba728",
+                            "Agent Type": "Linux bridge agent",
+                            "Host": "cloudnet1005",
+                            "Availability Zone": null,
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-linuxbridge-agent"
+                        }
+                    ]
+                """,
+                "expected_agents": [
+                    NeutronPartialAgent(
+                        agent_id="29547916-33cd-45d8-b33c-4947921ba728",
+                        agent_type=NeutronAgentType.LINUX_BRIDGE_AGENT,
+                        host="cloudnet1005",
+                        availability_zone=None,
+                        alive=True,
+                        admin_state_up=True,
+                        binary="neutron-linuxbridge-agent",
+                    ),
+                ],
+            },
+            "Metadata agent": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "97b30d69-fd14-4061-a7df-601186626a3c",
+                            "Agent Type": "Metadata agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": null,
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-metadata-agent"
+                        }
+                    ]
+                """,
+                "expected_agents": [
+                    NeutronPartialAgent(
+                        agent_id="97b30d69-fd14-4061-a7df-601186626a3c",
+                        agent_type=NeutronAgentType.METADATA_AGENT,
+                        host="cloudnet1006",
+                        availability_zone=None,
+                        alive=True,
+                        admin_state_up=True,
+                        binary="neutron-metadata-agent",
+                    ),
+                ],
+            },
+            "DHCP agent": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "e4f71e5d-e182-487d-8c5f-eb15f1ff2bf6",
+                            "Agent Type": "DHCP agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-dhcp-agent"
+                        }
+                    ]
+                """,
+                "expected_agents": [
+                    NeutronPartialAgent(
+                        agent_id="e4f71e5d-e182-487d-8c5f-eb15f1ff2bf6",
+                        agent_type=NeutronAgentType.DHCP_AGENT,
+                        host="cloudnet1006",
+                        availability_zone="nova",
+                        alive=True,
+                        admin_state_up=True,
+                        binary="neutron-dhcp-agent",
+                    ),
+                ],
+            },
+            "L3 agent": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "3f54b3c2-503f-4667-8263-859a259b3b21",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent"
+                        }
+                    ]
+                """,
+                "expected_agents": [
+                    NeutronPartialAgent(
+                        agent_id="3f54b3c2-503f-4667-8263-859a259b3b21",
+                        agent_type=NeutronAgentType.L3_AGENT,
+                        host="cloudnet1006",
+                        availability_zone="nova",
+                        alive=True,
+                        admin_state_up=True,
+                        binary="neutron-l3-agent",
+                    ),
+                ],
+            },
+            "More than one agent": {
+                "neutron_output": """
+                    [
+                        {
+                            "ID": "6a88c860-29fb-4a85-8aea-6a8877c2e035",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1005",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent"
+                        },
+                        {
+                            "ID": "3f54b3c2-503f-4667-8263-859a259b3b21",
+                            "Agent Type": "L3 agent",
+                            "Host": "cloudnet1006",
+                            "Availability Zone": "nova",
+                            "Alive": true,
+                            "State": true,
+                            "Binary": "neutron-l3-agent"
+                        }
+                    ]
+                """,
+                "expected_agents": [
+                    NeutronPartialAgent(
+                        agent_id="6a88c860-29fb-4a85-8aea-6a8877c2e035",
+                        agent_type=NeutronAgentType.L3_AGENT,
+                        host="cloudnet1005",
+                        availability_zone="nova",
+                        alive=True,
+                        admin_state_up=True,
+                        binary="neutron-l3-agent",
+                    ),
+                    NeutronPartialAgent(
+                        agent_id="3f54b3c2-503f-4667-8263-859a259b3b21",
+                        agent_type=NeutronAgentType.L3_AGENT,
+                        host="cloudnet1006",
+                        availability_zone="nova",
+                        alive=True,
+                        admin_state_up=True,
+                        binary="neutron-l3-agent",
+                    ),
+                ],
+            },
+        }
+    )
+)
+def test_OpenstackAPI_get_neutron_agents_works(neutron_output: str, expected_agents: list[NeutronPartialAgent]):
+    fake_remote = UtilsForTesting.get_fake_remote(responses=[neutron_output])
+    my_api = OpenstackAPI(remote=fake_remote, project="admin-monitoring", cluster_name=OpenstackClusterName.EQIAD1)
+    fake_run_sync = fake_remote.query.return_value.run_sync
+
+    gotten_agents = my_api.get_neutron_agents()
+    assert gotten_agents == expected_agents
+
+    fake_run_sync.assert_called_with(
+        cumin.transports.Command(
+            "env OS_PROJECT_ID=admin-monitoring wmcs-openstack network agent list -f json --os-cloud novaadmin",
+            ok_codes=[0],
+        ),
+        is_safe=True,
+        print_output=False,
+        print_progress_bars=False,
+        success_threshold=1,
+        batch_size=None,
+        batch_sleep=None,
+    )
 
 
 def test_OpenstackAPI_quota_show_happy_path():
