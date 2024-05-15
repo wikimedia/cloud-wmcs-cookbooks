@@ -168,7 +168,7 @@ class NeutronController(CommandRunnerMixin):
 
     def cloudnet_set_admin_down(self, cloudnet_host: str) -> None:
         """Given a cloudnet hostname, set all it's agents down, usually for maintenance or reboot."""
-        cloudnet_agents = [agent for agent in self.openstack_api.get_neutron_agents() if agent.host == cloudnet_host]
+        cloudnet_agents = self.openstack_api.get_neutron_agents(host=cloudnet_host)
         for agent in cloudnet_agents:
             if agent.admin_state_up:
                 self.agent_set_admin_down(agent_id=agent.agent_id)
@@ -177,7 +177,7 @@ class NeutronController(CommandRunnerMixin):
 
     def cloudnet_set_admin_up(self, cloudnet_host: str) -> None:
         """Given a cloudnet hostname, set all it's agents up, usually after maintenance or reboot."""
-        cloudnet_agents = [agent for agent in self.openstack_api.get_neutron_agents() if agent.host == cloudnet_host]
+        cloudnet_agents = self.openstack_api.get_neutron_agents(host=cloudnet_host)
         for agent in cloudnet_agents:
             if not agent.admin_state_up:
                 self.agent_set_admin_up(agent_id=agent.agent_id)

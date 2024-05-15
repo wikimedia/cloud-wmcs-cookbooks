@@ -132,7 +132,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         LOGGER.info("Taking the node out of the cluster (setting admin-state-down to all it's agents)")
         self.neutron_controller.cloudnet_set_admin_down(cloudnet_host=host_name)
         if not self.force:
-            agents_on_cloudnet = [agent for agent in self.openstack_api.get_neutron_agents() if agent.host == host_name]
+            agents_on_cloudnet = self.openstack_api.get_neutron_agents(host=host_name)
             if any(agent.agent_type == NeutronAgentType.L3_AGENT for agent in agents_on_cloudnet):
                 LOGGER.info("This is an L3 agent node, waiting for the router handover if needed...")
                 self.neutron_controller.wait_for_l3_handover()

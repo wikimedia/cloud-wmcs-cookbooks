@@ -449,9 +449,15 @@ class OpenstackAPI(CommandRunnerMixin):
         """Return designate's list of registered services"""
         return self.run_formatted_as_list("dns", "service", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
-    def get_neutron_agents(self) -> list[NeutronPartialAgent]:
+    def get_neutron_agents(self, *, host: str | None = None) -> list[NeutronPartialAgent]:
         """Return neutron's list of registered services"""
-        data = self.run_formatted_as_list("network", "agent", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        filter_args = []
+        if host:
+            filter_args.append(f"--host={host}")
+
+        data = self.run_formatted_as_list(
+            "network", "agent", "list", *filter_args, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
+        )
         return [NeutronPartialAgent.from_agent_data(agent) for agent in data]
 
     def get_routers(self) -> list[NeutronPartialRouter]:
