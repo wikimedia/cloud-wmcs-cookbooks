@@ -16,14 +16,6 @@ class NeutronError(OpenstackError):
     """Neutron specific openstack error."""
 
 
-class IncompleteData(NeutronError):
-    """Thrown when trying to act on an object without having loaded all it's data."""
-
-
-class CloudnetsUnhealthy(NeutronError):
-    """Happens when some of the cloudnets are not in a healthy state."""
-
-
 class CloudnetAdminDown(NeutronError):
     """Used to say the operation failed due to the cloudnet being admin down."""
 
