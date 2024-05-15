@@ -189,79 +189,6 @@ def test_NeutronController_list_routers_on_agent_works(neutron_output: str, expe
                 "neutron_output": "\n[]",
                 "expected_cloudnets": [],
             },
-            "Linux bridge agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "ID": "29547916-33cd-45d8-b33c-4947921ba728",
-                            "Agent Type": "Linux bridge agent",
-                            "Host": "cloudnet1005",
-                            "Availability Zone": null,
-                            "Alive": true,
-                            "State": true,
-                            "Binary": "neutron-linuxbridge-agent"
-                        },
-                        {
-                            "ID": "fe76faf1-f9f4-4d27-ba31-345441e7b655",
-                            "Agent Type": "Linux bridge agent",
-                            "Host": "cloudvirt1056",
-                            "Availability Zone": null,
-                            "Alive": true,
-                            "State": true,
-                            "Binary": "neutron-linuxbridge-agent"
-                        }
-                    ]
-                """,
-                "expected_cloudnets": [],
-            },
-            "OVS agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "ID": "ad1f63bc-8acb-4d2f-a07c-13d8f8c1c7bb",
-                            "Agent Type": "Open vSwitch agent",
-                            "Host": "cloudnet2005-dev",
-                            "Availability Zone": null,
-                            "Alive": true,
-                            "State": true,
-                            "Binary": "neutron-openvswitch-agent"
-                        }
-                    ]
-                """,
-                "expected_cloudnets": [],
-            },
-            "Metadata agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "ID": "97b30d69-fd14-4061-a7df-601186626a3c",
-                            "Agent Type": "Metadata agent",
-                            "Host": "cloudnet1006",
-                            "Availability Zone": null,
-                            "Alive": true,
-                            "State": true,
-                            "Binary": "neutron-metadata-agent"
-                        }
-                    ]
-                """,
-                "expected_cloudnets": [],
-            },
-            "DHCP agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "ID": "e4f71e5d-e182-487d-8c5f-eb15f1ff2bf6",
-                            "Agent Type": "DHCP agent",
-                            "Host": "cloudnet1006",
-                            "Availability Zone": "nova",
-                            "Alive": true,
-                            "State": true,
-                            "Binary": "neutron-dhcp-agent"
-                        }
-                    ]
-                """,
-                "expected_cloudnets": [],
-            },
             "L3 agent": {
                 "neutron_output": """
                     [
@@ -317,7 +244,7 @@ def test_NeutronController_get_cloudnets_works(neutron_output: str, expected_clo
     assert sorted(gotten_agents) == sorted(expected_cloudnets)
     fake_run_sync.assert_called_with(
         cumin.transports.Command(
-            "env OS_PROJECT_ID=admin-monitoring wmcs-openstack network agent list -f json --os-cloud novaadmin",
+            "env OS_PROJECT_ID=admin-monitoring wmcs-openstack network agent list --agent-type=l3 -f json --os-cloud novaadmin",  # noqa: E501
             ok_codes=[0],
         ),
         is_safe=True,

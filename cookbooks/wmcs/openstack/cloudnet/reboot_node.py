@@ -105,9 +105,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         return f"for host {self.fqdn_to_reboot}"
 
     def _check_network_setup_as_expected(self) -> None:
-        l3_agents = [
-            agent for agent in self.openstack_api.get_neutron_agents() if agent.agent_type == NeutronAgentType.L3_AGENT
-        ]
+        l3_agents = self.openstack_api.get_neutron_agents(agent_type=NeutronAgentType.L3_AGENT)
         # currently this is the same, but adding the check in case anything changes
         cloudnets = self.neutron_controller.get_cloudnets()
         if not cloudnets:

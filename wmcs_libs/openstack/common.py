@@ -261,6 +261,21 @@ class NeutronAgentType(Enum):
     DHCP_AGENT = "DHCP agent"
     METADATA_AGENT = "Metadata agent"
 
+    @property
+    def openstack_id(self) -> str:
+        """The short name used in OpenStack CLI commands for filtering."""
+        if self == NeutronAgentType.L3_AGENT:
+            return "l3"
+        if self == NeutronAgentType.OVS_AGENT:
+            return "open-vswitch"
+        if self == NeutronAgentType.LINUX_BRIDGE_AGENT:
+            return "linux-bridge"
+        if self == NeutronAgentType.DHCP_AGENT:
+            return "dhcp"
+        if self == NeutronAgentType.METADATA_AGENT:
+            return "metadata"
+        raise ValueError(f"Unknown agent type '{self}'!")
+
 
 class NeutronAgentHAState(Enum):
     """HA state for a neutron agent."""
@@ -476,11 +491,15 @@ class OpenstackAPI(CommandRunnerMixin):
         """Return designate's list of registered services"""
         return self.run_formatted_as_list("dns", "service", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
-    def get_neutron_agents(self, *, host: str | None = None) -> list[NeutronPartialAgent]:
+    def get_neutron_agents(
+        self, *, host: str | None = None, agent_type: NeutronAgentType | None = None
+    ) -> list[NeutronPartialAgent]:
         """Return neutron's list of registered services"""
         filter_args = []
         if host:
             filter_args.append(f"--host={host}")
+        if agent_type:
+            filter_args.append(f"--agent-type={agent_type.openstack_id}")
 
         data = self.run_formatted_as_list(
             "network", "agent", "list", *filter_args, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT

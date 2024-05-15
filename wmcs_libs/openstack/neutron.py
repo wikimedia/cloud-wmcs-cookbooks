@@ -212,11 +212,7 @@ class NeutronController(CommandRunnerMixin):
 
         Currently does that by checking the neutron agents running on those.
         """
-        return [
-            agent.host
-            for agent in self.openstack_api.get_neutron_agents()
-            if agent.agent_type == NeutronAgentType.L3_AGENT
-        ]
+        return [agent.host for agent in self.openstack_api.get_neutron_agents(agent_type=NeutronAgentType.L3_AGENT)]
 
     def list_routers_on_agent(self, agent_id: OpenstackID) -> list[dict[str, Any]]:
         """Get the list of routers hosted a given agent."""
