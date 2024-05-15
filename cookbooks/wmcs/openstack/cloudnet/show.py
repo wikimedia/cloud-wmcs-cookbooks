@@ -74,7 +74,7 @@ class ShowRunner(WMCSCookbookRunnerBase):
         )
         self.neutron_controller = NeutronController(openstack_api=self.openstack_api)
 
-    def run_with_proxy(self) -> None:
+    def run(self) -> None:
         """Main entry point"""
         all_agents = self.openstack_api.get_neutron_agents()
         l3_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.L3_AGENT]
