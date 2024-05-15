@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any
 
-from wmcs_libs.common import CUMIN_UNSAFE_WITHOUT_OUTPUT, CommandRunnerMixin, CuminParams, OutputFormat
 from wmcs_libs.openstack.common import NeutronAgentHAState, NeutronAgentType, OpenstackAPI, OpenstackError, wait_for_it
 
 LOGGER = logging.getLogger(__name__)
@@ -34,66 +32,16 @@ class NeutronAlerts(Enum):
     NEUTRON_AGENT_DOWN = "NeutronAgentDown"
 
 
-class NeutronController(CommandRunnerMixin):
+# TODO: This class should eventually be folded into the OpenstackAPI
+# class. It was originally separate because the Neutron CLI was separate,
+# but now all the logic for talking with Neutron has been moved there already
+# and only various tiny helper functions remain.
+class NeutronController:
     """Neutron specific controller"""
 
     def __init__(self, openstack_api: OpenstackAPI):
         """Controller to handle neutron commands and operations."""
         self.openstack_api = openstack_api
-        self.control_node = openstack_api.control_node
-        super().__init__(command_runner_node=self.control_node)
-
-    def _get_full_command(self, *command: str, json_output: bool = True, project_as_arg: bool = False):
-        cmd = ["source", "/root/novaenv.sh", "&&", "neutron", *command]
-        if json_output:
-            cmd.extend(["--format", "json"])
-
-        script = " ".join(cmd)
-        # we need sudo, and the sourced credentials, so we have to wrap it in a bash command
-        return ["bash", "-c", f"'{script}'"]
-
-    def run_formatted_as_list(
-        self,
-        *command,
-        capture_errors: bool = False,
-        project_as_arg: bool = False,
-        skip_first_line: bool = True,
-        cumin_params: CuminParams | None = None,
-    ) -> list[Any]:
-        """Run a neutron command on a control node forcing json output."""
-        # neutron command return a first line in the output that is a warning, not part of the json
-        return super().run_formatted_as_list(
-            *command,
-            skip_first_line=skip_first_line,
-            capture_errors=capture_errors,
-            project_as_arg=project_as_arg,
-            cumin_params=CuminParams.replace(cumin_params, print_output=False, print_progress_bars=False),
-        )
-
-    def run_formatted_as_dict(
-        self,
-        *command: str,
-        capture_errors: bool = False,
-        skip_first_line: bool = True,
-        project_as_arg: bool = False,
-        cumin_params: CuminParams | None = None,
-        try_format: OutputFormat = OutputFormat.JSON,
-        last_line_only: bool = False,
-    ) -> dict[str, Any]:
-        """Run a neutron command on a control node forcing json output."""
-        return super().run_formatted_as_dict(
-            *command,
-            capture_errors=capture_errors,
-            cumin_params=CuminParams.replace(cumin_params, print_output=False, print_progress_bars=False),
-            skip_first_line=skip_first_line,
-            last_line_only=last_line_only,
-            try_format=try_format,
-            project_as_arg=project_as_arg,
-        )
-
-    def _run_one_raw(self, *command: str, json_output: bool = False) -> str:
-        """Run a neutron command on a control node returning the raw string."""
-        return super().run_raw(*command, json_output=json_output, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
     def cloudnet_set_admin_down(self, cloudnet_host: str) -> None:
         """Given a cloudnet hostname, set all it's agents down, usually for maintenance or reboot."""
