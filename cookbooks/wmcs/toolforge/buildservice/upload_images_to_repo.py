@@ -15,9 +15,9 @@ import argparse
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
-from spicerack.remote import RemoteHosts
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.k8s.images import ImageController
 
 
 class UploadImagesToRepo(CookbookBase):
@@ -121,40 +121,34 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         self.upload_distroless = upload_distroless
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
-    def _update_image(self, uploader_node: RemoteHosts, pull_url: str, push_url: str) -> str:
-        self.spicerack.sal_logger.info("Updating %s", push_url)
-        run_one_raw(command=["docker", "pull", pull_url], node=uploader_node)
-        run_one_raw(command=["docker", "tag", pull_url, push_url], node=uploader_node)
-        return run_one_raw(command=["docker", "push", push_url], node=uploader_node)
-
     def run(self) -> None:
         """Main entry point"""
         remote = self.spicerack.remote()
         uploader_node = remote.query(f"D{{{self.uploader_node}}}", use_sudo=True)
+        image_ctrl = ImageController(spicerack=self.spicerack, uploader_node=uploader_node)
 
         if self.tekton_version:
             for image_name in self.TEKTON_IMAGES:
                 pull_url = f"{self.TEKTON_COMMON_PATH}/{image_name}:{self.tekton_version}"
                 push_url = f"{self.image_repo_url}/toolforge-tektoncd-pipeline-cmd-{image_name}:{self.tekton_version}"
-                self._update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
+                image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
 
         if self.bash_version:
             pull_url = f"docker.io/library/bash:{self.bash_version}"
             push_url = f"{self.image_repo_url}/toolforge-library-bash:{self.bash_version}"
-            self._update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
+            image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
 
         if self.lifecycle_version:
             pull_url = f"docker.io/buildpacksio/lifecycle:{self.lifecycle_version}"
             push_url = f"{self.image_repo_url}/toolforge-buildpacksio-lifecycle:{self.lifecycle_version}"
-            self._update_image(uploader_node=uploader_node, pull_url=pull_url, push_url=push_url)
+            image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
 
         if self.upload_distroless:
             # the distroless/base:debug image contains sh entrypoint which is required
             # for the tekton pipeline to work. Only the :debug one contains it
             pull_url = "gcr.io/distroless/base:debug"
             push_url = f"{self.image_repo_url}/toolforge-distroless-base-debug:latest"
-            self._update_image(
-                uploader_node=uploader_node,
+            image_ctrl.update_image(
                 pull_url=pull_url,
                 push_url=push_url,
             )
