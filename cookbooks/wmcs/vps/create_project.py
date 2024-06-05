@@ -113,13 +113,8 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         """Main entry point"""
         if "_" in self.common_opts.project:
             ask_confirmation(
-                "An underscore is generally not a valid character in a DNS label, "
-                "are you sure you want to use one in a project name?"
-            )
-        if "-" in self.common_opts.project:
-            ask_confirmation(
-                "Using a dash in a project name will cause issues with Ceph RGW (Swift/S3), "
-                "are you sure you want to use this project name?"
+                "Project names should generally be limited to alphanumeric characters and dashes. "
+                "Are you sure you want to use an underscore in the name?"
             )
 
         self.openstack_api.project_create(project=self.common_opts.project, description=self.description)
