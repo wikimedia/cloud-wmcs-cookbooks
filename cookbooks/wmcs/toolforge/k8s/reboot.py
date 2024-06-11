@@ -64,6 +64,12 @@ class ToolforgeK8sReboot(CookbookBase):
             action="store_true",
             help="operate on all cluster worker nodes",
         )
+        parser.add_argument(
+            "--all-nfs-workers",
+            required=False,
+            action="store_true",
+            help="operate on all cluster worker nodes",
+        )
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
@@ -77,6 +83,7 @@ class ToolforgeK8sReboot(CookbookBase):
             hostname_list=args.hostname_list,
             do_all=args.all,
             do_all_workers=args.all_workers,
+            do_all_nfs_workers=args.all_nfs_workers,
         )
 
 
@@ -90,6 +97,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
         hostname_list: list[str],
         do_all: bool,
         do_all_workers: bool,
+        do_all_nfs_workers: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
         """Init"""
@@ -99,6 +107,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
         self.hostname_list = hostname_list
         self.do_all = do_all
         self.do_all_workers = do_all_workers
+        self.do_all_nfs_workers = do_all_nfs_workers
         self.domain = f"{self.common_opts.project}.eqiad1.wikimedia.cloud"
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
@@ -106,15 +115,17 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
             project=self.common_opts.project,
         )
 
-        if (do_all or do_all_workers) and hostname_list:
-            raise Exception("--all/--all-workers and --hostname-list are mutually exclusive")
+        if (do_all or do_all_workers or do_all_nfs_workers) and hostname_list:
+            raise Exception("--all/--all-workers/--all-nfs-workers and --hostname-list are mutually exclusive")
 
-        if not do_all and not hostname_list and not do_all_workers:
-            raise Exception("either --all, --all-workers or --hostname-list needs to be specified")
+        if not do_all and not hostname_list and not do_all_workers and not do_all_nfs_workers:
+            raise Exception("either --all, --all-workers, --all-nfs-workers or --hostname-list needs to be specified")
 
     @property
     def runtime_description(self) -> str:
         """Return a nicely formatted string that represents the cookbook action."""
+        if self.do_all_nfs_workers:
+            return "for all NFS workers"
         if self.do_all_workers:
             return "for all workers"
         if self.do_all:
@@ -127,11 +138,13 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
         k8s_controller = KubernetesController(self.spicerack.remote(), control_node_fqdn)
         LOGGER.info("INFO: using control node %s", control_node_fqdn)
 
-        if self.do_all or self.do_all_workers:
+        if self.do_all or self.do_all_workers or self.do_all_nfs_workers:
             # in reverse order, so the controllers are done last!
             self.hostname_list = k8s_controller.get_nodes_hostnames()[::-1]
 
-        if self.do_all_workers:
+        if self.do_all_nfs_workers:
+            self.hostname_list = [node for node in self.hostname_list if "-worker-nfs-" in node]
+        elif self.do_all_workers:
             self.hostname_list = [node for node in self.hostname_list if "-worker-" in node]
 
         for node_hostname in self.hostname_list:
