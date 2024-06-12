@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=too-many-arguments,too-many-lines
+# pylint: disable=too-many-arguments
 """Openstack generic related code."""
 from __future__ import annotations
 
@@ -942,49 +942,6 @@ class OpenstackAPI(CommandRunnerMixin):
                     f"{new_quotas[new_quota.name]} quota of {new_quotas[new_quota.name].value} "
                     f"does not match expected value of {new_quota.value}"
                 )
-
-    def flavor_create(
-        self,
-        vcpus: int,
-        ram_gb: int,
-        disk_gb: int,
-        public: bool,
-        project: str,
-        disk_read_iops_sec: int,
-        disk_write_iops_sec: int,
-        disk_total_bytes_sec: int,
-        generation: int = 3,
-    ) -> dict[str, Any]:
-        """Create a new flavor."""
-        name = f"g{generation}.cores{vcpus}.ram{ram_gb}.disk{disk_gb}"
-
-        if not public:
-            # per-project flavors still have to be uniquely named
-            name += f".{project}"
-
-        command = [
-            "flavor",
-            "create",
-            f"--ram={ram_gb * 1024}",
-            f"--disk={disk_gb}",
-            f"--vcpus={vcpus}",
-            '--property "aggregate_instance_extra_specs:ceph=true"',
-            f'--property "quota:disk_read_iops_sec={disk_read_iops_sec}"',
-            f'--property "quota:disk_write_iops_sec={disk_write_iops_sec}"',
-            f'--property "quota:disk_total_bytes_sec={disk_total_bytes_sec}"',
-        ]
-        if public:
-            command.append("--public")
-        else:
-            command.extend(
-                [
-                    "--private",
-                    f"--project='{project}'",
-                ]
-            )
-        command.append(name)
-
-        return self.run_formatted_as_dict(*command)
 
     def role_list_assignments(self, user_name: OpenstackName) -> list[dict[str, Any]]:
         """List the assignments for a user in the project."""
