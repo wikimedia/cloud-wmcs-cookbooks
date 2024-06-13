@@ -30,8 +30,8 @@ from wmcs_libs.openstack.common import OpenstackAPI, OpenstackClusterName, Opens
 
 LOGGER = logging.getLogger(__name__)
 
-FLAVOR = "g3.cores1.ram1.disk20"
-IMAGE = "debian-11.0-bullseye"
+FLAVOR = "g4.cores1.ram1.disk20"
+IMAGE = "debian-12.0-bookworm"
 
 
 class EnsureCanaryVM(CookbookBase):
