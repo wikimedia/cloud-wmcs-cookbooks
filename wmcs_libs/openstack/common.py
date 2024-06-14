@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-lines
 """Openstack generic related code."""
 from __future__ import annotations
 
 import logging
 import re
 import time
+from collections.abc import Collection
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Callable, NamedTuple, Type, Union, cast
 
 import yaml
 from cumin.transports import Command
+from spicerack.decorators import retry
 from spicerack.remote import Remote, RemoteHosts
 
 from wmcs_libs.common import (
@@ -546,7 +548,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def port_get_for_server(self, server_id: OpenstackID) -> list[NeutronPartialPort]:
         """Get ports for a specified server."""
-        return self._port_get(port_filter=[f'--server="{server_id }"'])
+        return self._port_get(port_filter=[f'--server="{server_id}"'])
 
     def port_get_by_ip(self, ip_address: str) -> list[NeutronPartialPort]:
         """Get ports for specified IP address"""
@@ -610,6 +612,37 @@ class OpenstackAPI(CommandRunnerMixin):
         but maybe not).
         """
         self.run_raw("server", "reboot", "--hard", name_to_reboot, json_output=False)
+
+    @retry(
+        tries=16,
+        backoff_mode="power",
+        failure_message="Server is in unexpected status",
+        exceptions=(OpenstackError,),
+    )
+    def _server_wait_for_state(self, server: OpenstackIdentifier, states: Collection[str]) -> None:
+        """Wait for a server to be in a specific state."""
+        # TODO: should states be an Enum here?
+        server_state = self.server_show(server).get("status")
+        if server_state not in states:
+            raise OpenstackError(f"Server status is '{server_state}', not in any of {', '.join(states)}")
+
+    def server_start(self, server: OpenstackIdentifier):
+        """Stop a server."""
+        self.run_raw("server", "start", server, json_output=False)
+        self._server_wait_for_state(server=server, states=["ACTIVE"])
+
+    def server_stop(self, server: OpenstackIdentifier):
+        """Stop a server."""
+        self.run_raw("server", "stop", server, json_output=False)
+        self._server_wait_for_state(server=server, states=["SHUTOFF"])
+
+    def server_resize(self, server: OpenstackIdentifier, new_flavor_name: OpenstackName) -> None:
+        """Resizes a server to a given flavor."""
+        orig_status = self.server_show(server).get("status")
+        self.run_raw("server", "resize", "--flavor", new_flavor_name, server, json_output=False)
+        self._server_wait_for_state(server=server, states=["VERIFY_RESIZE"])
+        self.run_raw("server", "resize", "confirm", server, json_output=False)
+        self._server_wait_for_state(server=server, states=[orig_status])
 
     def volume_create(self, name: OpenstackName, size: int) -> str:
         """Create a volume and return the ID of the created volume.
