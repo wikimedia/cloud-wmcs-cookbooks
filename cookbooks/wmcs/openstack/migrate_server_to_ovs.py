@@ -94,11 +94,12 @@ class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
         old_flavor: str = server_data["flavor"].split(" ")[0]
 
         if old_flavor in (
+            "g3.cores1.ram1.disk20",
             "g3.cores1.ram2.disk20",
             "g3.cores2.ram4.disk20",
             "g3.cores4.ram8.disk20",
             "g3.cores8.ram16.disk20",
-            "g3.cores4.ram8.disk20",
+            "g3.cores4.ram8.disk20.ephem40",
             "g3.cores8.ram16.disk20.ephem140",
         ):
             return old_flavor.replace("g3.", "g4.")
