@@ -627,7 +627,7 @@ class OpenstackAPI(CommandRunnerMixin):
             raise OpenstackError(f"Server status is '{server_state}', not in any of {', '.join(states)}")
 
     def server_start(self, server: OpenstackIdentifier):
-        """Stop a server."""
+        """Start a server."""
         self.run_raw("server", "start", server, json_output=False)
         self._server_wait_for_state(server=server, states=["ACTIVE"])
 
