@@ -614,7 +614,7 @@ class OpenstackAPI(CommandRunnerMixin):
         self.run_raw("server", "reboot", "--hard", name_to_reboot, json_output=False)
 
     @retry(
-        tries=16,
+        tries=8,
         backoff_mode="power",
         failure_message="Server is in unexpected status",
         exceptions=(OpenstackError,),
