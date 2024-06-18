@@ -101,6 +101,7 @@ class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
             "g3.cores8.ram16.disk20",
             "g3.cores4.ram8.disk20.ephem40",
             "g3.cores8.ram16.disk20.ephem140",
+            "g3.cores8.ram24.disk20.ephemeral40.4xiops",
         ):
             return old_flavor.replace("g3.", "g4.")
 
