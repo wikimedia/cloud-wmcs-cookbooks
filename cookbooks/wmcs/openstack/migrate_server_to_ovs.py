@@ -93,17 +93,29 @@ class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
         # the 'flavor' property is something like "g3.cores2.ram4.disk20 (g3.cores2.ram4.disk20)"
         old_flavor: str = server_data["flavor"].split(" ")[0]
 
+        flavor_map = {
+            "g3.cores16.ram34.disk20": "g4.cores16.ram32.disk20",
+            "g3.cores16.ram36.disk20": "g4.cores16.ram32.disk20",
+            "g3.cores8.ram36.disk20": "g4.cores8.ram32.disk20",
+            "g2.cores1.ram2.disk20": "g4.cores1.ram2.disk20",
+        }
+
         if old_flavor in (
             "g3.cores1.ram1.disk20",
             "g3.cores1.ram2.disk20",
             "g3.cores2.ram4.disk20",
             "g3.cores4.ram8.disk20",
             "g3.cores8.ram16.disk20",
+            "g3.cores8.ram32.disk20",
             "g3.cores4.ram8.disk20.ephem40",
             "g3.cores8.ram16.disk20.ephem140",
             "g3.cores8.ram24.disk20.ephemeral40.4xiops",
+            "g3.cores16.ram16.disk20",
+            "g3.cores16.ram32.disk20",
         ):
             return old_flavor.replace("g3.", "g4.")
+        if old_flavor in flavor_map:
+            return flavor_map[old_flavor]
 
         raise RuntimeError(f"Unable to determine new flavor to replace '{old_flavor}'")
 
