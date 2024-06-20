@@ -623,9 +623,9 @@ class OpenstackAPI(CommandRunnerMixin):
         )
         return NeutronFloatingIP.from_ip_data(data)
 
-    def server_show(self, vm_name: OpenstackIdentifier) -> dict[str, Any]:
+    def server_show(self, vm_name_or_id: OpenstackIdentifier) -> dict[str, Any]:
         """Get the information for a VM."""
-        return self.run_formatted_as_dict("server", "show", vm_name, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        return self.run_formatted_as_dict("server", "show", vm_name_or_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
     def server_list(self, long: bool = False, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Retrieve the list of servers for the project."""

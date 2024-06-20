@@ -87,7 +87,7 @@ class VMConsoleRunner(WMCSCookbookRunnerBase):
 
     def run(self) -> None:
         """Main entry point"""
-        vm_info = self.openstack_api.server_show(vm_name=self.vm_name)
+        vm_info = self.openstack_api.server_show(self.vm_name)
         hypervisor_fqdn = vm_info["OS-EXT-SRV-ATTR:hypervisor_hostname"]
         libvirt_vmid = vm_info["OS-EXT-SRV-ATTR:instance_name"]
         LOGGER.info(

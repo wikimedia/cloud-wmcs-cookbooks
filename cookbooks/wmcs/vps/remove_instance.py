@@ -168,7 +168,7 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
             return 1
 
         node_fqdn = f"{self.name_to_remove}.{self.common_opts.project}.{self.cluster_name.value}.wikimedia.cloud"
-        if self.openstack_api.server_show(vm_name=self.name_to_remove).get("status") == "SHUTOFF":
+        if self.openstack_api.server_show(self.name_to_remove).get("status") == "SHUTOFF":
             LOGGER.info("Server is shutoff")
             remote = None
             puppet_hosts = None
