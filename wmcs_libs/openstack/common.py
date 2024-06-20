@@ -627,6 +627,25 @@ class OpenstackAPI(CommandRunnerMixin):
         """Get the information for a VM."""
         return self.run_formatted_as_dict("server", "show", vm_name_or_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
+    def db_instance_reboot(self, db_instance_id: OpenstackIdentifier) -> None:
+        """Restart guest agent on db instance."""
+        self.run_raw(
+            "database", "instance", "reboot", db_instance_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT, json_output=False
+        )
+        self._db_instance_wait_for_status(db_instance_id=db_instance_id, states=["HEALTHY"])
+
+    def db_instance_show(self, db_instance_id: OpenstackIdentifier) -> dict[str, Any]:
+        """Get the information for a db instance."""
+        return self.run_formatted_as_dict(
+            "database", "instance", "show", db_instance_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
+        )
+
+    def db_instance_resize(self, db_instance_id: OpenstackIdentifier, new_flavor_name: OpenstackName) -> None:
+        """Resizes a db instance to a given flavor."""
+        orig_status = self.db_instance_show(db_instance_id).get("status")
+        self.run_raw("database", "instance", "resize", "flavor", db_instance_id, new_flavor_name, json_output=False)
+        self._db_instance_wait_for_state(db_instance_id=db_instance_id, states=[orig_status])
+
     def server_list(self, long: bool = False, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Retrieve the list of servers for the project."""
         _long = "--long" if long else ""
@@ -684,6 +703,32 @@ class OpenstackAPI(CommandRunnerMixin):
         server_state = self.server_show(server).get("status")
         if server_state not in states:
             raise OpenstackError(f"Server status is '{server_state}', not in any of {', '.join(states)}")
+
+    @retry(
+        tries=8,
+        backoff_mode="power",
+        failure_message="Db instance is in unexpected status",
+        exceptions=(OpenstackError,),
+    )
+    def _db_instance_wait_for_state(self, db_instance_id: OpenstackIdentifier, states: Collection[str]) -> None:
+        """Wait for a server to be in a specific state."""
+        # TODO: should states be an Enum here?
+        server_state = self.db_instance_show(db_instance_id).get("status")
+        if server_state not in states:
+            raise OpenstackError(f"Db instance status is '{server_state}', not in any of {', '.join(states)}")
+
+    @retry(
+        tries=8,
+        backoff_mode="power",
+        failure_message="Db instance has unexpected operating status",
+        exceptions=(OpenstackError,),
+    )
+    def _db_instance_wait_for_status(self, db_instance_id: OpenstackIdentifier, states: Collection[str]) -> None:
+        """Wait for a server to be in a specific state."""
+        # TODO: should states be an Enum here?
+        server_state = self.db_instance_show(db_instance_id).get("operating_status")
+        if server_state not in states:
+            raise OpenstackError(f"Db instance operating status is '{server_state}', not in any of {', '.join(states)}")
 
     def server_start(self, server: OpenstackIdentifier):
         """Start a server."""
