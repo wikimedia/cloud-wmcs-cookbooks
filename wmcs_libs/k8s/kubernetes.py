@@ -242,7 +242,7 @@ class KubernetesController:
                 # resource. They can't be evicted either.
                 # We assume that everything else can be evicted.
                 ref["kind"] == "Node" or ref["kind"] == "DaemonSet"
-                for ref in pod["metadata"]["ownerReferences"]
+                for ref in pod["metadata"].get("ownerReferences", [])
             )
         ]
 
