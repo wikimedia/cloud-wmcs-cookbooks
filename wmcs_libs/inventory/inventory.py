@@ -105,7 +105,7 @@ _INVENTORY = {
                         ],
                         # TODO: extract the replicas from the primary configuration if possible
                         ToolforgeToolsDBNodeRoleName.REPLICA: [
-                            "tools-db-2.tools.eqiad1.wikimedia.cloud",
+                            "tools-db-3.tools.eqiad1.wikimedia.cloud",
                         ],
                     },
                 ),
