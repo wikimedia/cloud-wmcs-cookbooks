@@ -9,6 +9,7 @@ import time
 from collections.abc import Collection
 from dataclasses import dataclass
 from enum import Enum, auto
+from ipaddress import IPv4Address
 from typing import Any, Callable, NamedTuple, Type, Union, cast
 
 import yaml
@@ -60,6 +61,13 @@ def get_gateway_nodes(cluster_name: OpenstackClusterName) -> list[str]:
 def _quote(mystr: str) -> str:
     """Wraps the given string in single quotes."""
     return f"'{mystr}'"
+
+
+def _if_not_empty(data: str) -> str | None:
+    """Returns the given string if it's not empty, and None if it."""
+    if data == "":
+        return None
+    return data
 
 
 def wait_for_it(
@@ -409,6 +417,45 @@ class NeutronPartialPort:
         )
 
 
+@dataclass(frozen=True)
+class NeutronPort(NeutronPartialPort):
+    """Represents the full details for a Neutron port.
+
+    We are only storing the fields we are using, if you need more please add them."""
+
+    device_id: OpenstackID | None
+    device_owner: str | None
+
+    @classmethod
+    def from_port_data(cls, port_data: dict[str, Any]) -> "NeutronPort":
+        return cls(
+            port_id=port_data["id"],
+            port_name=port_data["name"],
+            mac_address=port_data["mac_address"],
+            device_id=_if_not_empty(port_data["device_id"]),
+            device_owner=_if_not_empty(port_data["device_owner"]),
+        )
+
+
+@dataclass(frozen=True)
+class NeutronFloatingIP:
+    """Represents a Neutron floating IP address.
+
+    We are only storing the fields we are using, if you need more please add them."""
+
+    floating_ip_id: OpenstackID
+    floating_ip_address: IPv4Address
+    port_id: OpenstackID | None
+
+    @classmethod
+    def from_ip_data(cls, ip_data: dict[str, Any]) -> "NeutronFloatingIP":
+        return cls(
+            floating_ip_id=ip_data["id"],
+            floating_ip_address=IPv4Address(ip_data["floating_ip_address"]),
+            port_id=ip_data["port_id"],
+        )
+
+
 class OpenstackAPI(CommandRunnerMixin):
     """Class to interact with the Openstack API (indirectly for now)."""
 
@@ -554,6 +601,11 @@ class OpenstackAPI(CommandRunnerMixin):
         """Get ports for specified IP address"""
         return self._port_get(port_filter=[f'--fixed-ip="ip-address={ip_address}"'])
 
+    def port_show(self, port_id: OpenstackID) -> NeutronPort:
+        """Show information about a port."""
+        data = self.run_formatted_as_dict("port", "show", port_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        return NeutronPort.from_port_data(data)
+
     def zone_get(self, name) -> list[dict[str, Any]]:
         """Get zone record for specified dns zone"""
         return self.run_formatted_as_list("zone", "list", "--name", name, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
@@ -563,6 +615,13 @@ class OpenstackAPI(CommandRunnerMixin):
         return self.run_formatted_as_dict(
             "recordset", "create", "--type", record_type, "--record", record, zone_id, name
         )
+
+    def floating_ip_show(self, address: IPv4Address) -> NeutronFloatingIP:
+        """Show information about a floating IP address."""
+        data = self.run_formatted_as_dict(
+            "floating", "ip", "show", str(address), cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
+        )
+        return NeutronFloatingIP.from_ip_data(data)
 
     def server_show(self, vm_name: OpenstackIdentifier) -> dict[str, Any]:
         """Get the information for a VM."""
@@ -643,6 +702,14 @@ class OpenstackAPI(CommandRunnerMixin):
         self._server_wait_for_state(server=server, states=["VERIFY_RESIZE"])
         self.run_raw("server", "resize", "confirm", server, json_output=False)
         self._server_wait_for_state(server=server, states=[orig_status])
+
+    def server_add_floating_ip(self, server: OpenstackIdentifier, floating_ip: IPv4Address) -> None:
+        """Add a floating IP address to a server."""
+        self.run_raw("server", "add", "floating", "ip", server, str(floating_ip), json_output=False)
+
+    def server_remove_floating_ip(self, server: OpenstackIdentifier, floating_ip: IPv4Address) -> None:
+        """Remove a floating IP address from a server."""
+        self.run_raw("server", "remove", "floating", "ip", server, str(floating_ip), json_output=False)
 
     def volume_create(self, name: OpenstackName, size: int) -> str:
         """Create a volume and return the ID of the created volume.
