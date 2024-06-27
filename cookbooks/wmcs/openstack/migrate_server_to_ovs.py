@@ -98,6 +98,7 @@ class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
             "g3.cores16.ram36.disk20": "g4.cores16.ram32.disk20",
             "g3.cores8.ram36.disk20": "g4.cores8.ram32.disk20",
             "g2.cores1.ram2.disk20": "g4.cores1.ram2.disk20",
+            "g3.cores2.ram80.disk40.private": "g3.cores2.ram8.disk40",
         }
 
         if old_flavor in (
@@ -107,6 +108,7 @@ class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
             "g3.cores4.ram8.disk20",
             "g3.cores8.ram16.disk20",
             "g3.cores8.ram32.disk20",
+            "g3.cores24.ram122.disk20",
             "g3.cores4.ram8.disk20.ephem40",
             "g3.cores8.ram16.disk20.ephem140",
             "g3.cores8.ram24.disk20.ephemeral40.4xiops",
@@ -115,6 +117,7 @@ class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
             "g3.cores16.ram32.disk20",
             "g3.cores16.ram64.disk20.10xiops",
             "g3.cores8.ram36.disk20.4xiops",
+            "g3.cores16.ram64.disk20.maxiops",
             "g3.cores8.ram24.disk20.ephemeral60.4xiops",
             "g3.cores1.ram2.disk20.localdisk",
             "g3.cores2.ram4.disk20.localdisk",
