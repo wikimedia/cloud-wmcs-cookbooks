@@ -13,7 +13,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.alerts import downtime_host
+from wmcs_libs.alerts import silence_host
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 
@@ -81,12 +81,12 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
             print("host: %s" % host)
             hostname = host.split(".", 1)[0]
             downtime_ids.append(
-                downtime_host(spicerack=self.spicerack, host_name=hostname, comment="Setting maintenance mode.")
+                silence_host(spicerack=self.spicerack, host_name=hostname, comment="Setting maintenance mode.")
             )
 
         # Also downtime the lvs alert if we're in eqiad1
         if self.deployment == OpenstackClusterName.EQIAD1:
-            downtime_host(spicerack=self.spicerack, host_name="labweb-ssl", comment="Setting maintenance mode.")
+            silence_host(spicerack=self.spicerack, host_name="labweb-ssl", comment="Setting maintenance mode.")
 
         remote_hosts.run_sync("touch /etc/openstack-dashboard/maintenance.mode")
         remote_hosts.run_sync("systemctl reload apache2")

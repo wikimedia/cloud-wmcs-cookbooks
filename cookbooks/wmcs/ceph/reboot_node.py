@@ -15,7 +15,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.alerts import downtime_host, uptime_host
+from wmcs_libs.alerts import remove_silence, silence_host
 from wmcs_libs.ceph import CephClusterController, get_node_cluster_name
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 
@@ -108,7 +108,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
 
         node = self.spicerack.remote().query(f"D{{{self.fqdn_to_reboot}}}", use_sudo=True)
         host_name = self.fqdn_to_reboot.split(".", 1)[0]
-        silence_id = downtime_host(
+        silence_id = silence_host(
             spicerack=self.spicerack,
             host_name=host_name,
             comment="Rebooting with wmcs.ceph.reboot_node",
@@ -131,6 +131,6 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         if not self.skip_maintenance:
             self.controller.unset_maintenance(silences=silences)
 
-        uptime_host(spicerack=self.spicerack, host_name=host_name, silence_id=silence_id)
+        remove_silence(spicerack=self.spicerack, silence_id=silence_id)
 
         self.sallogger.log(message=f"Finished rebooting node {self.fqdn_to_reboot}")

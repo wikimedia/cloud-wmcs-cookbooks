@@ -500,7 +500,7 @@ class UtilsForTesting:
     @staticmethod
     def get_fake_spicerack(fake_remote: mock.MagicMock) -> mock.MagicMock:
         """Create a fake spicerack."""
-        fake_spicerack = mock.create_autospec(spec=Spicerack, spec_set=True)
+        fake_spicerack = mock.create_autospec(spec=Spicerack)
         fake_spicerack.remote.return_value = fake_remote
         return fake_spicerack
 

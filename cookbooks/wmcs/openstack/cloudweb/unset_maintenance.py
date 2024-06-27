@@ -13,7 +13,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.alerts import uptime_host
+from wmcs_libs.alerts import remove_silence
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 
@@ -82,10 +82,10 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
         for host in remote_hosts.hosts:
             print("host: %s" % host)
             hostname = host.split(".", 1)[0]
-            uptime_host(spicerack=self.spicerack, host_name=hostname)
+            remove_silence(spicerack=self.spicerack, host_name=hostname)
 
         if self.deployment == OpenstackClusterName.EQIAD1:
-            uptime_host(spicerack=self.spicerack, host_name="labweb-ssl")
+            remove_silence(spicerack=self.spicerack, host_name="labweb-ssl")
 
         self.sallogger.log(message=f"Removed cloudweb hosts ({remote_hosts.hosts}) from maintenance mode.")
         LOGGER.info("Hosts %s now out of maintenance mode.", remote_hosts.hosts)

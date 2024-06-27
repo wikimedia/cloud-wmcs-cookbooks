@@ -14,21 +14,6 @@ params:
     node: non-serializable
     skip_first_line: false
 ---
-output: 89eb678f-c0b2-423c-94cc-23cd351b4194
-params:
-  args: []
-  kwargs:
-    command:
-      - amtool
-      - --output=json
-      - silence
-      - add
-      - --duration="4h"
-      - --comment='Downtiming alert from cookbook - Roll rebooting mons- from
-        cookbook ran by dcaro@vulcanus'
-      - " 'service=~.*ceph.*'"
-    node: non-serializable
----
 output: '
 
   {"fsid":"489c4187-17bc-44dc-9aeb-1d044c9bba9e","health":{"status":"HEALTH_OK","checks":{},"mutes":[]},"election_epoch":678,"quorum":[0,1,2],"quorum_names":["cloudcephmon2004-dev","cloudcephmon2006-dev","cloudcephmon2005-dev"],"quorum_age":159384,"monmap":{"epoch":9,"min_mon_release_name":"octopus","num_mons":3},"osdmap":{"epoch":1109799,"num_osds":6,"num_up_osds":6,"osd_up_since":1671554919,"num_in_osds":6,"osd_in_since":1650299790,"num_remapped_pgs":0},"pgmap":{"pgs_by_state":[{"state_name":"active+clean","count":401}],"num_pgs":401,"num_pools":10,"num_objects":120504,"data_bytes":734734416927,"bytes_used":2197846933504,"bytes_avail":3561704210432,"bytes_total":5759551143936,"read_bytes_sec":19233,"write_bytes_sec":997589,"read_op_per_sec":31,"write_op_per_sec":114},"fsmap":{"epoch":1,"by_rank":[],"up:standby":0},"mgrmap":{"available":true,"num_standbys":2,"modules":["iostat","pg_autoscaler","restful"],"services":{}},"servicemap":{"epoch":566665,"modified":"2023-01-06T11:00:36.515458+0000","services":{"rgw":{"daemons":{"summary":"","radosgw":{"start_epoch":566663,"start_stamp":"2023-01-06T10:55:44.228731+0000","gid":88682471,"addr":"208.80.153.116:0/299906094","metadata":{"arch":"x86_64","ceph_release":"octopus","ceph_version":"ceph
@@ -120,21 +105,6 @@ params:
     last_line_only: false
     node: non-serializable
     skip_first_line: false
----
-output: a107fda8-5101-4d02-bcb9-f9b392340a8a
-params:
-  args: []
-  kwargs:
-    command:
-      - amtool
-      - --output=json
-      - silence
-      - add
-      - --duration="1h"
-      - --comment='Rebooting with wmcs.ceph.reboot_node- from cookbook ran by
-        dcaro@vulcanus'
-      - instance=~'cloudcephmon2004-dev(:[0-9]+)?'
-    node: non-serializable
 ---
 repeat_num: -1
 output: '

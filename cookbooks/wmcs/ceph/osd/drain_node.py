@@ -18,7 +18,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.alerts import downtime_host, uptime_host
+from wmcs_libs.alerts import remove_silence, silence_host
 from wmcs_libs.ceph import CephClusterController
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.ceph import CephClusterName
@@ -150,13 +150,13 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
                 idx,
                 len(self.hosts_to_drain),
             )
-            silence_id = downtime_host(
+            silence_id = silence_host(
                 spicerack=self.spicerack,
                 host_name=host_name,
                 comment="Draining with wmcs.ceph.drain_node",
                 task_id=self.common_opts.task_id,
                 # A bit longer than the timeout for the operation
-                duration="6h",
+                duration=datetime.timedelta(hours=6),
             )
 
             self.controller.drain_osd_node(
@@ -177,7 +177,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
                     len(self.hosts_to_drain),
                 )
                 self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)
-                uptime_host(spicerack=self.spicerack, host_name=host_name, silence_id=silence_id)
+                remove_silence(spicerack=self.spicerack, silence_id=silence_id)
                 LOGGER.info("[%s] Cluster healthy, continuing", datetime.datetime.now())
 
         if self.set_maintenance:

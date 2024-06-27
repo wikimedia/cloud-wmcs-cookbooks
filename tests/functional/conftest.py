@@ -18,10 +18,11 @@ def mock_side_effects():
     """Mock all the things that might contact hosts/external services aside from run_one_raw."""
     # multi-nested syntax needed for older python
     with patch("spicerack.remote.query"):
-        with patch("spicerack.remote.RemoteHosts"):
-            with patch("wmcs_libs.alerts.wrap_with_sudo_icinga"):
-                with patch("wmcs_libs.ceph.time.sleep"):
-                    yield
+        with patch("spicerack.requests.Session"):
+            with patch("spicerack.remote.RemoteHosts"):
+                with patch("wmcs_libs.alerts.wrap_with_sudo_icinga"):
+                    with patch("wmcs_libs.ceph.time.sleep"):
+                        yield
 
 
 @pytest.fixture
@@ -41,6 +42,18 @@ puppetdb:
     api_version: 4
     urllib3_disable_warnings:
       - SubjectAltNameWarning  # Temporary fix for T158757
+        """
+    )
+    alerts_config_path = tmp_path / "alertmanager" / "config.yaml"
+    os.makedirs(alerts_config_path.parent, exist_ok=True)
+    alerts_config_path.write_text(
+        """
+---
+default_instance: tests
+instances:
+  tests:
+    urls:
+    - http://idontexist.example.com
         """
     )
     spicerack_config_path = tmp_path / "spicerack.yaml"

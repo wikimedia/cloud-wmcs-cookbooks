@@ -16,7 +16,7 @@ from datetime import timedelta
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.alerts import downtime_host, uptime_host
+from wmcs_libs.alerts import remove_silence, silence_host
 from wmcs_libs.ceph import CephClusterController, CephOSDFlag, get_node_cluster_name
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
 
@@ -103,11 +103,11 @@ class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
         remote_host = self.spicerack.remote().query(self.to_upgrade_fqdn, use_sudo=True)
         host_name = self.to_upgrade_fqdn.split(".", 1)[0]
         puppet = self.spicerack.puppet(remote_host)
-        downtime_id = downtime_host(
+        downtime_id = silence_host(
             spicerack=self.spicerack,
             host_name=host_name,
             comment="Ceph node software upgrade and reboot",
-            duration="20m",
+            duration=timedelta(minutes=20),
         )
         puppet_reason = self.spicerack.admin_reason("Software upgrade and reboot")
 
@@ -131,7 +131,7 @@ class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
 
         puppet.run()
 
-        uptime_host(spicerack=self.spicerack, host_name=host_name, silence_id=downtime_id)
+        remove_silence(spicerack=self.spicerack, host_name=host_name, silence_id=downtime_id)
 
         # Once the node is up, let it rebalance
         self.controller.unset_osdmap_flag(CephOSDFlag("norebalance"))

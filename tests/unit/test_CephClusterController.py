@@ -165,7 +165,7 @@ def test_set_osdmap_flag_happy_path(set_flag_command_output: str):
 
     my_controller.set_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
-    my_controller._controlling_node.run_sync.assert_called_with(
+    my_controller._controlling_node.run_sync.assert_called_with(  # type: ignore
         Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), **asdict(CUMIN_UNSAFE_WITH_OUTPUT)
     )
 
@@ -188,7 +188,7 @@ def test_set_osdmap_flag_raising(set_flag_command_output: str):
     with pytest.raises(CephFlagSetError):
         my_controller.set_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
-    my_controller._controlling_node.run_sync.assert_called_with(
+    my_controller._controlling_node.run_sync.assert_called_with(  # type: ignore
         Command(f"ceph osd set {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), **asdict(CUMIN_UNSAFE_WITH_OUTPUT)
     )
 
@@ -213,7 +213,7 @@ def test_unset_osdmap_flag_happy_path(unset_flag_command_output: str):
 
     my_controller.unset_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
-    my_controller._controlling_node.run_sync.assert_called_with(
+    my_controller._controlling_node.run_sync.assert_called_with(  # type: ignore
         Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), **asdict(CUMIN_UNSAFE_WITH_OUTPUT)
     )
 
@@ -236,7 +236,7 @@ def test_unset_osdmap_flag_raising(unset_flag_command_output: str):
     with pytest.raises(CephFlagSetError):
         my_controller.unset_osdmap_flag(flag=CephOSDFlag.NOREBALANCE)
 
-    my_controller._controlling_node.run_sync.assert_called_with(
+    my_controller._controlling_node.run_sync.assert_called_with(  # type: ignore
         Command(f"ceph osd unset {CephOSDFlag.NOREBALANCE.value}", ok_codes=[0]), **asdict(CUMIN_UNSAFE_WITH_OUTPUT)
     )
 
@@ -346,7 +346,7 @@ def test_unset_maintenance_happy_path(commands_output: list[str], force: bool | 
         spicerack=CephTestUtils.get_fake_spicerack(fake_remote=fake_remote),
     )
 
-    my_controller.unset_maintenance(force=bool(force))
+    my_controller.unset_maintenance(force=bool(force), silences=[])
 
 
 @parametrize(
@@ -382,7 +382,7 @@ def test_unset_maintenance_raising(commands_output: list[str], exception: Type[E
     )
 
     with pytest.raises(exception):
-        my_controller.unset_maintenance(force=bool(force))
+        my_controller.unset_maintenance(force=bool(force), silences=[])
 
 
 @parametrize(

@@ -6,9 +6,10 @@ set -o nounset
 
 DEFAULT_CONFIG_DIR="$HOME/.config/spicerack"
 DEFAULT_COOKBOOK_CONFIG_PATH="$DEFAULT_CONFIG_DIR/cookbook.yaml"
+DEFAULT_ALERTMANAGER_CONFIG_PATH="$DEFAULT_CONFIG_DIR/alertmanager/config.yaml"
 DEFAULT_LOGS_DIR="/tmp/spicerack_logs"
 DEFAULT_COOKBOOKS_WMCS_DIR="$PWD"
-DEFAULT_COOKBOOKS_SRE_DIR="$(basedir "$PWD")/operations-cookbooks"
+DEFAULT_COOKBOOKS_SRE_DIR="$(dirname "$PWD")/operations-cookbooks"
 DEFAULT_CUMIN_CONFIG_PATH="$DEFAULT_CONFIG_DIR/cumin.yaml"
 
 help() {
@@ -27,6 +28,7 @@ help() {
             Defaults:
                 DEFAULT_CONFIG_DIR=$DEFAULT_CONFIG_DIR
                 DEFAULT_COOKBOOK_CONFIG_PATH=$DEFAULT_COOKBOOK_CONFIG_PATH
+                DEFAULT_ALERTMANAGER_CONFIG_PATH=$DEFAULT_ALERTMANAGER_CONFIG_PATH
                 DEFAULT_LOGS_DIR=$DEFAULT_LOGS_DIR
                 DEFAULT_COOKBOOKS_WMCS_DIR=$DEFAULT_COOKBOOKS_WMCS_DIR
                 DEFAULT_COOKBOOKS_SRE_DIR=$DEFAULT_COOKBOOKS_SRE_DIR
@@ -77,6 +79,12 @@ main() {
             cookbook_config_path=$DEFAULT_COOKBOOK_CONFIG_PATH
         fi
 
+        echo "What will be the path for alertmanager.yaml config? [default: $DEFAULT_ALERTMANAGER_CONFIG_PATH]"
+        read -r alertmanager_config_path
+        if [[ $alertmanager_config_path = "" ]]; then
+            alertmanager_config_path=$DEFAULT_ALERTMANAGER_CONFIG_PATH
+        fi
+
         echo "What will be the directory for sipcerack logs? [default: $DEFAULT_LOGS_DIR]"
         read -r logs_dir
         if [[ $logs_dir = "" ]]; then
@@ -103,6 +111,7 @@ main() {
     else
         config_dir="$DEFAULT_CONFIG_DIR"
         cookbook_config_path=$DEFAULT_COOKBOOK_CONFIG_PATH
+        alertmanager_config_path=$DEFAULT_ALERTMANAGER_CONFIG_PATH
         logs_dir="$DEFAULT_LOGS_DIR"
         cumin_config_path="$DEFAULT_CUMIN_CONFIG_PATH"
         cookbooks_wmcs_dir="$DEFAULT_COOKBOOKS_WMCS_DIR"
@@ -144,6 +153,29 @@ instance_params:
 #
 
 # jenkins_api_token = sometoken
+EOC
+    fi
+
+    rewrite="yes"
+    if [[ -f $alertmanager_config_path ]]; then
+        echo "The configuration file $alertmanager_config_path already exists, overwrite?[Ny] (Ctr+C to abort)"
+        read -r answer
+        if ! [[ $answer =~ [yY].* ]]; then
+            rewrite="no"
+            echo "Skipping $alertmanager_config_path"
+        fi
+    fi
+    if [[ $rewrite == "yes" ]]; then
+        mkdir -p "$(dirname "$alertmanager_config_path")"
+        cat > "$alertmanager_config_path" <<EOC
+---
+# note that these willl be reached using the proxy
+default_instance: production
+instances:
+  production:
+    urls:
+    - http://alertmanager-eqiad.wikimedia.org
+    - http://alertmanager-codfw.wikimedia.org
 EOC
     fi
 

@@ -52,7 +52,7 @@ class UnSetClusterInMaintenance(CookbookBase):
             "--silence-ids",
             required=False,
             default=None,
-            type=lambda silences_str: [silence.strip() for silence in silences_str.split(",")],
+            type=lambda silences_str: [SilenceID(silence.strip()) for silence in silences_str.split(",")],
             help=(
                 "Comma separated list of silences to unmute. If not passed will unmute all the silences affecting the "
                 "ceph cluster alerts."
@@ -94,5 +94,6 @@ class UnSetClusterInMaintenanceRunner(WMCSCookbookRunnerBase):
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
-        self.controller.unset_maintenance(force=self.force, silences=self.silence_ids)
+        if self.silence_ids:
+            self.controller.unset_maintenance(force=self.force, silences=self.silence_ids)
         self.sallogger.log(f"Ceph cluster at {self.cluster_name} set out of maintenance")

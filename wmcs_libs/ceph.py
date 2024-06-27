@@ -17,7 +17,7 @@ from spicerack import Spicerack
 from spicerack.remote import Remote, RemoteExecutionError
 from wmflib.interactive import ask_confirmation
 
-from wmcs_libs.alerts import SilenceID, downtime_alert, uptime_alert
+from wmcs_libs.alerts import SilenceID, remove_silence, silence_alert
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
     CUMIN_UNSAFE_WITH_OUTPUT,
@@ -466,7 +466,11 @@ class CephOSDNodeController:
 class CephClusterController(CommandRunnerMixin):
     """Controller for a CEPH cluster."""
 
-    CLUSTER_ALERT_MATCH = "service=~.*ceph.*"
+    CLUSTER_ALERT_MATCH: dict[str, str | int | float | bool] = {
+        "name": "service",
+        "value": "~.*ceph.*",
+        "isRegex": True,
+    }
 
     def __init__(self, remote: Remote, cluster_name: CephClusterName, spicerack: Spicerack):
         """Init."""
@@ -556,35 +560,28 @@ class CephClusterController(CommandRunnerMixin):
             cumin_params=CUMIN_UNSAFE_WITH_OUTPUT,
         )
 
-    def downtime_cluster_alerts(self, reason: str, duration: str = "4h", task_id: str | None = None) -> list[SilenceID]:
+    def downtime_cluster_alerts(
+        self, reason: str, duration: timedelta = timedelta(hours=4), task_id: str | None = None
+    ) -> list[SilenceID]:
         """Downtime all the known cluster-wide alerts (the ones not related to a specific ceph node)."""
         silences = []
         # There's only one alert left
         silences.append(
-            downtime_alert(
+            silence_alert(
                 spicerack=self._spicerack,
                 duration=duration,
                 task_id=task_id,
                 comment=f"Downtiming alert from cookbook - {reason}",
-                extra_queries=[self.CLUSTER_ALERT_MATCH],
+                extra_matchers=[self.CLUSTER_ALERT_MATCH],
             )
         )
 
         return silences
 
-    def uptime_cluster_alerts(self, silences: list[SilenceID] | None) -> None:
-        """Enable again all the alert for the cluster.
-
-        If specific silences are passed, only those are removed, if none are passed, it will remove any existing
-        silence for cluster alerts.
-        """
-        if silences:
-            for silence in silences:
-                uptime_alert(spicerack=self._spicerack, silence_id=silence)
-
-        else:
-            # we match each individually
-            uptime_alert(spicerack=self._spicerack, extra_queries=[self.CLUSTER_ALERT_MATCH])
+    def uptime_cluster_alerts(self, silences: list[SilenceID]) -> None:
+        """Enable again all the alert for the cluster."""
+        for silence in silences:
+            remove_silence(spicerack=self._spicerack, silence_id=silence)
 
     def set_maintenance(self, reason: str, force: bool = False, task_id: str | None = None) -> list[SilenceID]:
         """Set maintenance and mute any cluster-wide alerts.
@@ -620,11 +617,8 @@ class CephClusterController(CommandRunnerMixin):
         self.set_osdmap_flag(flag=CephOSDFlag("norebalance"))
         return silences
 
-    def unset_maintenance(self, force: bool = False, silences: list[SilenceID] | None = None) -> None:
-        """Unset maintenance and remove any cluster-wide alert silences.
-
-        If no silences passed, it will remove all the existing silences for the cluster if any.
-        """
+    def unset_maintenance(self, silences: list[SilenceID], force: bool = False) -> None:
+        """Unset maintenance and remove any cluster-wide alert silences."""
         cluster_status = self.get_cluster_status()
         try:
             cluster_status.check_healthy(consider_maintenance_healthy=True)
