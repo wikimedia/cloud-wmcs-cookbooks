@@ -98,7 +98,7 @@ class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
             "g3.cores16.ram36.disk20": "g4.cores16.ram32.disk20",
             "g3.cores8.ram36.disk20": "g4.cores8.ram32.disk20",
             "g2.cores1.ram2.disk20": "g4.cores1.ram2.disk20",
-            "g3.cores2.ram80.disk40.private": "g3.cores2.ram8.disk40",
+            "g3.cores2.ram80.disk40.private": "g4.cores2.ram8.disk40",
         }
 
         if old_flavor in (
