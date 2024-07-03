@@ -517,7 +517,12 @@ class CephClusterController(CommandRunnerMixin):
 
     def get_cluster_status(self) -> CephClusterStatus:
         """Get the current cluster status."""
-        cluster_status_output = self.run_formatted_as_dict("status", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        try:
+            cluster_status_output = self.run_formatted_as_dict("status", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        except Exception as error:  # noqa: broad-except
+            LOGGER.info("Retrying get_cluster_status (got error %s)", str(error))
+            cluster_status_output = self.run_formatted_as_dict("status", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+
         return CephClusterStatus(status_dict=cluster_status_output)
 
     def is_osdmap_flag_set(self, flag: CephOSDFlag) -> bool:
