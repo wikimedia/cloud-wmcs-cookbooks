@@ -854,6 +854,34 @@ class CephClusterController(CommandRunnerMixin):
 
         return all_osd_ips
 
+    def get_osd_for_devices(self, hostname: str, devices: list[str]) -> list[int]:
+        """Given a host and a list of device names (ex. sda) returns the osd that uses it."""
+
+        host_devices = self.run_formatted_as_list("device", "ls-by-host", hostname)
+        # Example of return value:
+        # [
+        #   {
+        #     "devid": "MTFDDAK1T9TDN_194725128AB3",
+        #     "location": [
+        #       {
+        #         "host": "cloudcephosd1009",
+        #         "dev": "sdg",
+        #         "path": "/dev/disk/by-path/pci-0000:18:00.0-scsi-0:0:6:0"
+        #       }
+        #     ],
+        #     "daemons": [
+        #       "osd.20"
+        #     ]
+        #   }
+        # ]
+        osds = [
+            # we have only one daemon per-device
+            int(host_device["daemons"][0].split(".", 1)[-1])
+            for host_device in host_devices
+            if host_device["location"][0]["dev"] in devices
+        ]
+        return osds
+
     def crush_reweight_osd(self, osd_id: int, new_weight: float) -> bool:
         """Re-weights an OSD daemon at the CRUSH table.
 

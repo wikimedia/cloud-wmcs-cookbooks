@@ -239,6 +239,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
                 host_fqdn=new_osd_fqdn,
                 batch_size=self.batch_size,
                 wait_for_rebalance=self.wait_for_rebalance,
+                new_devices=new_devices,
             )
 
         if silences:
@@ -293,14 +294,17 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
                 f"Something went wrong, I was unable to change the device class for osds {wrongly_classified_osds}"
             )
 
-    def _undrain_in_batches(self, host_fqdn: str, batch_size: int, wait_for_rebalance: bool) -> None:
+    def _undrain_in_batches(
+        self, host_fqdn: str, batch_size: int, wait_for_rebalance: bool, new_devices: list[str]
+    ) -> None:
         ceph_hostname = host_fqdn.split(".", 1)[0]
-        new_osds = _wait_for_osds_to_show_up(cluster_controller=self.cluster_controller, ceph_hostname=ceph_hostname)
+        _wait_for_osds_to_show_up(cluster_controller=self.cluster_controller, ceph_hostname=ceph_hostname)
+        new_osds_ids = self.cluster_controller.get_osd_for_devices(hostname=ceph_hostname, devices=new_devices)
 
         # marking them all out first as they are in by default
-        for osd in new_osds:
-            self.cluster_controller.crush_reweight_osd(osd_id=osd.osd_id, new_weight=0.0)
-            self.cluster_controller.mark_osd_out(osd_id=osd.osd_id)
+        for osd_id in new_osds_ids:
+            self.cluster_controller.crush_reweight_osd(osd_id=osd_id, new_weight=0.0)
+            self.cluster_controller.mark_osd_out(osd_id=osd_id)
 
         # Now we enable rebalancing
         self.cluster_controller.unset_osdmap_flag(CephOSDFlag.NOREBALANCE)
@@ -308,5 +312,5 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
 
         # And bring them in in batches
         self.cluster_controller.undrain_osds_in_chunks(
-            osd_ids=[osd.osd_id for osd in new_osds], batch_size=batch_size, wait=wait_for_rebalance
+            osd_ids=new_osds_ids, batch_size=batch_size, wait=wait_for_rebalance
         )
