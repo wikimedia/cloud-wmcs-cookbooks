@@ -81,6 +81,12 @@ class BootstrapAndAdd(CookbookBase):
             ),
         )
         parser.add_argument(
+            "--batch-size",
+            required=False,
+            default=4,
+            help="Number of osds to bring up at a time to avoid congesting the network, use 0 for all at once.",
+        )
+        parser.add_argument(
             "--wait-for-rebalance",
             required=False,
             action="store_true",
@@ -106,6 +112,7 @@ class BootstrapAndAdd(CookbookBase):
             skip_reboot=args.skip_reboot,
             wait_for_rebalance=args.wait_for_rebalance,
             force=args.force,
+            batch_size=args.batch_size,
             only_check=args.only_check,
             spicerack=self.spicerack,
         )
@@ -142,6 +149,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         skip_reboot: bool,
         wait_for_rebalance: bool,
         only_check: bool,
+        batch_size: int,
         spicerack: Spicerack,
     ):
         """Init"""
@@ -155,6 +163,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.wait_for_rebalance = wait_for_rebalance
         self.only_check = only_check
+        self.batch_size = batch_size
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.cluster_controller = CephClusterController(
             remote=self.spicerack.remote(), cluster_name=cluster_name, spicerack=self.spicerack
@@ -222,8 +231,15 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
                 "The new OSDs are up and running, the cluster will now start rebalancing the data to them, that might "
                 "take quite a long time, you can follow the progress by running 'ceph status' on a control node."
             )
-            info("We'll add the new osds in batches of 2, to avoid saturating the network")
-            self._undrain_in_batches(host_fqdn=new_osd_fqdn)
+            info(
+                f"We'll add the new osds in batches of {self.batch_size or len(new_devices)}, "
+                "to avoid saturating the network"
+            )
+            self._undrain_in_batches(
+                host_fqdn=new_osd_fqdn,
+                batch_size=self.batch_size,
+                wait_for_rebalance=self.wait_for_rebalance,
+            )
 
         if silences:
             self.cluster_controller.uptime_cluster_alerts(silences=silences)
@@ -277,10 +293,9 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
                 f"Something went wrong, I was unable to change the device class for osds {wrongly_classified_osds}"
             )
 
-    def _undrain_in_batches(self, host_fqdn: str) -> None:
-        new_osds = _wait_for_osds_to_show_up(
-            cluster_controller=self.cluster_controller, ceph_hostname=host_fqdn.split(".", 1)[0]
-        )
+    def _undrain_in_batches(self, host_fqdn: str, batch_size: int, wait_for_rebalance: bool) -> None:
+        ceph_hostname = host_fqdn.split(".", 1)[0]
+        new_osds = _wait_for_osds_to_show_up(cluster_controller=self.cluster_controller, ceph_hostname=ceph_hostname)
 
         # marking them all out first as they are in by default
         for osd in new_osds:
@@ -293,5 +308,5 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
 
         # And bring them in in batches
         self.cluster_controller.undrain_osds_in_chunks(
-            osd_ids=[osd.osd_id for osd in new_osds], batch_size=2, wait=self.wait_for_rebalance
+            osd_ids=[osd.osd_id for osd in new_osds], batch_size=batch_size, wait=wait_for_rebalance
         )
