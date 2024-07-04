@@ -165,9 +165,13 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         self.sallogger.log(
             message=f"Adding all available disks from nodes {self.osd_fqdns} to the cluster",
         )
+        silences: list[str] = []
         if self.only_check:
-            LOGGER.info("Skipping setting the cluster as norebalance")
+            LOGGER.info("Skipping setting the cluster as in maintenance, only checking")
         else:
+            silences = self.cluster_controller.downtime_cluster_alerts(
+                task_id=self.common_opts.task_id, reason=f"Adding hosts {self.osd_fqdns} to the cluster"
+            )
             # this avoids rebalancing after each osd is added
             self.cluster_controller.set_osdmap_flag(CephOSDFlag.NOREBALANCE)
             self.cluster_controller.set_osdmap_flag(CephOSDFlag.NOIN)
@@ -220,6 +224,9 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
             )
             info("We'll add the new osds in batches of 2, to avoid saturating the network")
             self._undrain_in_batches(host_fqdn=new_osd_fqdn)
+
+        if silences:
+            self.cluster_controller.uptime_cluster_alerts(silences=silences)
 
         self.sallogger.log(
             message=f"Added {len(self.osd_fqdns)} new OSDs {self.osd_fqdns} \\o/",
