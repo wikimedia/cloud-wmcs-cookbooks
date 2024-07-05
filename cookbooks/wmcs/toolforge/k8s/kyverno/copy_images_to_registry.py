@@ -63,6 +63,9 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         "reports-controller",
     ]
 
+    KYVERNO_KUBECTL_PULL = "bitnami/kubectl:1.26.4"
+    KYVERNO_KUBECTL_PUSH_NAME = "bitnami-kubectl:1.26.4"
+
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -85,3 +88,7 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
             pull_url = f"{self.KYVERNO_IMAGE_BASE_URL}{image}:{self.KYVERNO_IMAGE_VERSION}"
             push_url = f"{self.image_repo_url}/toolforge-kyverno-{image}:{self.KYVERNO_IMAGE_VERSION}"
             image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
+
+        pull_url = self.KYVERNO_KUBECTL_PULL
+        push_url = f"{self.image_repo_url}/{self.KYVERNO_KUBECTL_PUSH_NAME}"
+        image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
