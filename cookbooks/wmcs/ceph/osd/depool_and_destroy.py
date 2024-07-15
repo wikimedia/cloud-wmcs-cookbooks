@@ -185,6 +185,8 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         self.cluster_controller = CephClusterController(
             remote=self.spicerack.remote(), cluster_name=cluster_name, spicerack=self.spicerack
         )
+        self.osd_fqdn = f"{self.osd_hostname}.{self.cluster_controller.cluster_name.get_site().get_domain()}"
+        self.osd_controller = CephOSDNodeController(remote=self.spicerack.remote(), node_fqdn=self.osd_fqdn)
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
@@ -232,7 +234,7 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         else:
             # we already checked that it was safe
             self._depool_daemons(be_mean=self.be_mean_about_it)
-            self._stop_daemons()
+            self.osd_controller.stop_osds(osd_ids=self.ids)
 
         self.sallogger.log(
             message=(
@@ -240,6 +242,8 @@ class DestroyRunner(WMCSCookbookRunnerBase):
                 f"{self.cluster_controller.cluster_name}"
             ),
         )
+        # we need this before destroying the osds
+        devices = self.cluster_controller.get_device_for_osds(hostname=self.osd_hostname, osds=self.ids)
         failures = self.cluster_controller.check_osds_safe_to_destroy(osd_ids=self.ids)
         if failures:
             raise Exception("\n".join(failures))
@@ -249,14 +253,20 @@ class DestroyRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Skipping destroying the OSD daemons")
         else:
             extra_message = self._destroy_osds()
-
         self.sallogger.log(message=f"Depooled and destroyed OSD daemons {self.ids}{extra_message}.")
+
+        if self.only_check:
+            LOGGER.info("Skipping zapping the OSD drives")
+        else:
+            self._zap_drives(devices=devices)
+        self.sallogger.log(message=f"Zapped devices {devices} for osds {self.ids}")
 
     def _depool_daemons(self, be_mean: bool = False) -> None:
         if be_mean:
             batch_size = 0
         else:
             batch_size = 2
+
         any_changes = self.cluster_controller.drain_osds_in_chunks(
             osd_ids=self.ids, be_unsafe=True, batch_size=batch_size
         )
@@ -277,11 +287,6 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         else:
             LOGGER.info("No changes were made to the cluster, skipping waiting for rebalance.")
 
-    def _stop_daemons(self) -> None:
-        osd_fqdn = f"{self.osd_hostname}.{self.cluster_controller.cluster_name.get_site().get_domain()}"
-        osd_controller = CephOSDNodeController(remote=self.spicerack.remote(), node_fqdn=osd_fqdn)
-        osd_controller.stop_osds(osd_ids=self.ids)
-
     def _destroy_osds(self) -> str:
         for osd_id in self.ids:
             # we already checked that it was safe
@@ -294,3 +299,8 @@ class DestroyRunner(WMCSCookbookRunnerBase):
 
         LOGGER.info("Not cleaning up host bucket, as it still has some OSDs in it")
         return ""
+
+    def _zap_drives(self, devices: list[str]) -> None:
+        for device in devices:
+            # we already checked that it was safe
+            self.osd_controller.zap_device(device_path=device)

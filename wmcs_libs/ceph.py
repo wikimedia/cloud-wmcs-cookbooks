@@ -401,7 +401,7 @@ class CephOSDNodeController:
 
         NOTE: this destroys all the information in the device!
         """
-        run_one_raw(command=["ceph-volume", "lvm", "zap", device_path], node=self._node)
+        run_one_raw(command=["ceph-volume", "lvm", "zap", "--destroy", device_path], node=self._node)
 
     def initialize_and_start_osd(self, device_path: str) -> None:
         """Setup and start a new osd on the given device."""
@@ -881,6 +881,34 @@ class CephClusterController(CommandRunnerMixin):
             if host_device["location"][0]["dev"] in devices
         ]
         return osds
+
+    def get_device_for_osds(self, hostname: str, osds: list[int]) -> list[str]:
+        """Given a host and a list of osd ids (ex. 247) returns the devices that correspond to those osds."""
+
+        host_devices = self.run_formatted_as_list("device", "ls-by-host", hostname)
+        # Example of return value:
+        # [
+        #   {
+        #     "devid": "MTFDDAK1T9TDN_194725128AB3",
+        #     "location": [
+        #       {
+        #         "host": "cloudcephosd1009",
+        #         "dev": "sdg",
+        #         "path": "/dev/disk/by-path/pci-0000:18:00.0-scsi-0:0:6:0"
+        #       }
+        #     ],
+        #     "daemons": [
+        #       "osd.20"
+        #     ]
+        #   }
+        # ]
+        devices = [
+            str(host_device["location"][0]["dev"])
+            for host_device in host_devices
+            # we have only one daemon per-device
+            if host_device["daemons"][0].split(".", 1)[-1] in osds
+        ]
+        return devices
 
     def crush_reweight_osd(self, osd_id: int, new_weight: float) -> bool:
         """Re-weights an OSD daemon at the CRUSH table.
