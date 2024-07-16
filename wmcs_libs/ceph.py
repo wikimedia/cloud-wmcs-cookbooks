@@ -858,6 +858,9 @@ class CephClusterController(CommandRunnerMixin):
         """Given a host and a list of device names (ex. sda) returns the osd that uses it."""
 
         host_devices = self.run_formatted_as_list("device", "ls-by-host", hostname)
+        # the devices are only passed as names unfortunately, the paths are the full disk path (not so useful), see
+        # the example below
+        device_names = [device.rsplit("/", 1)[-1] for device in devices]
         # Example of return value:
         # [
         #   {
@@ -878,7 +881,7 @@ class CephClusterController(CommandRunnerMixin):
             # we have only one daemon per-device
             int(host_device["daemons"][0].split(".", 1)[-1])
             for host_device in host_devices
-            if host_device["location"][0]["dev"] in devices
+            if host_device["location"][0]["dev"] in device_names
         ]
         return osds
 
@@ -903,10 +906,10 @@ class CephClusterController(CommandRunnerMixin):
         #   }
         # ]
         devices = [
-            str(host_device["location"][0]["dev"])
+            f"/dev/{host_device['location'][0]['dev']}"
             for host_device in host_devices
             # we have only one daemon per-device
-            if host_device["daemons"][0].split(".", 1)[-1] in osds
+            if int(host_device["daemons"][0].split(".", 1)[-1]) in osds
         ]
         return devices
 
@@ -1045,6 +1048,10 @@ class CephClusterController(CommandRunnerMixin):
         return any_changes
 
     def undrain_osds_in_chunks(self, osd_ids: list[int], batch_size: int = 0, wait: bool = False) -> None:
+        if not osd_ids:
+            LOGGER.info("No osd ids passed, skipping")
+            return
+
         start_time = datetime.now()
         timeout = timedelta(hours=5)
 

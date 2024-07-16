@@ -301,6 +301,8 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         return ""
 
     def _zap_drives(self, devices: list[str]) -> None:
+        if not devices:
+            raise Exception("No devices found to zap, aborting")
         for device in devices:
             # we already checked that it was safe
             self.osd_controller.zap_device(device_path=device)

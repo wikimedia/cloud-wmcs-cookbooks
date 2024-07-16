@@ -233,7 +233,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
 
             info(
                 "The new OSDs are up and running, the cluster will now start rebalancing the data to them, that might "
-                "take quite a long time, you can follow the progress by running 'ceph status' on a control node."
+                "take quite a long time, you can also follow the progress by running 'ceph status' on a control node."
             )
             info(
                 f"We'll add the new osds in batches of {self.batch_size or len(new_devices)}, "
@@ -304,6 +304,8 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         ceph_hostname = host_fqdn.split(".", 1)[0]
         _wait_for_osds_to_show_up(cluster_controller=self.cluster_controller, ceph_hostname=ceph_hostname)
         new_osds_ids = self.cluster_controller.get_osd_for_devices(hostname=ceph_hostname, devices=new_devices)
+        if not new_osds_ids:
+            raise Exception(f"Unable to find new osd for device {new_devices}, something went wrong")
 
         # marking them all out first as they are in by default
         for osd_id in new_osds_ids:
@@ -314,7 +316,8 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         self.cluster_controller.unset_osdmap_flag(CephOSDFlag.NOREBALANCE)
         self.cluster_controller.unset_osdmap_flag(CephOSDFlag.NOIN)
 
-        # And bring them in in batches
+        # And bring them in in batches, we need to give the cluster a few seconds to start rebalancing
+        time.sleep(10)
         self.cluster_controller.undrain_osds_in_chunks(
             osd_ids=new_osds_ids, batch_size=batch_size, wait=wait_for_rebalance
         )
