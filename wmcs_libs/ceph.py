@@ -1253,18 +1253,24 @@ class CephClusterController(CommandRunnerMixin):
         host_devices = osd_controller.do_lsblk()
         total_expected_devices = OSD_EXPECTED_OS_DRIVES + self.expected_osd_drives_per_host
         if len(host_devices) != total_expected_devices:
+            LOGGER.info("    NOOK")
             failures.append(
                 f"The host has {len(host_devices)}, when we are expecting {total_expected_devices} "
                 f"({self.expected_osd_drives_per_host} for osds, and {OSD_EXPECTED_OS_DRIVES} for the os)"
             )
+        else:
+            LOGGER.info("    OK")
 
         LOGGER.info("Checking that we have enough free drives in the host...")
         available_devices = osd_controller.get_available_devices()
         if len(available_devices) > self.expected_osd_drives_per_host:
+            LOGGER.info("    NOOK")
             failures.append(
                 f"We expected to have at least {OSD_EXPECTED_OS_DRIVES} drives reserved for OS, but it seems we "
                 f"would use some of them ({available_devices}), maybe the raid is not properly setup?"
             )
+        else:
+            LOGGER.info("    OK")
 
         LOGGER.info("Checking that we have enough OS dedicated drives in the host...")
         # example of soft-raid device:
@@ -1294,10 +1300,13 @@ class CephClusterController(CommandRunnerMixin):
             )
         ]
         if len(devices_with_soft_raid_on_them) != OSD_EXPECTED_OS_DRIVES:
+            LOGGER.info("    NOOK")
             failures.append(
                 "It seems we don't have the expected raids setup on the OS devices, I was expecting "
                 f"{OSD_EXPECTED_OS_DRIVES} setup in software raid, but got {devices_with_soft_raid_on_them}"
             )
+        else:
+            LOGGER.info("    OK")
 
         return failures
 
