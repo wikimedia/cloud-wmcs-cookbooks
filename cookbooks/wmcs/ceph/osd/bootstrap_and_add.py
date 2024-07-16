@@ -201,6 +201,13 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
             node: RemoteHosts = self.spicerack.remote().query(f"D{{{new_osd_fqdn}}}", use_sudo=True)
             osd_controller = CephOSDNodeController(remote=self.spicerack.remote(), node_fqdn=new_osd_fqdn)
 
+            new_devices = osd_controller.get_available_devices()
+            if not new_devices:
+                info(f"No new devices found on host {new_osd_fqdn}, skipping...")
+                continue
+
+            info(f"Found available disks {new_devices} on node {new_osd_fqdn}")
+
             if not self.skip_reboot:
                 info("Running puppet and rebooting to make sure we start from fresh boot.")
                 self._do_reboot_and_puppet(node=node, host_fqdn=new_osd_fqdn)
@@ -208,9 +215,6 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
             info("Doing some checks...")
             self._do_checks(host_fqdn=new_osd_fqdn, osd_controller=osd_controller)
             info("checks OK")
-
-            new_devices = osd_controller.get_available_devices()
-            info(f"Found available disks {new_devices} on node {new_osd_fqdn}")
 
             if self.only_check:
                 info("Skipping adding the new devices and fixing their class")
