@@ -634,6 +634,19 @@ class OpenstackAPI(CommandRunnerMixin):
         )
         self._db_instance_wait_for_status(db_instance_id=db_instance_id, states=["HEALTHY"])
 
+    def db_instance_rebuild(self, db_instance_id: OpenstackIdentifier, guest_image_id: OpenstackIdentifier) -> None:
+        """Rebuild db instance."""
+        self.run_raw(
+            "database",
+            "instance",
+            "rebuild",
+            db_instance_id,
+            guest_image_id,
+            cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+            json_output=False,
+        )
+        self._db_instance_wait_for_status(db_instance_id=db_instance_id, states=["HEALTHY"])
+
     def db_instance_show(self, db_instance_id: OpenstackIdentifier) -> dict[str, Any]:
         """Get the information for a db instance."""
         return self.run_formatted_as_dict(
