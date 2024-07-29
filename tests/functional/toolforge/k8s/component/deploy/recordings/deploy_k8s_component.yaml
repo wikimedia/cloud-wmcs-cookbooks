@@ -1,0 +1,589 @@
+output: ''
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - mkdir
+    - /tmp/cookbook-toolforge-k8s-component-deploy-zmafbzwgej
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: Cloning into 'toolforge-deploy'...
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - git -C '/tmp/cookbook-toolforge-k8s-component-deploy-zmafbzwgej' clone 'https://gitlab.wikimedia.org/repos/cloud/toolforge/toolforge-deploy.git'
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'branch ''bump_builds-builder'' set up to track ''origin/bump_builds-builder''.
+
+  Switched to a new branch ''bump_builds-builder'''
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - git -C '/tmp/cookbook-toolforge-k8s-component-deploy-zmafbzwgej/toolforge-deploy'
+      checkout 'bump_builds-builder'
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: d95ccf2
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - git -C '/tmp/cookbook-toolforge-k8s-component-deploy-zmafbzwgej/toolforge-deploy'
+      rev-parse --short HEAD
+    cumin_params: non-serializable
+    last_line_only: true
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: "/root\nPulling toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.0.114-20240729143738-4f948212\n\
+  Exporting toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.0.114-20240729143738-4f948212\n\
+  Exporting toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.0.114-20240729143738-4f948212\n\
+  Listing releases matching ^builds-builder$\nbuilds-builder\tbuilds-builder\t26 \
+  \     \t2024-07-15 11:35:32.939831651 +0000 UTC\tdeployed\tbuilds-builder-0.0.113-20240715112850-70f3503e\t\
+  \           \n\nComparing release=builds-builder, chart=/tmp/helmfile4111792480/builds-builder/builds-builder/builds-builder/0.0.114-20240729143738-4f948212/builds-builder\n\
+  \e[0;33mimage-build, toolforge-buildpacks-phases, Task (tekton.dev) has changed:\e\
+  [0m\n  # Source: builds-builder/templates/task-combined.yaml.gotmpl\n  # Task that\
+  \ is a mix of\n  # https://github.com/tektoncd/catalog/blob/main/task/git-clone/0.8/git-clone.yaml\n\
+  \  # https://github.com/tektoncd/catalog/blob/main/task/buildpacks-phases/0.2/buildpacks-phases.yaml\n\
+  \  #\n  # We use the phases to increase the security by splitting the containers\
+  \ that run each phase instead of running the\n  # whole of it in the same container.\
+  \ Mainly for the export container to be able to push to a private registry\n  apiVersion:\
+  \ tekton.dev/v1beta1\n  kind: Task\n  metadata:\n    name: toolforge-buildpacks-phases\n\
+  \    namespace: image-build\n    labels:\n      app.kubernetes.io/version: \"0.5\"\
+  \n    annotations:\n      tekton.dev/categories: Image Build, Security\n      tekton.dev/pipelines.minVersion:\
+  \ \"0.17.0\"\n      tekton.dev/tags: image-build\n      tekton.dev/platforms: \"\
+  linux/amd64\"\n      tekton.dev/displayName: \"Toolforge Buildpacks (phases)\"\n\
+  \  spec:\n    description: >-\n      This is a large task that combines the steps\
+  \ of the upstream git clone and\n      buildpacks-phases tasks. This is done to\
+  \ avoid requiring a PVC provisioner\n      for the workspace and reduce privileges\
+  \ needed.\n  \n      The Buildpacks-Phases task builds source into a container image\
+  \ and pushes\n      it to a registry, using Cloud Native Buildpacks. This task separately\
+  \ calls\n      the aspects of the Cloud Native Buildpacks lifecycle, to provide\
+  \ increased\n      security via container isolation.\n  \n      The git-clone Task\
+  \ will clone a repo from the provided url into the output\n      Workspace. By default\
+  \ the repo will be cloned into the root of your\n      Workspace. You can clone\
+  \ into a subdirectory by setting this Task's\n      subdirectory param. This Task\
+  \ also supports sparse checkouts. To perform a\n      sparse checkout, pass a list\
+  \ of comma separated directory patterns to this\n      Task's sparseCheckoutDirectories\
+  \ param.\n  \n    workspaces:\n      - name: source\n        description: Directory\
+  \ where application source is located.\n        mountPath: /workspace\n      - name:\
+  \ aptbuildpack\n        description: Directory where the apt buildpack is located\n\
+  \        mountPath: /cnb/buildpacks/fagiani_apt\n      - name: cache\n        description:\
+  \ Directory where cache is stored (when no cache image is provided).\n        optional:\
+  \ true\n        mountPath: /cache\n      - name: dockerconfig\n        description:\
+  \ >-\n          An optional workspace that allows providing a .docker/config.json\
+  \ file\n          for Buildpacks lifecycle binary to access the container registry.\
+  \ The\n          file should be placed at the root of the Workspace with name\n\
+  \          config.json.\n        optional: true\n      - name: ssh-directory\n \
+  \       optional: true\n        description: |\n          A .ssh directory with\
+  \ private key, known_hosts, config, etc. Copied to\n          the user's home before\
+  \ git commands are executed. Used to authenticate\n          with the git remote\
+  \ when performing the clone. Binding a Secret to this\n          Workspace is strongly\
+  \ recommended over other volume types.\n      - name: basic-auth\n        optional:\
+  \ true\n        description: |\n          A Workspace containing a .gitconfig and\
+  \ .git-credentials file. These\n          will be copied to the user's home before\
+  \ any git commands are run. Any\n          other files in this Workspace are ignored.\
+  \ It is strongly recommended\n          to use ssh-directory over basic-auth whenever\
+  \ possible and to bind a\n          Secret to this Workspace over other volume types.\n\
+  \  \n    params:\n      - name: url\n        description: Repository URL to clone\
+  \ from.\n        type: string\n      - name: revision\n        description: Revision\
+  \ to checkout. (branch, tag, sha, ref, etc...)\n        type: string\n        default:\
+  \ \"\"\n      - name: refspec\n        description: Refspec to fetch before checking\
+  \ out revision.\n        default: \"\"\n      - name: submodules\n        description:\
+  \ Initialize and fetch git submodules.\n        type: string\n        default: \"\
+  true\"\n      - name: depth\n        description: Perform a shallow clone, fetching\
+  \ only the most recent N commits.\n        type: string\n        default: \"1\"\n\
+  \      - name: sslVerify\n        description:\n          Set the `http.sslVerify`\
+  \ global git config. Setting this to `false` is\n          not advised unless you\
+  \ are sure that you trust your git remote.\n        type: string\n        default:\
+  \ \"true\"\n      - name: crtFileName\n        description: Add the given git CA\
+  \ certificate authority.\n        type: string\n        default: \"\"\n      - name:\
+  \ subdirectory\n        description: Subdirectory inside the `source` Workspace\
+  \ to clone the repo into.\n        type: string\n        default: \"\"\n      -\
+  \ name: sparseCheckoutDirectories\n        description:\n          Define the directory\
+  \ patterns to match or exclude when performing a\n          sparse checkout.\n \
+  \       type: string\n        default: \"\"\n      - name: deleteExisting\n    \
+  \    description:\n          Clean out the contents of the destination directory\
+  \ if it already exists\n          before cloning.\n        type: string\n      \
+  \  default: \"true\"\n      - name: httpProxy\n        description: HTTP proxy server\
+  \ for non-SSL requests.\n        type: string\n        default: \"\"\n      - name:\
+  \ httpsProxy\n        description: HTTPS proxy server for SSL requests.\n      \
+  \  type: string\n        default: \"\"\n      - name: noProxy\n        description:\
+  \ Opt out of proxying HTTP/HTTPS requests.\n        type: string\n        default:\
+  \ \"\"\n      - name: verbose\n        description: Log the commands that are executed\
+  \ during `git-clone`'s operation.\n        type: string\n        default: \"true\"\
+  \n      - name: gitInitImage\n        description: The image providing the git-init\
+  \ binary that this Task runs.\n        type: string\n        default: \"docker-registry.tools.wmflabs.org/toolforge-tektoncd-pipeline-cmd-git-init:v0.33.2\"\
+  \n      - name: userHome\n        description: |\n          Absolute path to the\
+  \ user's home directory. Set this explicitly if you are running the image as a non-root\
+  \ user or have overridden\n          the gitInitImage param with an image containing\
+  \ custom user configuration.\n        type: string\n        default: \"/tekton/home\"\
+  \n      - name: APP_IMAGE\n        description: The name of where to store the app\
+  \ image.\n      - name: BUILDER_IMAGE\n        description:\n          The image\
+  \ on which builds will run (must include lifecycle and\n          compatible buildpacks).\n\
+  \      - name: SOURCE_SUBPATH\n        description:\n          A subpath within\
+  \ the `source` input where the source to build is\n          located.\n        default:\
+  \ \"\"\n      - name: ENV_VARS\n        type: array\n        description: Environment\
+  \ variables to set during _build-time_.\n        default: []\n      - name: PROCESS_TYPE\n\
+  \        description: The default process type to set on the image.\n        default:\
+  \ \"\"\n      - name: RUN_IMAGE\n        description: Reference to a run image to\
+  \ use.\n        default: \"\"\n      - name: CACHE_IMAGE\n        description:\n\
+  \          The name of the persistent app cache image (if no cache workspace is\n\
+  \          provided).\n        default: \"\"\n      - name: USER_ID\n        description:\
+  \ The user ID of the builder image user.\n        default: \"1000\"\n      - name:\
+  \ SKIP_RESTORE\n        description: Do not write layer metadata or restore cached\
+  \ layers.\n        default: \"false\"\n      - name: GROUP_ID\n        description:\
+  \ The group ID of the builder image user.\n        default: \"1000\"\n      - name:\
+  \ PLATFORM_DIR\n        description: The name of the platform directory.\n     \
+  \   default: empty-dir\n      - name: USER_HOME\n        description: Absolute path\
+  \ to the user's home directory.\n        default: /tekton/home\n  \n    results:\n\
+  \      - name: APP_IMAGE_DIGEST\n        description: The digest of the built `APP_IMAGE`.\n\
+  \      - name: APP_IMAGE_URL\n        description: The URL of the built `APP_IMAGE`.\n\
+  \  \n    stepTemplate:\n      env:\n        - name: RUN_IMAGE\n          value:\
+  \ $(params.RUN_IMAGE)\n        - name: CNB_PLATFORM_API\n          value: \"0.9\"\
+  \n        - name: HOME\n          value: $(params.USER_HOME)\n        - name: MY_NODE_NAME\n\
+  \          valueFrom:\n            fieldRef:\n              fieldPath: spec.nodeName\n\
+  \  \n    steps:\n      - name: clone\n        image: \"$(params.gitInitImage)\"\n\
+  \        env:\n          - name: HOME\n            value: \"$(params.userHome)\"\
+  \n          - name: PARAM_URL\n            value: $(params.url)\n          - name:\
+  \ PARAM_REVISION\n            value: $(params.revision)\n          - name: PARAM_REFSPEC\n\
+  \            value: $(params.refspec)\n          - name: PARAM_SUBMODULES\n    \
+  \        value: $(params.submodules)\n          - name: PARAM_DEPTH\n          \
+  \  value: $(params.depth)\n          - name: PARAM_SSL_VERIFY\n            value:\
+  \ $(params.sslVerify)\n          - name: PARAM_CRT_FILENAME\n            value:\
+  \ $(params.crtFileName)\n          - name: PARAM_SUBDIRECTORY\n            value:\
+  \ $(params.subdirectory)\n          - name: PARAM_DELETE_EXISTING\n            value:\
+  \ $(params.deleteExisting)\n          - name: PARAM_HTTP_PROXY\n            value:\
+  \ $(params.httpProxy)\n          - name: PARAM_HTTPS_PROXY\n            value: $(params.httpsProxy)\n\
+  \          - name: PARAM_NO_PROXY\n            value: $(params.noProxy)\n      \
+  \    - name: PARAM_VERBOSE\n            value: $(params.verbose)\n          - name:\
+  \ PARAM_SPARSE_CHECKOUT_DIRECTORIES\n            value: $(params.sparseCheckoutDirectories)\n\
+  \          - name: PARAM_USER_HOME\n            value: $(params.userHome)\n    \
+  \      # this was changed to source.path from output.path\n          - name: WORKSPACE_OUTPUT_PATH\n\
+  \            value: $(workspaces.source.path)\n          - name: WORKSPACE_SSH_DIRECTORY_BOUND\n\
+  \            value: $(workspaces.ssh-directory.bound)\n          - name: WORKSPACE_SSH_DIRECTORY_PATH\n\
+  \            value: $(workspaces.ssh-directory.path)\n          - name: WORKSPACE_BASIC_AUTH_DIRECTORY_BOUND\n\
+  \            value: $(workspaces.basic-auth.bound)\n          - name: WORKSPACE_BASIC_AUTH_DIRECTORY_PATH\n\
+  \            value: $(workspaces.basic-auth.path)\n          - name: WORKSPACE_SSL_CA_DIRECTORY_BOUND\n\
+  \            value: $(workspaces.ssl-ca-directory.bound)\n          - name: WORKSPACE_SSL_CA_DIRECTORY_PATH\n\
+  \            value: $(workspaces.ssl-ca-directory.path)\n        # Not needed for\
+  \ us\n        # securityContext:\n        #   runAsNonRoot: true\n        #   runAsUser:\
+  \ 65532\n        script: | \n          #!/usr/bin/env sh\n          set -eu\n  \
+  \        if [ \"${PARAM_VERBOSE}\" = \"true\" ] ; then\n            set -x\n   \
+  \       fi\n          if [ \"${WORKSPACE_BASIC_AUTH_DIRECTORY_BOUND}\" = \"true\"\
+  \ ] ; then\n            cp \"${WORKSPACE_BASIC_AUTH_DIRECTORY_PATH}/.git-credentials\"\
+  \ \"${PARAM_USER_HOME}/.git-credentials\"\n            cp \"${WORKSPACE_BASIC_AUTH_DIRECTORY_PATH}/.gitconfig\"\
+  \ \"${PARAM_USER_HOME}/.gitconfig\"\n            chmod 400 \"${PARAM_USER_HOME}/.git-credentials\"\
+  \n            chmod 400 \"${PARAM_USER_HOME}/.gitconfig\"\n          fi\n      \
+  \    if [ \"${WORKSPACE_SSH_DIRECTORY_BOUND}\" = \"true\" ] ; then\n           \
+  \ cp -R \"${WORKSPACE_SSH_DIRECTORY_PATH}\" \"${PARAM_USER_HOME}\"/.ssh\n      \
+  \      chmod 700 \"${PARAM_USER_HOME}\"/.ssh\n            chmod -R 400 \"${PARAM_USER_HOME}\"\
+  /.ssh/*\n          fi\n          if [ \"${WORKSPACE_SSL_CA_DIRECTORY_BOUND}\" =\
+  \ \"true\" ] ; then\n            export GIT_SSL_CAPATH=\"${WORKSPACE_SSL_CA_DIRECTORY_PATH}\"\
+  \n            if [ \"${PARAM_CRT_FILENAME}\" != \"\" ] ; then\n              export\
+  \ GIT_SSL_CAINFO=\"${WORKSPACE_SSL_CA_DIRECTORY_PATH}/${PARAM_CRT_FILENAME}\"\n\
+  \            fi\n          fi\n          CHECKOUT_DIR=\"${WORKSPACE_OUTPUT_PATH}/${PARAM_SUBDIRECTORY}\"\
+  \n          cleandir() {\n            # Delete any existing contents of the repo\
+  \ directory if it exists.\n            #\n            # We don't just \"rm -rf ${CHECKOUT_DIR}\"\
+  \ because ${CHECKOUT_DIR} might be \"/\"\n            # or the root of a mounted\
+  \ volume.\n            if [ -d \"${CHECKOUT_DIR}\" ] ; then\n            # Delete\
+  \ non-hidden files and directories\n            rm -rf \"${CHECKOUT_DIR:?}\"/*\n\
+  \            # Delete files and directories starting with . but excluding ..\n \
+  \           rm -rf \"${CHECKOUT_DIR}\"/.[!.]*\n            # Delete files and directories\
+  \ starting with .. plus any other character\n            rm -rf \"${CHECKOUT_DIR}\"\
+  /..?*\n            fi\n          }\n          if [ \"${PARAM_DELETE_EXISTING}\"\
+  \ = \"true\" ] ; then\n            cleandir\n          fi\n          test -z \"\
+  ${PARAM_HTTP_PROXY}\" || export HTTP_PROXY=\"${PARAM_HTTP_PROXY}\"\n          test\
+  \ -z \"${PARAM_HTTPS_PROXY}\" || export HTTPS_PROXY=\"${PARAM_HTTPS_PROXY}\"\n \
+  \         test -z \"${PARAM_NO_PROXY}\" || export NO_PROXY=\"${PARAM_NO_PROXY}\"\
+  \n          /ko-app/git-init \\\n            -url=\"${PARAM_URL}\" \\\n        \
+  \    -revision=\"${PARAM_REVISION}\" \\\n            -refspec=\"${PARAM_REFSPEC}\"\
+  \ \\\n            -path=\"${CHECKOUT_DIR}\" \\\n            -sslVerify=\"${PARAM_SSL_VERIFY}\"\
+  \ \\\n            -submodules=\"${PARAM_SUBMODULES}\" \\\n            -depth=\"\
+  ${PARAM_DEPTH}\" \\\n            -sparseCheckoutDirectories=\"${PARAM_SPARSE_CHECKOUT_DIRECTORIES}\"\
+  \n          cd \"${CHECKOUT_DIR}\"\n          # shellcheck disable=SC2034  # Unused\
+  \ variable left for readability\n          RESULT_SHA=\"$(git rev-parse HEAD)\"\n\
+  \          EXIT_CODE=\"$?\"\n          if [ \"${EXIT_CODE}\" != 0 ] ; then\n   \
+  \         exit \"${EXIT_CODE}\"\n          fi\n          \n  \n      # Copy builder\
+  \ buildpacks and order.toml for pre-processing\n      - name: copy-builder-to-tmp\n\
+  \        image: $(params.BUILDER_IMAGE)\n        imagePullPolicy: Always\n     \
+  \   command: [\"/bin/sh\"]\n        args:\n          - \"-c\"\n          - \"-x\"\
+  \n          - >-\n            cp -a /cnb/buildpacks /tmp_builder/\n            &&\
+  \ cp /cnb/order.toml /tmp_builder/\n            || exit 1\n        volumeMounts:\n\
+  \          - name: tmp-builder-dir\n            mountPath: /tmp_builder\n  \n  \
+  \    - name: prepare\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \n        args:\n          - \"--env-vars\"\n          - \"$(params.ENV_VARS[*])\"\
+  \n        script: | \n          #!/usr/bin/env bash\n          set -e\n        \
+  \  \n          echo \"Running on node $MY_NODE_NAME\"\n          \n          if\
+  \ [[ \"$(workspaces.cache.bound)\" == \"true\" ]]; then\n            echo \"> Setting\
+  \ permissions on '$(workspaces.cache.path)'...\"\n            chown -R \"$(params.USER_ID):$(params.GROUP_ID)\"\
+  \ \"$(workspaces.cache.path)\"\n          fi\n          \n          for path in\
+  \ \"/tekton/home\" \"/layers\" \"$(workspaces.source.path)\"; do\n            echo\
+  \ \"> Setting permissions on '$path'...\"\n            chown -R \"$(params.USER_ID):$(params.GROUP_ID)\"\
+  \ \"$path\"\n          \n            if [[ \"$path\" == \"$(workspaces.source.path)\"\
+  \ ]]; then\n              chmod 775 \"$(workspaces.source.path)\"\n            fi\n\
+  \          done\n          \n          echo \"> Parsing additional configuration...\"\
+  \n          parsing_flag=\"\"\n          envs=()\n          for arg in \"$@\"; do\n\
+  \            if [[ \"$arg\" == \"--env-vars\" ]]; then\n              echo \"->\
+  \ Parsing env variables...\"\n              parsing_flag=\"env-vars\"\n        \
+  \    elif [[ \"$parsing_flag\" == \"env-vars\" ]]; then\n              envs+=(\"\
+  $arg\")\n            fi\n          done\n          \n          echo \"> Processing\
+  \ any environment variables...\"\n          ENV_DIR=\"/platform/env\"\n        \
+  \  \n          echo \"--> Creating 'env' directory: $ENV_DIR\"\n          mkdir\
+  \ -p \"$ENV_DIR\"\n          \n          for env in \"${envs[@]}\"; do\n       \
+  \     IFS='=' read -r key value _ <<< \"$env\"\n            if [[ \"$key\" != \"\
+  \" && \"$value\" != \"\" ]]; then\n              path=\"${ENV_DIR}/${key}\"\n  \
+  \            echo \"--> Writing ${path}...\"\n              echo -n \"$value\" >\
+  \ \"$path\"\n            fi\n          done\n          \n        volumeMounts:\n\
+  \          - name: layers-dir\n            mountPath: /layers\n          - name:\
+  \ $(params.PLATFORM_DIR)\n            mountPath: /platform\n          - name: tmp-builder-dir\n\
+  \            mountPath: /tmp_builder\n  \n      # this whole step was added\n  \
+  \    - name: inject-buildpacks\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \n        args: []\n        env:\n          - name: WORKSPACE_OUTPUT_PATH\n    \
+  \        value: $(workspaces.source.path)\n        script: | \n          #!/usr/bin/env\
+  \ bash\n          set -x\n          set -o nounset\n          set -o errexit\n \
+  \         set -o pipefail\n          \n          \n          # this is the library\
+  \ that yq uses, but yq has a bug for toml nested arrays: https://github.com/mikefarah/yq/issues/1758\n\
+  \          # so as a workaround we parse toml -> json -> jq edits -> json -> toml\n\
+  \          JSON_TOML_URL=https://github.com/pelletier/go-toml/releases/download/v2.1.1/jsontoml_2.1.1_linux_amd64.tar.xz\n\
+  \          TOML_JSON_URL=https://github.com/pelletier/go-toml/releases/download/v2.1.1/tomljson_2.1.1_linux_amd64.tar.xz\n\
+  \          JQ_URL=https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64\n\
+  \          \n          \n          download_parsing_tools() {\n              wget\
+  \ -O - \"$JSON_TOML_URL\" | tar xvJ\n              wget -O - \"$TOML_JSON_URL\"\
+  \ | tar xvJ\n              wget -O jq \"$JQ_URL\" && chmod +x jq\n          }\n\
+  \          \n          download_buildpack(){\n              local url=\"${1?}\"\n\
+  \              local dest_dir=\"${2?}\"\n              local tmpdir\n          \n\
+  \              tmpdir=\"$(mktemp -d)\"\n              cd \"$tmpdir\"\n         \
+  \     wget \"$url\"\n              unzip -- *.zip\n              mkdir -p \"$dest_dir/\"\
+  \n              cp -a -- */* \"$dest_dir/\"\n              cd -\n              rm\
+  \ -rf \"$tmpdir\"\n          }\n          \n          \n          add_entry_to_all_groups()\
+  \ {\n              local toml_file=\"${1?}\"\n              local group_entry=\"\
+  ${2?}\"\n          \n              # Poor-dev's toml parser xd, note the '|' as\
+  \ separator to avoid collisions, don't change that\n              # TODO: use a\
+  \ proper parser -.-\n              # TODO: avoid adding also to the already existing\
+  \ nodejs buildpack\n              sed -i \"s|\\[\\[order\\]\\]|$group_entry|\" \"\
+  $toml_file\"\n          }\n          \n          \n          add_new_group() {\n\
+  \              # Use as:\n              #   add_new_group /path/to/toml <<EOT\n\
+  \              #   [[order]]\n              #       [[order.group]]\n          \
+  \    #       id = ....\n              #   EOT\n              #\n              #\
+  \ The new group will be added to the start of the toml file\n              local\
+  \ toml_file=\"${1?}\"\n              local tmpdir\n          \n              tmpdir=\"\
+  $(mktemp -d)\"\n              local tmp_toml=\"$tmpdir/tmp.toml\"\n            \
+  \  cat > \"$tmp_toml\"\n              cat \"$toml_file\" >> \"$tmp_toml\"\n    \
+  \          cp \"$tmp_toml\" \"$toml_file\"\n              chmod 644 \"$toml_file\"\
+  \n              rm -rf \"$tmpdir\"\n          }\n          \n          \n      \
+  \    inject_dotnet() {\n              local buildpacks_dir=\"${1?No buildpacks_dir\
+  \ passed}\"\n              local order_toml=\"${2?No order_toml passed}\"\n    \
+  \          download_buildpack \\\n                  \"https://gitlab.wikimedia.org/repos/cloud/toolforge/buildpacks/dotnetcore-buildpack/-/archive/move_to_api_0.10/dotnetcore-buildpack-move_to_api_0.10.zip\"\
+  \ \\\n                  \"$buildpacks_dir/jincod_dotnetcore-buildpack/7.0.401/\"\
+  \n          \n              local procfile_version\n              procfile_version=\"\
+  $(ls \"$buildpacks_dir/heroku_procfile\")\"\n              add_new_group \"$order_toml\"\
+  \ <<EOT\n          [[order]]\n              [[order.group]]\n              id =\
+  \ \"jincod/dotnetcore-buildpack\"\n              version = \"7.0.401\"\n       \
+  \       api = \"0.10\"\n              optional = false\n              [[order.group]]\n\
+  \              id = \"heroku/procfile\"\n              version = \"$procfile_version\"\
+  \n              optional = true\n          EOT\n          }\n          \n      \
+  \    \n          inject_rust() {\n              local buildpacks_dir=\"${1?No buildpacks_dir\
+  \ passed}\"\n              local order_toml=\"${2?No order_toml passed}\"\n    \
+  \          download_buildpack \\\n                  \"https://gitlab.wikimedia.org/repos/cloud/toolforge/buildpacks/rust-buildpack/-/archive/move_to_api_0.10/rust-buildpack-move_to_api_0.10.zip\"\
+  \ \\\n                  \"$buildpacks_dir/emk_rust/0.1/\"\n          \n        \
+  \      local procfile_version\n              procfile_version=\"$(ls \"$buildpacks_dir/heroku_procfile\"\
+  )\"\n              # we need to add the procfile one as it's not included in the\
+  \ rust buildpack\n              add_new_group \"$order_toml\" <<EOT\n          [[order]]\n\
+  \              [[order.group]]\n              id = \"emk/rust\"\n              version\
+  \ = \"0.1\"\n              api = \"0.10\"\n              optional = false\n    \
+  \          [[order.group]]\n              id = \"heroku/procfile\"\n           \
+  \   version = \"$procfile_version\"\n              optional = true\n          EOT\n\
+  \          }\n          \n          \n          # We can remove this once they add\
+  \ the buildpack back to the builder\n          #    https://github.com/heroku/buildpacks-jvm/pull/587\n\
+  \          inject_clojure() {\n              local buildpacks_dir=\"${1?No buildpacks_dir\
+  \ passed}\"\n              local order_toml=\"${2?No order_toml passed}\"\n    \
+  \          download_buildpack \\\n                  \"https://gitlab.wikimedia.org/repos/cloud/toolforge/buildpacks/clojure-buildpack/-/archive/move_to_api_0.10/clojure-buildpack-move_to_api_0.10.zip\"\
+  \ \\\n                  \"$buildpacks_dir/heroku_clojure/0.1/\"\n          \n  \
+  \            local procfile_version\n              procfile_version=\"$(ls \"$buildpacks_dir/heroku_procfile\"\
+  )\"\n              # we need to add the procfile one as it's not included in the\
+  \ clojure buildpack\n              add_new_group \"$order_toml\" <<EOT\n       \
+  \   [[order]]\n              [[order.group]]\n              id = \"heroku/clojure\"\
+  \n              version = \"0.1\"\n              api = \"0.10\"\n              optional\
+  \ = false\n              [[order.group]]\n              id = \"heroku/procfile\"\
+  \n              version = \"$procfile_version\"\n              optional = true\n\
+  \          EOT\n          }\n          \n          \n          inject_aptfile()\
+  \ {\n              local buildpacks_dir=\"${1?No buildpacks_dir passed}\"\n    \
+  \          local order_toml=\"${2?No order_toml passed}\"\n          \n        \
+  \      download_buildpack \\\n                  \"https://gitlab.wikimedia.org/repos/cloud/toolforge/buildpacks/apt-buildpack/-/archive/move_to_api_0.10/apt-buildpack-move_to_api_0.10.zip\"\
+  \ \\\n                  \"$buildpacks_dir/fagiani_apt/0.2.5/\"\n          \n   \
+  \           local aptfile_group='[[order]]\\\n              [[order.group]]\\\n\
+  \              id = \"fagiani/apt\"\\\n              version = \"0.2.5\"\\\n   \
+  \           optional = true\\\n              '\n              add_entry_to_all_groups\
+  \ \"$order_toml\" \"$aptfile_group\"\n          }\n          \n          \n    \
+  \      inject_nodejs() {\n              local buildpacks_dir=\"${1?No buildpacks_dir\
+  \ passed}\"\n              local order_toml=\"${2?No order_toml passed}\"\n    \
+  \      \n              local version\n              # the only subdirectory is the\
+  \ version that's installed\n              version=\"$(ls \"$buildpacks_dir/heroku_nodejs\"\
+  )\"\n          \n              local nodejs_group='[[order]]\\\n              [[order.group]]\\\
+  \n              id = \"heroku/nodejs\"\\\n              version = \"'\"$version\"\
+  '\"\\\n              optional = true\\\n              '\n              add_entry_to_all_groups\
+  \ \"$order_toml\" \"$nodejs_group\"\n          }\n          \n          \n     \
+  \     remove_group() {\n              local toml_file=\"${1?}\"\n              local\
+  \ id=\"${2?}\"\n              local expected_length=\"${3?}\"\n              local\
+  \ tmpdir\n          \n              tmpdir=\"$(mktemp -d)\"\n              local\
+  \ tmp_toml=\"$tmpdir/tmp.toml\"\n          \n              # filtering objects with\
+  \ length X (assisting buildpacks + our id, the easiest way I found to identify them)\n\
+  \              # and that have our buildpack id\n              ./tomljson \"$toml_file\"\
+  \ \\\n              | ./jq \"walk(if type==\\\"object\\\" and (.group|length)==$expected_length\
+  \ and .group[0].id==\\\"$id\\\" then empty else . end)\" \\\n              | ./jsontoml\
+  \ >> \"$tmp_toml\"\n          \n              cp \"$tmp_toml\" \"$toml_file\"\n\
+  \              chmod 644 \"$toml_file\"\n              rm -rf \"$tmpdir\"\n    \
+  \      }\n          \n          \n          put_nodejs_at_the_end() {\n        \
+  \      local buildpacks_dir=\"${1?No buildpacks_dir passed}\"\n              local\
+  \ order_toml=\"${2?No order_toml passed}\"\n          \n              local version\n\
+  \              # the only subdirectory is the version that's installed\n       \
+  \       version=\"$(ls \"$buildpacks_dir/heroku_nodejs\")\"\n          \n      \
+  \        local procfile_version\n              procfile_version=\"$(ls \"$buildpacks_dir/heroku_procfile\"\
+  )\"\n          \n              # we expect it to have only procfile + nodejs\n \
+  \             remove_group \"$order_toml\" \"heroku/nodejs\" 2\n          \n   \
+  \           cat >>\"$order_toml\" <<EOT\n          [[order]]\n              [[order.group]]\n\
+  \              id = \"heroku/nodejs\"\n              version = \"$version\"\n  \
+  \            optional = false\n              [[order.group]]\n              id =\
+  \ \"heroku/procfile\"\n              version = \"$procfile_version\"\n         \
+  \     optional = true\n          EOT\n          }\n          \n          \n    \
+  \      inject_locales() {\n              local buildpacks_dir=\"${1?No buildpacks_dir\
+  \ passed}\"\n              local order_toml=\"${2?No order_toml passed}\"\n    \
+  \      \n              download_buildpack \\\n                  \"https://gitlab.wikimedia.org/repos/cloud/toolforge/buildpacks/locale-buildpack/-/archive/move_to_api_0.10/dotnetcore-buildpack-move_to_api_0.10.zip\"\
+  \ \\\n                  \"$buildpacks_dir/heroku-community_locale/0.1/\"\n     \
+  \     \n              local nodejs_group='[[order]]\\\n              [[order.group]]\\\
+  \n              id = \"heroku-community/locale\"\\\n              version = \"0.1\"\
+  \\\n              optional = true\\\n              '\n              add_entry_to_all_groups\
+  \ \"$order_toml\" \"$nodejs_group\"\n          }\n          \n          \n     \
+  \     \n          main() {\n              local buildpacks_dir=\"/tmp_builder/buildpacks\"\
+  \n              local order_toml=\"/tmp_builder/order.toml\"\n          \n     \
+  \         # For toml parsing, includes jq\n              download_parsing_tools\n\
+  \          \n              # as we support multistack with nodejs, any lang+nodejs\
+  \ combination should have\n              # priority over only nodejs\n         \
+  \     put_nodejs_at_the_end \"$buildpacks_dir\" \"$order_toml\"\n          \n  \
+  \        \n              # Enable users to build dotnet/mono/c# code\n         \
+  \     inject_dotnet \"$buildpacks_dir\" \"$order_toml\"\n              # Enable\
+  \ users to build rust\n              inject_rust \"$buildpacks_dir\" \"$order_toml\"\
+  \n              # Enable users to build clojure\n              inject_clojure \"\
+  $buildpacks_dir\" \"$order_toml\"\n          \n              # these are appended\
+  \ to existing order groups rather than creating new ones\n              # to allow\
+  \ multi-buildpack\n              inject_locales \"$buildpacks_dir\" \"$order_toml\"\
+  \n              inject_nodejs \"$buildpacks_dir\" \"$order_toml\"\n            \
+  \  inject_aptfile \"$buildpacks_dir\" \"$order_toml\"\n          \n            \
+  \  echo \"<------ Final order.toml\"\n              cat \"$order_toml\"\n      \
+  \    }\n          \n          \n          main \"$@\"\n          \n        volumeMounts:\n\
+  \          - name: layers-dir\n            mountPath: /layers\n          - name:\
+  \ $(params.PLATFORM_DIR)\n            mountPath: /platform\n          - name: tmp-builder-dir\n\
+  \            mountPath: /tmp_builder\n  \n      # Override the stack.toml file so\
+  \ we use our runner image (instead of pulling from docker)\n      - name: set-stack-toml\n\
+  \        image: $(params.BUILDER_IMAGE)\n        imagePullPolicy: Always\n     \
+  \   volumeMounts:\n          - name: layers-dir\n            mountPath: /layers\n\
+  \        script: | \n          #!/usr/bin/env bash\n          \n          set -o\
+  \ nounset\n          set -o errexit\n          set -o pipefail\n          \n   \
+  \       main() {\n              local run_image=\"${RUN_IMAGE?No run image passed,\
+  \ please set an environment variable RUN_IMAGE}\"\n              echo \"Using run\
+  \ image: $run_image\"\n              cat <<EOS >/layers/stack.toml\n          [run-image]\n\
+  \            image = \"$run_image\"\n          EOS\n          }\n          \n  \
+  \        main \"$@\"\n          \n  \n      - name: analyze\n        image: $(params.BUILDER_IMAGE)\
+  \  # using the builder included lifecycle\n        imagePullPolicy: Always\n   \
+  \     command: [\"/cnb/lifecycle/analyzer\"]\n        args:\n          - \"-layers=/layers\"\
+  \n          - \"-stack=/layers/stack.toml\"\n          - \"-cache-image=$(params.CACHE_IMAGE)\"\
+  \n          - \"-uid=$(params.USER_ID)\"\n          - \"-gid=$(params.GROUP_ID)\"\
+  \n          - \"$(params.APP_IMAGE)\"\n        volumeMounts:\n          - name:\
+  \ layers-dir\n            mountPath: /layers\n  \n      - name: detect\n       \
+  \ image: $(params.BUILDER_IMAGE)  # using the builder included lifecycle\n     \
+  \   imagePullPolicy: Always\n        command: [\"/cnb/lifecycle/detector\"]\n  \
+  \      args:\n          - \"-app=$(workspaces.source.path)/$(params.SOURCE_SUBPATH)\"\
+  \n          - \"-group=/layers/group.toml\"\n          - \"-plan=/layers/plan.toml\"\
+  \n          - \"-buildpacks=/tmp_builder/buildpacks\"\n          - \"-order=/tmp_builder/order.toml\"\
+  \n        volumeMounts:\n          - name: layers-dir\n            mountPath: /layers\n\
+  \          - name: $(params.PLATFORM_DIR)\n            mountPath: /platform\n  \
+  \        - name: empty-dir\n            mountPath: /tekton/home\n          - name:\
+  \ tmp-builder-dir\n            mountPath: /tmp_builder\n  \n      - name: restore\n\
+  \        image: $(params.BUILDER_IMAGE)  # using the builder included lifecycle\n\
+  \        imagePullPolicy: Always\n        command: [\"/cnb/lifecycle/restorer\"\
+  ]\n        args:\n          - \"-group=/layers/group.toml\"\n          - \"-layers=/layers\"\
+  \n          - \"-cache-dir=$(workspaces.cache.path)\"\n          - \"-cache-image=$(params.CACHE_IMAGE)\"\
+  \n          - \"-uid=$(params.USER_ID)\"\n          - \"-gid=$(params.GROUP_ID)\"\
+  \n        volumeMounts:\n          - name: layers-dir\n            mountPath: /layers\n\
+  \  \n      - name: build\n        image: $(params.BUILDER_IMAGE)  # using the builder\
+  \ included lifecycle\n        imagePullPolicy: Always\n        command: [\"/cnb/lifecycle/builder\"\
+  ]\n        args:\n          - \"-app=$(workspaces.source.path)/$(params.SOURCE_SUBPATH)\"\
+  \n          - \"-layers=/layers\"\n          - \"-group=/layers/group.toml\"\n \
+  \         - \"-plan=/layers/plan.toml\"\n          - \"-buildpacks=/tmp_builder/buildpacks\"\
+  \n        volumeMounts:\n          - name: layers-dir\n            mountPath: /layers\n\
+  \          - name: $(params.PLATFORM_DIR)\n            mountPath: /platform\n  \
+  \        - name: empty-dir\n            mountPath: /tekton/home\n          - name:\
+  \ tmp-builder-dir\n            mountPath: /tmp_builder\n  \n      # this whole step\
+  \ was added\n      - name: fix-nested-procfile-launcher\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \n        args: []\n        script: | \n          #!/usr/bin/env bash\n        \
+  \  \n          set -e\n          \n          LAYERS_DIR=\"/layers\"\n          PROCFILE_LAYER=\"\
+  $LAYERS_DIR/heroku_procfile\"\n          FIX_LAYER=\"$PROCFILE_LAYER/nested_launcher_fix\"\
+  \n          ENV_DIR=\"$FIX_LAYER/env\"\n          \n          if ! [[ -e \"$PROCFILE_LAYER\"\
+  \ ]]; then\n              echo \"Skipping, procfile buildpack not detected...\"\n\
+  \              exit 0\n          fi\n          \n          # Allow procfile launcher\
+  \ to run itself\n          # T355214\n          mkdir -p \"$ENV_DIR\"\n        \
+  \  \n          cnb_platform=\"${ENV_DIR}/CNB_PLATFORM_API\"\n          # shellcheck\
+  \ disable=SC2153 # possible misspelling of unassigned variable\n          echo \"\
+  --> Writing ${cnb_platform}=$CNB_PLATFORM ...\"\n          echo -n \"$CNB_PLATFORM_API\"\
+  \ > \"$cnb_platform\"\n          \n          if [[ -e \"$LAYERS_DIR/heroku_go\"\
+  \ ]]; then\n              # golang entrypoints have the same name as the binaries\n\
+  \              # so we put the /cnb/process at the end of the path to avoid\n  \
+  \            # recursive calls\n              #    See https://phabricator.wikimedia.org/T363417\n\
+  \              path_var=\"${ENV_DIR}/PATH.append\"\n              echo \"--> Writing\
+  \ ${path_var}...\"\n              echo -n \":/cnb/process:/cnb/lifecycle\" > \"\
+  $path_var\"\n          else\n              path_var=\"${ENV_DIR}/PATH.prepend\"\n\
+  \              echo \"--> Writing ${path_var}...\"\n              echo -n \"/cnb/process:/cnb/lifecycle:\"\
+  \ > \"$path_var\"\n          fi\n          \n          cat >\"$FIX_LAYER.toml\"\
+  <<EOL\n          [types]\n          launch = true\n          build = false\n   \
+  \       cache = false\n          EOL\n          \n        volumeMounts:\n      \
+  \    - name: layers-dir\n            mountPath: /layers\n  \n      # this whole\
+  \ step was added\n\e[0;32m+     - name: fix-imagemagick-config\e[0m\n\e[0;32m+ \
+  \      image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \e[0m\n\e[0;32m+       args: []\e[0m\n\e[0;32m+       script: | \e[0m\n\e[0;32m+\
+  \         #!/usr/bin/env bash\e[0m\n\e[0;32m+         # See https://phabricator.wikimedia.org/T370610\e\
+  [0m\n\e[0;32m+         # and https://help.heroku.com/RFDJQSG3/how-can-i-override-imagemagick-settings-in-a-policy-xml-file\e\
+  [0m\n\e[0;32m+         #\e[0m\n\e[0;32m+         # heroku-22 base image comes with\
+  \ a default imagemagick config under /etc/ImageMagick-6/policy.xml file that\e[0m\n\
+  \e[0;32m+         # restricts the sizes it can manage, as we are running inside\
+  \ a container we don't really want to limit them here,\e[0m\n\e[0;32m+         #\
+  \ and allow the container to use as much memory as it can.\e[0m\n\e[0;32m+     \
+  \    \e[0m\n\e[0;32m+         set -o nounset\e[0m\n\e[0;32m+         set -o errexit\e\
+  [0m\n\e[0;32m+         set -o pipefail\e[0m\n\e[0;32m+         \e[0m\n\e[0;32m+\
+  \         LAYERS_DIR=\"/layers\"\e[0m\n\e[0;32m+         PROCFILE_LAYER=\"$LAYERS_DIR/heroku_procfile\"\
+  \e[0m\n\e[0;32m+         FIX_LAYER=\"$PROCFILE_LAYER/imagemagick_fix\"\e[0m\n\e\
+  [0;32m+         ENV_DIR=\"$FIX_LAYER/env\"\e[0m\n\e[0;32m+         MAGICK_CONFIGURE_PATH=\"\
+  /app/.magick:$FIX_LAYER:/etc/ImageMagick-6\"\e[0m\n\e[0;32m+         \e[0m\n\e[0;32m+\
+  \         if ! [[ -e \"$PROCFILE_LAYER\" ]]; then\e[0m\n\e[0;32m+             echo\
+  \ \"Skipping, procfile buildpack not detected...\"\e[0m\n\e[0;32m+             exit\
+  \ 0\e[0m\n\e[0;32m+         fi\e[0m\n\e[0;32m+         \e[0m\n\e[0;32m+        \
+  \ mkdir -p \"$ENV_DIR\"\e[0m\n\e[0;32m+         \e[0m\n\e[0;32m+         magick_configure_varfile=\"\
+  ${ENV_DIR}/MAGICK_CONFIGURE_PATH\"\e[0m\n\e[0;32m+         echo \"--> Writing MAGICK_CONFIGURE_PATH=$MAGICK_CONFIGURE_PATH\
+  \ ...\"\e[0m\n\e[0;32m+         echo -n \"$MAGICK_CONFIGURE_PATH\" > \"$magick_configure_varfile\"\
+  \e[0m\n\e[0;32m+         \e[0m\n\e[0;32m+         echo \"--> Writing $FIX_LAYER/policy.xml\
+  \ ...\"\e[0m\n\e[0;32m+         # We need to set some values, otherwise it falls\
+  \ back to the default config file\e[0m\n\e[0;32m+         cat <<EOC >\"$FIX_LAYER/policy.xml\"\
+  \e[0m\n\e[0;32m+         <policymap>\e[0m\n\e[0;32m+           <policy domain=\"\
+  resource\" name=\"memory\" value=\"1PiB\"/>\e[0m\n\e[0;32m+           <policy domain=\"\
+  resource\" name=\"map\" value=\"1PiB\"/>\e[0m\n\e[0;32m+           <policy domain=\"\
+  resource\" name=\"width\" value=\"1PP\"/>\e[0m\n\e[0;32m+           <policy domain=\"\
+  resource\" name=\"height\" value=\"1PP\"/>\e[0m\n\e[0;32m+           <policy domain=\"\
+  resource\" name=\"area\" value=\"1PP\"/>\e[0m\n\e[0;32m+           <policy domain=\"\
+  resource\" name=\"disk\" value=\"1PiB\"/>\e[0m\n\e[0;32m+           <policy domain=\"\
+  delegate\" rights=\"none\" pattern=\"URL\" />\e[0m\n\e[0;32m+           <policy\
+  \ domain=\"delegate\" rights=\"none\" pattern=\"HTTPS\" />\e[0m\n\e[0;32m+     \
+  \      <policy domain=\"delegate\" rights=\"none\" pattern=\"HggTTP\" />\e[0m\n\e\
+  [0;32m+           <policy domain=\"path\" rights=\"none\" pattern=\"@*\"/>\e[0m\n\
+  \e[0;32m+           <policy domain=\"cache\" name=\"shared-secret\" value=\"passphrase\"\
+  \ stealth=\"true\"/>\e[0m\n\e[0;32m+         </policymap>\e[0m\n\e[0;32m+      \
+  \   EOC\e[0m\n\e[0;32m+         \e[0m\n\e[0;32m+         cat >\"$FIX_LAYER.toml\"\
+  <<EOL\e[0m\n\e[0;32m+         [types]\e[0m\n\e[0;32m+         launch = true\e[0m\n\
+  \e[0;32m+         build = false\e[0m\n\e[0;32m+         cache = false\e[0m\n\e[0;32m+\
+  \         EOL\e[0m\n\e[0;32m+         \e[0m\n\e[0;32m+       volumeMounts:\e[0m\n\
+  \e[0;32m+         - name: layers-dir\e[0m\n\e[0;32m+           mountPath: /layers\e\
+  [0m\n\e[0;32m+ \e[0m\n\e[0;32m+     # this whole step was added\e[0m\n      - name:\
+  \ fix-permissions\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \n        args: []\n        script: | \n          #!/usr/bin/env bash\n        \
+  \  set -e\n          \n          # this is needed for the user that will run in\
+  \ the container to write on the app source code\n          # usually for hardcoded\
+  \ paths for buildpacks that expect to run as user 1000\n          # like logs, on-the-fly\
+  \ conf files, ...\n          for path in \"/layers\" \"$(workspaces.source.path)\"\
+  ; do\n            echo \"> Setting permissions on '$path'...\"\n            chmod\
+  \ go+rw -R \"$path\"\n            find \"$path\" -executable -exec chmod go+x {}\
+  \ \\;\n          done\n          \n        volumeMounts:\n          - name: layers-dir\n\
+  \            mountPath: /layers\n          - name: $(params.PLATFORM_DIR)\n    \
+  \        mountPath: /platform\n  \n      - name: export\n        image: $(params.BUILDER_IMAGE)\
+  \  # using the builder included lifecycle\n        imagePullPolicy: Always\n   \
+  \     script: | \n          #!/usr/bin/env bash\n          set -e\n          set\
+  \ -o pipefail\n          \n          explain_harbor_quota_error() {\n          \
+  \    # not the best approach but we have to somehow avoid false positives\n    \
+  \          expected_error_str=\"will exceed the configured upper limit\"\n     \
+  \         last_output=$(tail -n 1 <<< \"$1\")\n              if [[ $last_output\
+  \ == *\"$expected_error_str\"* ]]; then\n                  echo -e \"\\033[33m|=================================================================|\\\
+  033[0m\"\n                  echo -e \"\\033[33m| The above error is likely because\
+  \ the build is bigger than your |\\033[0m\"\n                  echo -e \"\\033[33m|\
+  \ current available quota.                                        |\\033[0m\"\n\
+  \                  echo -e \"\\033[33m| To check your available quota run: \\\"\
+  toolforge build quota\\\".     |\\033[0m\"\n                  echo -e \"\\033[33m|\
+  \ To free up space you can run: \\\"toolforge build clean\\\".          |\\033[0m\"\
+  \n                  echo -e \"\\033[33m| If the error persists,                \
+  \                          |\\033[0m\"\n                  echo -e \"\\033[33m| please\
+  \ report to the Toolforge admins: https://w.wiki/6Zuu      |\\033[0m\"\n       \
+  \           echo -e \"\\033[33m|=================================================================|\\\
+  033[0m\"\n              fi\n              exit 1\n          }\n          \n    \
+  \      output=$(/cnb/lifecycle/exporter \"$@\" 2>&1 | tee /dev/fd/2) || explain_harbor_quota_error\
+  \ \"$output\"\n          \n        args:\n          - \"-app=$(workspaces.source.path)/$(params.SOURCE_SUBPATH)\"\
+  \n          - \"-layers=/layers\"\n          - \"-group=/layers/group.toml\"\n \
+  \         - \"-cache-dir=$(workspaces.cache.path)\"\n          - \"-cache-image=$(params.CACHE_IMAGE)\"\
+  \n          - \"-report=/layers/report.toml\"\n          - \"-process-type=$(params.PROCESS_TYPE)\"\
+  \n          - \"-uid=$(params.USER_ID)\"\n          - \"-gid=$(params.GROUP_ID)\"\
+  \n          - \"-stack=/layers/stack.toml\"\n          - \"$(params.APP_IMAGE)\"\
+  \n        volumeMounts:\n          - name: layers-dir\n            mountPath: /layers\n\
+  \          - name: $(params.PLATFORM_DIR)\n            mountPath: /platform\n  \n\
+  \      - name: results\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \n        script: | \n          #!/usr/bin/env bash\n          set -e\n        \
+  \  grep \"digest\" /layers/report.toml | cut -d'\"' -f2 | cut -d'\"' -f2 | tr -d\
+  \ '\\n' > \"$(results.APP_IMAGE_DIGEST.path)\"\n          # shellcheck disable=SC2005\
+  \  # params.APP_IMAGE is a variable so echo is needed\n          echo \"$(params.APP_IMAGE)\"\
+  \ > \"$(results.APP_IMAGE_URL.path)\"\n          echo \"Built image $(cat \"$(results.APP_IMAGE_URL.path)\"\
+  )@$(cat \"$(results.APP_IMAGE_DIGEST.path)\")\"\n          \n        volumeMounts:\n\
+  \          - name: layers-dir\n            mountPath: /layers\n  \n    volumes:\n\
+  \      - name: empty-dir\n        emptyDir: {}\n      - name: layers-dir\n     \
+  \   emptyDir: {}\n      - name: tmp-builder-dir\n        emptyDir: {}\n\nUpgrading\
+  \ release=builds-builder, chart=/tmp/helmfile4111792480/builds-builder/builds-builder/builds-builder/0.0.114-20240729143738-4f948212/builds-builder\n\
+  Release \"builds-builder\" has been upgraded. Happy Helming!\nNAME: builds-builder\n\
+  LAST DEPLOYED: Mon Jul 29 16:10:05 2024\nNAMESPACE: builds-builder\nSTATUS: deployed\n\
+  REVISION: 27\nTEST SUITE: None\n\nListing releases matching ^builds-builder$\nbuilds-builder\t\
+  builds-builder\t27      \t2024-07-29 16:10:05.795774628 +0000 UTC\tdeployed\tbuilds-builder-0.0.114-20240729143738-4f948212\t\
+  \           \n\n\nUPDATED RELEASES:\nNAME             CHART                    \
+  \                                                                              \
+  \                                       VERSION\nbuilds-builder   /tmp/helmfile4111792480/builds-builder/builds-builder/builds-builder/0.0.114-20240729143738-4f948212/builds-builder\
+  \   0.0.114-20240729143738-4f948212\n"
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - /tmp/cookbook-toolforge-k8s-component-deploy-zmafbzwgej/toolforge-deploy/deploy.sh
+      'builds-builder'
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: ''
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - rm
+    - -rf
+    - --preserve-root=all
+    - '''/tmp/cookbook-toolforge-k8s-component-deploy-zmafbzwgej'''
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1

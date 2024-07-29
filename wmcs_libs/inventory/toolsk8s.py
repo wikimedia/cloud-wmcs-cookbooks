@@ -41,6 +41,8 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     INGRESS = "ingress"
     ETCD = "etcd"
     HAPROXY = "haproxy"
+    SERVICES = "service"
+    BASTION = "bastion"
 
     def __str__(self) -> str:
         """Needed to show the nice string values and for argparse to use those to call the `type` parameter."""

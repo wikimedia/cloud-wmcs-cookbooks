@@ -1,0 +1,338 @@
+output: "--2024-07-29 11:41:46--  https://gitlab.wikimedia.org/api/v4/projects/1451/jobs/326204/artifacts\n\
+  Resolving gitlab.wikimedia.org (gitlab.wikimedia.org)... 208.80.153.8, 2620:0:860:1:208:80:153:8\n\
+  Connecting to gitlab.wikimedia.org (gitlab.wikimedia.org)|208.80.153.8|:443... connected.\n\
+  HTTP request sent, awaiting response... 200 OK\nLength: 66437 (65K) [application/octet-stream]\n\
+  Saving to: \u2018artifacts\u2019\n\n     0K .......... .......... .......... .......Archive:\
+  \  artifacts\n  inflating: debs/toolforge-builds-cli_0.0.18.dsc  \n  inflating:\
+  \ debs/toolforge-builds-cli_0.0.18.tar.xz  \n  inflating: debs/toolforge-builds-cli_0.0.18_all.deb\
+  \  \n  inflating: debs/toolforge-builds-cli_0.0.18_amd64.build  \n  inflating: debs/toolforge-builds-cli_0.0.18_amd64.buildinfo\
+  \  \n... .......... 77%  821K 0s\n    50K .......... ....                      \
+  \                 100% 63.6M=0.06s\n\n2024-07-29 11:41:46 (1.04 MB/s) - \u2018artifacts\u2019\
+  \ saved [66437/66437]\n\n  inflating: debs/toolforge-builds-cli_0.0.18_amd64.changes\
+  \  "
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - 'bash -c -- ''
+
+      set -o errexit;
+
+      set -o nounset;
+
+      set -o pipefail;
+
+
+      mkdir -p "/tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx";
+
+      cd "/tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx";
+
+      wget "https://gitlab.wikimedia.org/api/v4/projects/1451/jobs/326204/artifacts";
+
+      unzip artifacts;
+
+      ''
+
+      '
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: /tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx/debs/toolforge-builds-cli_0.0.18_all.deb
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - ls
+    - /tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx/debs/toolforge-builds-cli*.deb
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Loading packages...
+
+  [+] toolforge-builds-cli_0.0.18_all added'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - aptly
+    - repo
+    - add
+    - buster-toolsbeta
+    - /tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx/debs/toolforge-builds-cli_0.0.18_all.deb
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Loading packages...
+
+  Generating metadata files and linking package files...
+
+  Finalizing metadata files...
+
+  Cleaning up prefix "." components main...
+
+
+  Publish for local repo ./buster-toolsbeta [all, amd64] publishes {main: [buster-toolsbeta]}
+  has been successfully updated.'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - aptly
+    - publish
+    - update
+    - --skip-signing
+    - buster-toolsbeta
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Loading packages...
+
+  [+] toolforge-builds-cli_0.0.18_all added'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - aptly
+    - repo
+    - add
+    - bullseye-toolsbeta
+    - /tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx/debs/toolforge-builds-cli_0.0.18_all.deb
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Loading packages...
+
+  Generating metadata files and linking package files...
+
+  Finalizing metadata files...
+
+  Cleaning up prefix "." components main...
+
+
+  Publish for local repo ./bullseye-toolsbeta [all, amd64] publishes {main: [bullseye-toolsbeta]:
+  Toolforge beta packages for Debian 11 (Bullseye)} has been successfully updated.'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - aptly
+    - publish
+    - update
+    - --skip-signing
+    - bullseye-toolsbeta
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Loading packages...
+
+  [+] toolforge-builds-cli_0.0.18_all added'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - aptly
+    - repo
+    - add
+    - bookworm-toolsbeta
+    - /tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx/debs/toolforge-builds-cli_0.0.18_all.deb
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Loading packages...
+
+  Generating metadata files and linking package files...
+
+  Finalizing metadata files...
+
+  Cleaning up prefix "." components main...
+
+
+  Publish for local repo ./bookworm-toolsbeta (origin: Wikimedia, label: bookworm-toolsbeta)
+  [all, amd64] publishes {main: [bookworm-toolsbeta]} has been successfully updated.'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - aptly
+    - publish
+    - update
+    - --skip-signing
+    - bookworm-toolsbeta
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: ''
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - rm
+    - -rf
+    - --preserve-root=all
+    - /tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: '
+
+  WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+
+  Hit:1 http://apt.wikimedia.org/wikimedia bookworm-wikimedia InRelease
+
+  Hit:2 http://mirrors.wikimedia.org/debian bookworm-backports InRelease
+
+  Hit:3 http://mirrors.wikimedia.org/debian bookworm InRelease
+
+  Hit:4 http://mirrors.wikimedia.org/debian bookworm-updates InRelease
+
+  Hit:5 http://mirrors.wikimedia.org/osbpo bookworm-bobcat-backports-nochange InRelease
+
+  Hit:6 http://mirrors.wikimedia.org/osbpo bookworm-bobcat-backports InRelease
+
+  Hit:8 http://deb.debian.org/debian-debug bookworm-debug InRelease
+
+  Hit:9 http://security.debian.org/debian-security bookworm-security InRelease
+
+  Ign:7 https://deb.svc.toolforge.org/repo bookworm-toolsbeta InRelease
+
+  Get:10 https://deb.svc.toolforge.org/repo bookworm-toolsbeta Release [6623 B]
+
+  Ign:11 https://deb.svc.toolforge.org/repo bookworm-toolsbeta Release.gpg
+
+  Ign:11 http://deb.svc.toolforge.org/repo bookworm-toolsbeta Release.gpg
+
+  Fetched 6623 B in 1s (4714 B/s)
+
+  Reading package lists...
+
+  Building dependency tree...
+
+  Reading state information...
+
+  All packages are up to date.'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - apt
+    - update
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: '
+
+  WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+
+  Reading package lists...
+
+  Building dependency tree...
+
+  Reading state information...
+
+  toolforge-builds-cli is already the newest version (0.0.18).
+
+  0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - apt
+    - install
+    - --upgrade
+    - toolforge-builds-cli
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: "\nWARNING: apt does not have a stable CLI interface. Use with caution in\
+  \ scripts.\n\ntoolforge-builds-cli:\n  Installed: 0.0.18\n  Candidate: 0.0.18\n\
+  \  Version table:\n *** 0.0.18 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n        100 /var/lib/dpkg/status\n     0.0.17\
+  \ 1500\n       1500 http://deb.svc.toolforge.org/repo bookworm-toolsbeta/main amd64\
+  \ Packages\n       1500 http://deb.svc.toolforge.org/repo bookworm-toolsbeta/main\
+  \ all Packages\n     0.0.16 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.15 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.14 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.13 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.12 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.11 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.10 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.9 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.8 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.6 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.5 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.4 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages\n     0.0.3 1500\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main amd64 Packages\n       1500 http://deb.svc.toolforge.org/repo\
+  \ bookworm-toolsbeta/main all Packages"
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - apt
+    - policy
+    - toolforge-builds-cli
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1

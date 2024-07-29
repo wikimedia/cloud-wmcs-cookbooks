@@ -73,7 +73,7 @@ class WMCSCookbookRecorder:
         if self.next_entry < len(self.recordings) and not (we_are_in_last_entry and last_entry_is_infinite):
             raise ReplayError(
                 f"Not all the entries in the record {self.recordings_file} were replayed, only {self.next_entry - 1} "
-                "were."
+                f"out of {len(self.recordings)} were."
             )
 
     def init_record(self) -> None:

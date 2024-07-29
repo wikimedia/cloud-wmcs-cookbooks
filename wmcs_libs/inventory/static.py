@@ -74,6 +74,14 @@ _INVENTORY: Inventory = {
                             "tools-k8s-control-8.tools.eqiad1.wikimedia.cloud",
                             "tools-k8s-control-9.tools.eqiad1.wikimedia.cloud",
                         ],
+                        ToolforgeKubernetesNodeRoleName.SERVICES: [
+                            "tools-services-06.tools.eqiad1.wikimedia.cloud",
+                        ],
+                        ToolforgeKubernetesNodeRoleName.BASTION: [
+                            "tools-bastion-12.tools.eqiad1.wikimedia.cloud",
+                            "tools-bastion-13.tools.eqiad1.wikimedia.cloud",
+                            "tools-sgebastion-10.tools.eqiad1.wikimedia.cloud",
+                        ],
                     },
                 ),
                 ToolforgeKubernetesClusterName.TOOLSBETA: ToolforgeKubernetesCluster(
@@ -86,6 +94,12 @@ _INVENTORY: Inventory = {
                             "toolsbeta-test-k8s-control-7.toolsbeta.eqiad1.wikimedia.cloud",
                             "toolsbeta-test-k8s-control-8.toolsbeta.eqiad1.wikimedia.cloud",
                             "toolsbeta-test-k8s-control-9.toolsbeta.eqiad1.wikimedia.cloud",
+                        ],
+                        ToolforgeKubernetesNodeRoleName.SERVICES: [
+                            "tools-services-06.tools.eqiad1.wikimedia.cloud",
+                        ],
+                        ToolforgeKubernetesNodeRoleName.BASTION: [
+                            "toolsbeta-bastion-6.toolsbeta.eqiad1.wikimedia.cloud",
                         ],
                     },
                 ),
