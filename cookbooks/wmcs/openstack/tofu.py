@@ -26,6 +26,7 @@ from wmcs_libs.common import (
     with_common_opts,
     with_temporary_file,
 )
+from wmcs_libs.gitlab import GitlabController
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.clusters import get_openstack_clusters
 from wmcs_libs.openstack.common import get_control_nodes
@@ -73,6 +74,20 @@ class OpenstackTofu(CookbookBase):
             type=int,
             help="gitlab merge request number",
         )
+        parser.add_argument(
+            "--gitlab-private-token-file",
+            required=False,
+            type=str,
+            default="/etc/cookbook-wmcs-openstack-tofu-gitlab-private-token.txt",
+            help="Path to file containing gitlab private token to write gitlab MR notes",
+        )
+        parser.add_argument(
+            "--no-gitlab-mr-note",
+            required=False,
+            default=False,
+            action="store_true",
+            help="if running for a gitlab MR, and if specified, don't write a note to the MR",
+        )
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
@@ -82,6 +97,8 @@ class OpenstackTofu(CookbookBase):
             apply=args.apply,
             gitlab_mr=args.gitlab_mr,
             cluster_name=args.cluster_name,
+            gitlab_private_token_file=args.gitlab_private_token_file,
+            no_gitlab_mr_note=args.no_gitlab_mr_note,
             spicerack=self.spicerack,
         )
 
@@ -101,7 +118,8 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
     """Runner for OpenstackTofu"""
 
     GITLAB_BASE_URL = "https://gitlab.wikimedia.org"
-    GITLAB_REPO_URL = f"{GITLAB_BASE_URL}/repos/cloud/cloud-vps/tofu-infra"
+    GITLAB_REPO_NAME = "tofu-infra"
+    GITLAB_REPO_URL = f"{GITLAB_BASE_URL}/repos/cloud/cloud-vps/{GITLAB_REPO_NAME}"
     TOFU_INFRA_DIR = "/srv/tofu-infra/"
 
     def __init__(
@@ -111,6 +129,8 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         apply: bool,
         gitlab_mr: int,
         cluster_name: OpenstackClusterName,
+        gitlab_private_token_file: str,
+        no_gitlab_mr_note: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
         """Init"""
@@ -126,6 +146,12 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
 
         if self.apply and self.cluster_name:
             raise Exception("You can only run 'apply' for all clusters, i.e: don't specify --cluster_name")
+
+        self.gitlabcontroller = None
+        if self.gitlab_mr and not no_gitlab_mr_note:
+            with open(gitlab_private_token_file, encoding="utf-8") as token_file:
+                private_token = token_file.read().strip()
+                self.gitlabcontroller = GitlabController(private_token=private_token)
 
     @property
     def runtime_description(self) -> str:
@@ -187,6 +213,45 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         ]
         self._exec(node, commands)
 
+    def _tofu_plan_to_gitlab_note(self, node: Any, cluster_name: str, plan_file: str) -> None:
+        if not self.gitlabcontroller:
+            return
+
+        commands = [
+            f"cd {self.TOFU_INFRA_DIR}",
+            f"tofu show -no-color {plan_file}",
+        ]
+        tofu_show_cumin_params = CuminParams(print_progress_bars=False, print_output=False, is_safe=True)
+        try:
+            plan = run_one_raw(node=node, command=_sh_wrap(_concat(commands)), cumin_params=tofu_show_cumin_params)
+        except Exception as e:  # pylint: disable=broad-except
+            LOGGER.warning("WARNING: unable to get content of the tofu plan: %s", str(e))
+            return
+
+        if not plan:
+            LOGGER.warning("WARNING: the tofu plan is empty, not writing note to the MR")
+            return
+
+        try:
+            project_id = self.gitlabcontroller.get_project_id_by_name(self.GITLAB_REPO_NAME)
+        except Exception as e:  # pylint: disable=broad-except
+            LOGGER.warning("WARNING: unable to write gitlab note to merge request: %s", str(e))
+            return
+
+        LOGGER.info("INFO: writing note with tofu plan to gitlab merge request")
+
+        # TODO: apparently, code blocks aren't created correctly inside <details> blocks :-(
+        note_body = (
+            f"tofu plan was run for this merge request in cluster `{cluster_name}`:\n"
+            "<details>\n"
+            "<summary>Click to expand tofu plan</summary>\n"
+            f"{plan}\n"
+            "</details>\n"
+        )
+        self.gitlabcontroller.create_mr_note(
+            project_id=project_id, merge_request_iid=self.gitlab_mr, note_body=note_body
+        )
+
     @contextmanager
     def _with_merge_request(self, node: Any) -> Any:
         """Checkout the gitlab merge request, then rollback the local git repository to the main branch."""
@@ -215,6 +280,8 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         with with_temporary_file(dst_node=node, contents="", cumin_params=cumin_params) as plan_file:
             with self._with_merge_request(node):
                 self._tofu_plan(node, plan_file=plan_file)
+
+            self._tofu_plan_to_gitlab_note(node=node, cluster_name=cluster_name, plan_file=plan_file)
 
             run_apply = False
             if self.apply:

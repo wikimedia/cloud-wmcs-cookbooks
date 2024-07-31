@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import time
 from typing import Any, cast
 
+import gitlab as upstream_gitlab_lib
 import requests
 
 GITLAB_BASE_URL = "https://gitlab.wikimedia.org"
@@ -88,3 +91,23 @@ def get_artifacts_url(component: str, branch: str) -> str:
     pipeline = get_last_pipeline(project=project, mr_number=mr_number)
     package_job = get_package_job(project=project, pipeline=pipeline)
     return f"{GITLAB_API_BASE_URL}/projects/{project['id']}/jobs/{package_job['id']}/artifacts"
+
+
+class GitlabController:
+
+    def __init__(self, private_token: str | None = None):
+        self.gitlab = upstream_gitlab_lib.Gitlab(url=GITLAB_BASE_URL, private_token=private_token)
+
+    def get_project_id_by_name(self, project_name: str) -> int:
+        projects = self.gitlab.projects.list(all=True, search=project_name)
+        for project in projects:
+            if project.name == project_name:
+                return project.id
+
+        raise Exception(f"could not find project '{project_name}'")
+
+    def create_mr_note(self, project_id: int, merge_request_iid: int, note_body: str) -> Any:
+        project = self.gitlab.projects.get(project_id)
+        mr = project.mergerequests.get(merge_request_iid)
+        note = mr.notes.create({"body": note_body})
+        return note
