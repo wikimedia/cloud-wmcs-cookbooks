@@ -8,10 +8,10 @@ import os
 import subprocess
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 import requests
 from spicerack import Spicerack
-from wmflib.config import load_yaml_config
 
 BASE64_PUPPET_CA_URL = (
     "https://gerrit.wikimedia.org/r/plugins/gitiles/operations/puppet/"
@@ -91,24 +91,16 @@ def _download_puppet_ca(puppet_ca_path: Path):
 
 
 @contextmanager
-def with_proxy(spicerack: Spicerack):
+def with_proxy(spicerack: Spicerack, config: dict[str, Any]):
     """Context manager that makes sure to start and tear down a socks proxy if needed.
 
     Used to be able to access internal apis when running from your laptop/remotely.
     """
-    proxy_config_path = spicerack.config_dir / "wmcs.yaml"
-    if not proxy_config_path.exists():
-        LOGGER.debug("Skipping proxy start, no config found on %s.", str(proxy_config_path))
-        yield
-        return
-
-    config = load_yaml_config(config_file=spicerack.config_dir / "wmcs.yaml", raises=False)
     if "socks_proxy_host" not in config and "socks_proxy_port" not in config:
-        LOGGER.debug("Skipping proxy start, no proxy-specific config found on %s.", str(proxy_config_path))
+        LOGGER.debug("Skipping proxy start, no proxy-specific config found.")
         yield
         return
 
-    LOGGER.info("Loading socks proxy config from %s", spicerack.config_dir / "wmcs.yaml")
     proxy_via_host = config.get("socks_proxy_host", DEFAULT_PROXY_VIA_HOST)
     socks_proxy_port = int(config.get("socks_proxy_port", "54123"))
     puppet_ca_path = (

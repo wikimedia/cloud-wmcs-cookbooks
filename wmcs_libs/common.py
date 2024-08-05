@@ -25,6 +25,7 @@ from cumin.transports import Command
 from spicerack import ICINGA_DOMAIN, Spicerack
 from spicerack.cookbook import CookbookRunnerBase
 from spicerack.remote import Remote, RemoteHosts
+from wmflib.config import load_yaml_config
 from wmflib.irc import SocketHandler
 
 from wmcs_libs.proxy import with_proxy
@@ -710,9 +711,19 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
         self.spicerack = spicerack
         self._setup_logging(common_opts)
         self.nested = bool(WMCSCookbookRunnerBase.recorder)
+        self.wmcs_config = self._load_config()
         LOGGER.debug("Starting %s recorder", "nested" if self.nested else "not nested")
         if not self.nested:
             WMCSCookbookRunnerBase.recorder = WMCSCookbookRecorder()
+
+    def _load_config(self) -> dict[str, Any]:
+        wmcs_config_path = self.spicerack.config_dir / "wmcs.yaml"
+        if not wmcs_config_path.exists():
+            LOGGER.debug("No WMCS config found on %s. Continuing...", wmcs_config_path)
+            return {}
+
+        LOGGER.info("Loading WMCS config from %s", wmcs_config_path)
+        return load_yaml_config(config_file=wmcs_config_path, raises=False)
 
     def _setup_logging(self, common_opts: CommonOpts):
         if common_opts.no_dologmsg:
@@ -765,7 +776,7 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
 
     def run(self) -> int | None:
         """Main entry point"""
-        with with_proxy(spicerack=self.spicerack):
+        with with_proxy(spicerack=self.spicerack, config=self.wmcs_config):
             return self.run_with_proxy()
 
     def run_with_proxy(self) -> int | None:
