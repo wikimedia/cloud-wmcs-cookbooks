@@ -70,8 +70,11 @@ class ToolforgeComponentDeploy(CookbookBase):
         parser.add_argument(
             "--git-branch",
             required=False,
-            default="main",
-            help="git branch in the source repository",
+            default=None,
+            help=(
+                "git branch in the source repository, will use 'bump_{component}' by default (force it to be 'main' "
+                "if you want to deploy main)"
+            ),
         )
         return parser
 
@@ -99,14 +102,14 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         cluster_name: ToolforgeKubernetesClusterName,
         component: str,
-        git_branch: str,
+        git_branch: str | None,
         spicerack: Spicerack,
     ):
         """Init"""
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         self.component = component
-        self.git_branch = git_branch
+        self.git_branch = git_branch or f"bump_{component}"
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.random_dir = f"/tmp/cookbook-toolforge-k8s-component-deploy-{_random_word(10)}"  # nosec
 
