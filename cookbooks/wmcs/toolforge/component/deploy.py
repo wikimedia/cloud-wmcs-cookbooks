@@ -1,12 +1,12 @@
-r"""WMCS Toolforge Kubernetes - deploy a kubernetes custom component
+r"""WMCS Toolforge - deploy a custom component
 
 Usage example:
-    cookbook wmcs.toolforge.k8s.component.deploy \
+    cookbook wmcs.toolforge.component.deploy \
         --cluster-name toolsbeta \
         --component jobs-api
 
 
-    cookbook wmcs.toolforge.k8s.component.deploy \
+    cookbook wmcs.toolforge.component.deploy \
         --cluster-name toolsbeta \
         --component builds-cli \
         --git-branch bump_to_0.0.18

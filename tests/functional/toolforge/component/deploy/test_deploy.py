@@ -7,7 +7,7 @@ def test_deploy_package(run_cookbook_with_recording, monkeypatch):
     run_result = run_cookbook_with_recording(
         record_file_name="deploy_package.yaml",
         argv=[
-            "wmcs.toolforge.k8s.component.deploy",
+            "wmcs.toolforge.component.deploy",
             "--component=builds-cli",
             "--git-branch=bump_to_0.0.18",
             "--no-dologmsg",
@@ -22,7 +22,7 @@ def test_deploy_component(run_cookbook_with_recording, monkeypatch):
     run_result = run_cookbook_with_recording(
         record_file_name="deploy_k8s_component.yaml",
         argv=[
-            "wmcs.toolforge.k8s.component.deploy",
+            "wmcs.toolforge.component.deploy",
             "--component=builds-builder",
             "--git-branch=bump_builds-builder",
             "--no-dologmsg",
