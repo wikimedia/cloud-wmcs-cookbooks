@@ -99,7 +99,12 @@ class GitlabController:
         # decides it is (so useless-suppression)
         # pylint: disable=useless-suppression
         # pylint: disable=no-member
-        self.gitlab = upstream_gitlab_lib.Gitlab(url=GITLAB_BASE_URL, private_token=private_token)
+        # ssl_verify false needed to run on laptops as they don't have the CA installed
+        self.gitlab = upstream_gitlab_lib.Gitlab(
+            url=GITLAB_BASE_URL,
+            private_token=private_token,
+            ssl_verify=False,
+        )
 
     def get_project_id_by_name(self, project_name: str) -> int:
         projects = self.gitlab.projects.list(all=True, search=project_name)
