@@ -75,13 +75,6 @@ class OpenstackTofu(CookbookBase):
             help="gitlab merge request number",
         )
         parser.add_argument(
-            "--gitlab-private-token-file",
-            required=False,
-            type=str,
-            default="/etc/cookbook-wmcs-openstack-tofu-gitlab-private-token.txt",
-            help="Path to file containing gitlab private token to write gitlab MR notes",
-        )
-        parser.add_argument(
             "--no-gitlab-mr-note",
             required=False,
             default=False,
@@ -97,7 +90,6 @@ class OpenstackTofu(CookbookBase):
             apply=args.apply,
             gitlab_mr=args.gitlab_mr,
             cluster_name=args.cluster_name,
-            gitlab_private_token_file=args.gitlab_private_token_file,
             no_gitlab_mr_note=args.no_gitlab_mr_note,
             spicerack=self.spicerack,
         )
@@ -129,7 +121,6 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         apply: bool,
         gitlab_mr: int,
         cluster_name: OpenstackClusterName,
-        gitlab_private_token_file: str,
         no_gitlab_mr_note: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
@@ -147,11 +138,10 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         if self.apply and self.cluster_name:
             raise Exception("You can only run 'apply' for all clusters, i.e: don't specify --cluster_name")
 
-        self.gitlabcontroller = None
+        self.gitlab_controller = None
         if self.gitlab_mr and not no_gitlab_mr_note:
-            with open(gitlab_private_token_file, encoding="utf-8") as token_file:
-                private_token = token_file.read().strip()
-                self.gitlabcontroller = GitlabController(private_token=private_token)
+            private_token = self.wmcs_config.get("gitlab_token", None)
+            self.gitlab_controller = GitlabController(private_token=private_token)
 
     @property
     def runtime_description(self) -> str:
@@ -214,7 +204,7 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         self._exec(node, commands)
 
     def _tofu_plan_to_gitlab_note(self, node: Any, cluster_name: str, plan_file: str) -> None:
-        if not self.gitlabcontroller:
+        if not self.gitlab_controller:
             return
 
         commands = [
@@ -233,7 +223,7 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
             return
 
         try:
-            project_id = self.gitlabcontroller.get_project_id_by_name(self.GITLAB_REPO_NAME)
+            project_id = self.gitlab_controller.get_project_id_by_name(self.GITLAB_REPO_NAME)
         except Exception as e:  # pylint: disable=broad-except
             LOGGER.warning("WARNING: unable to write gitlab note to merge request: %s", str(e))
             return
@@ -248,7 +238,7 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
             f"{plan}\n"
             "</details>\n"
         )
-        self.gitlabcontroller.create_mr_note(
+        self.gitlab_controller.create_mr_note(
             project_id=project_id, merge_request_iid=self.gitlab_mr, note_body=note_body
         )
 
