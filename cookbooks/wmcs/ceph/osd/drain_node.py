@@ -65,7 +65,7 @@ class DrainNode(CookbookBase):
             required=False,
             action="store_true",
             help=(
-                "If passed, will wait until the cluster finishes rebalancing (note that if it does "
+                "If passed, it will not wait for the cluster to finish rebalancing (note that if it does "
                 "not have to rebalance, might wait forever for the rebalancing to start)."
             ),
         )
