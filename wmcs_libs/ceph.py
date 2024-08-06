@@ -1007,14 +1007,18 @@ class CephClusterController(CommandRunnerMixin):
         chunk_start = 0
 
         def info(msg, *args):
-            LOGGER.info(f"[%d/%d] {msg}", chunk_start, len(osd_ids), *args)
+            LOGGER.info(f"[%d/%d osds] {msg}", chunk_start, len(osd_ids), *args)
 
         any_changes = False
         info("Draining osds: %s", str(osd_ids))
-        for chunk_num in range(1 + len(osd_ids) // batch_size):
-            chunk_start = chunk_num * batch_size
+        for chunk_start in range(0, len(osd_ids), batch_size):
+            chunk_num = chunk_start // batch_size
             next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
-            info("Draining osd batch %d of %d: %s", chunk_num + 1, 1 + len(osd_ids) // batch_size, str(next_chunk))
+            info(
+                "Draining osd batch %d: %s",
+                chunk_num + 1,
+                str(next_chunk),
+            )
             had_changes = self.drain_osds(osd_ids=next_chunk, be_unsafe=be_unsafe)
             if wait and had_changes:
                 info("Waiting for the cluster to shift data around...")
@@ -1079,13 +1083,17 @@ class CephClusterController(CommandRunnerMixin):
         chunk_start = 0
 
         def info(msg, *args):
-            LOGGER.info(f"[%d/%d] {msg}", chunk_start, len(osd_ids), *args)
+            LOGGER.info(f"[%d/%d osds] {msg}", chunk_start, len(osd_ids), *args)
 
         info("Undraining osds: %s", str(osd_ids))
-        for chunk_num in range(1 + len(osd_ids) // batch_size):
-            chunk_start = chunk_num * batch_size
+        for chunk_num in range(0, len(osd_ids), batch_size):
+            chunk_num = chunk_start // batch_size
             next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
-            info("Undraining osd batch %d of %d: %s", chunk_num + 1, 1 + len(osd_ids) // batch_size, str(next_chunk))
+            info(
+                "Undraining osd batch %d: %s",
+                chunk_num + 1,
+                str(next_chunk),
+            )
             self.undrain_osds(osd_ids=next_chunk, osd_fqdn=osd_fqdn)
             if wait:
                 info("Waiting for the cluster to shift data around...")
