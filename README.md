@@ -1,26 +1,35 @@
 # Wikimedia Cloud Services cookbooks
+
 ## Installation
-Using your preferred method, install spicerack, the following uses virtualenv and virtualenvwrapper.
-From the top of this repository, create a new virtualenv, and install the cookbooks (pulls the dependencies):
+
+Using your preferred method, install spicerack, the following uses python
+directly. From the top of this repository, create a new virtualenv, and install
+the cookbooks (pulls the dependencies):
+
 ```
-dcaro@vulcanus$  mkvirtualenv cookbooks
-dcaro@vulcanus$  python setup.py install
+dcaro@vulcanus:wmcs-cookbooks$  python3 -m venv ~/.spicerack_venv
+dcaro@vulcanus:wmcs-cookbooks$  source ~/.spicerack_venv/bin/activate
+dcaro@vulcanus:wmcs-cookbooks$  python setup.py install
 ```
 
-To configure the cookbooks, just run the config generation script from the top of the repo, and follow the instruction:
+To configure the cookbooks, just run the config generation script from the top
+of the repo, and follow the instruction:
+
 ```
-dcaro@vulcanus$ wmcs utils/generate_wmcs_config.sh
+dcaro@vulcanus:wmcs-cookbooks$ utils/generate_wmcs_config.sh
 ```
 
-This will generate the configuration files needed to run the cookbooks directly from this repository.
+This will generate the configuration files needed to run the cookbooks directly
+from this repository.
 
-Now from anywhere , you should be able to run the `cookbook` command (adding something like `-c
-~/.config/spicerack/cookbook.yaml` if you did not create the `/etc/spicerack/config.yaml` link).
+Now from anywhere , you should be able to run the `cookbook` command (adding
+something like `-c ~/.config/spicerack/cookbook.yaml` if you did not create the
+`/etc/spicerack/config.yaml` link).
 
 **NOTE**: make sure you are in the virtualenv we created (`workon cookbooks`).
 
 ```
-dcaro@vulcanus$ cookbook -l wmcs
+dcaro@vulcanus:wmcs-cookbooks$ cookbook -l wmcs
 cookbooks
 `-- wmcs
     |-- wmcs.ceph
