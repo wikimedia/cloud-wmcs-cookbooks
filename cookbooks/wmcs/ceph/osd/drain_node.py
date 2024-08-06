@@ -120,7 +120,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
             cluster_name=cluster_name,
             spicerack=self.spicerack,
         )
-        cluster_nodes = self.controller.get_nodes()
+        cluster_nodes = self.controller.get_nodes()["osd"]
         for host in self.hosts_to_drain:
             if host not in cluster_nodes:
                 raise Exception(f"Host {host} is not in the cluster {', '.join(cluster_nodes.keys())}")
