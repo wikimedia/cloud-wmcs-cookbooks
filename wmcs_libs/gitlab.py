@@ -96,6 +96,10 @@ def get_artifacts_url(component: str, branch: str) -> str:
 class GitlabController:
 
     def __init__(self, private_token: str | None = None):
+        # this combo is needed as sometimes it decides that Gitlab is not a member (so no-member), but sometimes it
+        # decides it is (so useless-suppression)
+        # pylint: disable=useless-suppression
+        # pylint: disable=no-member
         self.gitlab = upstream_gitlab_lib.Gitlab(url=GITLAB_BASE_URL, private_token=private_token)
 
     def get_project_id_by_name(self, project_name: str) -> int:
