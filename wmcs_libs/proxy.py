@@ -103,6 +103,11 @@ def with_proxy(spicerack: Spicerack):
         return
 
     config = load_yaml_config(config_file=spicerack.config_dir / "wmcs.yaml", raises=False)
+    if "socks_proxy_host" not in config and "socks_proxy_port" not in config:
+        LOGGER.debug("Skipping proxy start, no proxy-specific config found on %s.", str(proxy_config_path))
+        yield
+        return
+
     LOGGER.info("Loading socks proxy config from %s", spicerack.config_dir / "wmcs.yaml")
     proxy_via_host = config.get("socks_proxy_host", DEFAULT_PROXY_VIA_HOST)
     socks_proxy_port = int(config.get("socks_proxy_port", "54123"))
