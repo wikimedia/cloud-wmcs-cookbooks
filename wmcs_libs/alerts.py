@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import socket
 from datetime import timedelta
 
 from spicerack import Spicerack
@@ -14,6 +15,10 @@ from wmcs_libs.common import wrap_with_sudo_icinga
 SilenceID = str
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _running_on_cloudcumin() -> bool:
+    return socket.gethostname().startswith("cloudcumin")
 
 
 def silence_host(
@@ -34,7 +39,7 @@ def silence_host(
         icinga_manager = wrap_with_sudo_icinga(spicerack).icinga_hosts(target_hosts=[host_name])
         icinga_manager.downtime(reason=reason)
     except IcingaError as error:
-        if "not found" not in str(error):
+        if not _running_on_cloudcumin() and "not found" not in str(error):
             raise
 
     alertmanager_hosts = spicerack.alertmanager_hosts(target_hosts=[host_name])
@@ -83,7 +88,7 @@ def remove_silence(
             icinga_manager = wrap_with_sudo_icinga(spicerack).icinga_hosts(target_hosts=[host_name])
             icinga_manager.remove_downtime()
         except IcingaError as error:
-            if "not found" not in str(error):
+            if not _running_on_cloudcumin() and "not found" not in str(error):
                 raise
 
     if silence_id:
