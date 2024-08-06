@@ -24,7 +24,7 @@ from ClusterShell.MsgTree import MsgTreeElem
 from cumin.transports import Command
 from spicerack import ICINGA_DOMAIN, Spicerack
 from spicerack.cookbook import CookbookRunnerBase
-from spicerack.remote import Remote, RemoteHosts
+from spicerack.remote import NodeSet, Remote, RemoteHosts
 from wmflib.config import load_yaml_config
 from wmflib.irc import SocketHandler
 
@@ -182,6 +182,7 @@ def with_common_opts(spicerack: Spicerack, args: argparse.Namespace, runner: Cal
 def run_one_raw_needed_to_be_able_to_mock(
     command: list[str] | Command,
     node: RemoteHosts,
+    user: str | None = None,
     capture_errors: bool = False,
     last_line_only: bool = False,
     skip_first_line: bool = False,
@@ -192,8 +193,17 @@ def run_one_raw_needed_to_be_able_to_mock(
     Useful when testing and/or recording test cases. Don't use unless you know what you are sure, use run_one_raw
     instead for most cases.
     """
+    if node._use_sudo and user:  # pylint: disable=protected-access
+        command_prefix = f"-u '{user}' "
+    elif user:
+        raise Exception("You can't pass a user unless you have a node initialized with 'use_sudo=True'")
+    else:
+        command_prefix = ""
+
     if not isinstance(command, Command):
-        command = Command(command=" ".join(command), ok_codes=[] if capture_errors else [0])
+        command = Command(command=command_prefix + " ".join(command), ok_codes=[] if capture_errors else [0])
+    else:
+        command.command = command_prefix + command.command
 
     run_sync_params = asdict(cumin_params) if cumin_params else {}
 
@@ -216,9 +226,41 @@ def run_one_raw_needed_to_be_able_to_mock(
     return raw_result
 
 
+def run_script(
+    script: str,
+    node: RemoteHosts,
+    user: str | None = None,
+    capture_errors: bool = False,
+    last_line_only: bool = False,
+    skip_first_line: bool = False,
+    cumin_params: CuminParams | None = None,
+) -> str:
+    """Run a script on a node."""
+    if user:
+        command_prefix = f"sudo -i -u '{user}' "
+    elif node._use_sudo:  # pylint: disable=protected-access
+        command_prefix = "sudo -i "
+    else:
+        command_prefix = ""
+
+    # make sure any failed command breaks the script
+    script = "set -e errexit\n" + script
+    hashed_script = base64.b64encode(script.encode("utf-8"))
+    command = [f"echo '{hashed_script.decode('utf-8')}' | base64 -d | {command_prefix}bash -i"]
+    return run_one_raw(
+        command=command,
+        node=node,
+        capture_errors=capture_errors,
+        last_line_only=last_line_only,
+        skip_first_line=skip_first_line,
+        cumin_params=cumin_params,
+    )
+
+
 def run_one_raw(
     command: list[str] | Command,
     node: RemoteHosts,
+    user: str | None = None,
     capture_errors: bool = False,
     last_line_only: bool = False,
     skip_first_line: bool = False,
@@ -230,6 +272,7 @@ def run_one_raw(
     """
     return run_one_raw_needed_to_be_able_to_mock(
         command=command,
+        user=user,
         node=node,
         capture_errors=capture_errors,
         last_line_only=last_line_only,
@@ -467,7 +510,12 @@ class UtilsForTesting:
         If side_effect is passed, it will override the responses and set that as side_effect of the mock on run_sync.
         """
         responses = responses if responses is not None else []
-        fake_hosts = mock.create_autospec(spec=RemoteHosts, spec_set=True)
+        fake_hosts = mock.create_autospec(
+            # using the instance otherwise we don't get instance-only properties like _use_sudo
+            spec=RemoteHosts(hosts=NodeSet(nodes="one"), config={}),
+            instance=True,
+            spec_set=True,
+        )
 
         def _get_fake_msg_tree(msg_tree_response: str):
             fake_msg_tree = mock.create_autospec(spec=MsgTreeElem, spec_set=True)
