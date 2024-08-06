@@ -78,11 +78,11 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
-        test_logs = self._run_tests(filter_tags=self.filter_tags)
+        test_logs = self.run_tests(filter_tags=self.filter_tags)
         if " 0 failures " not in test_logs:
             raise Exception(f"FAILED:\n{test_logs}")
 
-    def _run_tests(self, filter_tags: list[str]) -> str:
+    def run_tests(self, filter_tags: list[str]) -> str:
         site = self.cluster_name.get_openstack_cluster_name().get_site()
         bastions_fqdns = (
             get_static_inventory()[site]

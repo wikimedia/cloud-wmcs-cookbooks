@@ -18,12 +18,14 @@ from __future__ import annotations
 import argparse
 import logging
 import random
+import re
 import string
 from pathlib import Path
 
 from spicerack import RemoteHosts, Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
+from cookbooks.wmcs.toolforge.run_tests import ToolforgeRunTestsRunner
 from wmcs_libs.aptly import SUPPORTED_DISTROS, Aptly
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
@@ -31,8 +33,9 @@ from wmcs_libs.common import (
     CommonOpts,
     WMCSCookbookRunnerBase,
     run_one_raw,
+    run_script,
 )
-from wmcs_libs.gitlab import get_artifacts_url
+from wmcs_libs.gitlab import GitlabController, get_artifacts_url, get_branch_mr, get_project
 from wmcs_libs.inventory.static import get_static_inventory
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
@@ -76,6 +79,12 @@ class ToolforgeComponentDeploy(CookbookBase):
                 "if you want to deploy main)"
             ),
         )
+        parser.add_argument(
+            "--run-tests",
+            action="store_true",
+            help="If passed, will also run the tests.",
+        )
+        parser.add_argument("--filter-tags", action="append", default=[], help="filter tests with the given tags")
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
@@ -83,6 +92,8 @@ class ToolforgeComponentDeploy(CookbookBase):
         return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeComponentDeployRunner)(
             component=args.component,
             git_branch=args.git_branch,
+            run_tests=args.run_tests,
+            filter_tags=args.filter_tags,
             spicerack=self.spicerack,
         )
 
@@ -97,12 +108,14 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
 
     git_hash: str | None = None
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         common_opts: CommonOpts,
         cluster_name: ToolforgeKubernetesClusterName,
         component: str,
         git_branch: str | None,
+        run_tests: bool,
+        filter_tags: list[str],
         spicerack: Spicerack,
     ):
         """Init"""
@@ -110,6 +123,11 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self.cluster_name = cluster_name
         self.component = component
         self.git_branch = git_branch or f"bump_{component}"
+        self.run_tests = run_tests
+        self.filter_tags = filter_tags
+        if filter_tags and not run_tests:
+            raise Exception("You passed --filter-tags but not --run-tests, did you forget about it?")
+
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.random_dir = f"/tmp/cookbook-toolforge-k8s-component-deploy-{_random_word(10)}"  # nosec
 
@@ -129,6 +147,95 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
                 git_branch=self.git_branch,
                 cluster_name=self.cluster_name,
             )
+
+        if self.run_tests:
+            self._run_tests(
+                cluster_name=self.cluster_name,
+                branch=self.git_branch,
+                filter_tags=self.filter_tags,
+                component=self.component,
+            )
+
+    def _run_tests(
+        self,
+        cluster_name: ToolforgeKubernetesClusterName,
+        branch: str,
+        filter_tags: list[str],
+        component: str,
+    ):
+        tests_cookbook = ToolforgeRunTestsRunner(
+            common_opts=self.common_opts,
+            cluster_name=cluster_name,
+            spicerack=self.spicerack,
+            # this one is not really used as we use the internal method
+            filter_tags=filter_tags,
+        )
+        test_logs = tests_cookbook.run_tests(filter_tags=filter_tags)
+
+        self._send_mr_comment(
+            logs=test_logs, branch=branch, cluster_name=cluster_name, filter_tags=filter_tags, component=component
+        )
+
+    def _send_mr_comment(
+        self,
+        logs: str,
+        branch: str,
+        cluster_name: ToolforgeKubernetesClusterName,
+        filter_tags: list[str],
+        component: str,
+    ) -> None:
+        if component in COMPONENT_TO_PACKAGE_NAME:
+            # packages MRs bumping the version is on the repo of the package
+            project_name = component
+        else:
+            # k8s components have them in toolforge-deploy
+            project_name = "toolforge-deploy"
+
+        project = get_project(component=project_name)
+        mr_iid = get_branch_mr(branch=branch, project=project)
+
+        gitlab_controller = GitlabController(private_token=self.wmcs_config.get("gitlab_token", None))
+
+        status = "🗹 PASSED"
+        if " 0 failures " not in logs:
+            status = "🗷 FAILED"
+
+        if filter_tags:
+            status += f" (ran tests {filter_tags})"
+        else:
+            status += " (ran all tests)"
+
+        logs = self._cleanup_terminal_colors(logs)
+        pre_version = logs.split("toolforge components versions:", 1)[0] + "toolforge components versions:"
+        version = logs.split("toolforge components versions:", 1)[1]
+        version, post_version = version.split("Running tests from branch: ", 1)
+        post_version = "Running tests from branch: " + post_version
+
+        gitlab_controller.create_mr_note(
+            project_id=project["id"],
+            merge_request_iid=mr_iid,
+            note_body=f"""Ran the tests on {cluster_name}: **{status}**
+```
+{pre_version}
+```
+
+{version}
+
+```
+{post_version}
+```
+""",
+        )
+        if " 0 failures " not in logs:
+            raise Exception(f"TESTS FAILED:\n{logs}")
+
+    def _cleanup_terminal_colors(self, logs: str) -> str:
+        # TODO: find a nicer way, changing the TERM var did not help
+        logs = re.sub(r"\[[0-9;]*m", "", logs)
+        logs = re.sub(r"\[1G.*\[1G", "", logs)
+        logs = re.sub(r"\[K", "", logs)
+
+        return logs
 
     def _upload_package_to_repos(
         self,
@@ -153,18 +260,17 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             self.random_dir,
         )
         package = COMPONENT_TO_PACKAGE_NAME[component]
-        command = f"""bash -c -- '
-set -o errexit;
-set -o nounset;
-set -o pipefail;
+        script = f"""
+set -o errexit
+set -o nounset
+set -o pipefail
 
-mkdir -p "{self.random_dir}";
-cd "{self.random_dir}";
-wget "{artifacts_url}";
-unzip artifacts;
-'
+mkdir -p "{self.random_dir}"
+cd "{self.random_dir}"
+wget "{artifacts_url}"
+unzip artifacts
 """
-        run_one_raw(command=[command], node=service_node, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
+        run_script(script=script, node=service_node, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
         package_path = Path(
             run_one_raw(
