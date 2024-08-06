@@ -2,7 +2,6 @@ r"""WMCS Ceph - Drain all the osd daemons from a host or set of hosts
 
 Usage example:
     cookbook wmcs.ceph.drain_node \
-        --cluster eqiad1 \
         --node cloudcephosd2001-dev \
         --node cloudcephosd2002-dev \
         --cluster-name codfw1
