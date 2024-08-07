@@ -142,7 +142,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
         hosts = [child.name for child in rack.children]
         drain_node_cookbook = DrainNodeRunner(
             common_opts=self.common_opts,
-            hosts_to_drain=hosts,
+            osd_hostnames=hosts,
             force=self.force,
             set_maintenance=self.set_maintenance,
             cluster_name=self.cluster_name,

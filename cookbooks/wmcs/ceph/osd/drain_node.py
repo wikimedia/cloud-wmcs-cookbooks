@@ -2,8 +2,8 @@ r"""WMCS Ceph - Drain all the osd daemons from a host or set of hosts
 
 Usage example:
     cookbook wmcs.ceph.drain_node \
-        --node cloudcephosd2001-dev \
-        --node cloudcephosd2002-dev \
+        --osd-hostname cloudcephosd2001-dev \
+        --osd-hostname cloudcephosd2002-dev \
         --cluster-name codfw1
 
 """
@@ -39,10 +39,20 @@ class DrainNode(CookbookBase):
         )
         add_common_opts(parser)
         parser.add_argument(
-            "--node",
+            "--cluster-name",
+            required=True,
+            choices=list(CephClusterName),
+            type=CephClusterName,
+            help="Ceph cluster to roll restart.",
+        )
+        parser.add_argument(
+            "--osd-hostname",
             required=True,
             action="append",
-            help="Hostname (no subdomain) of the node to drain. Pass more than once to drain multiple nodes.",
+            help=(
+                "Hostname of the new OSDs to add. Repeat for each new OSD. If specifying more "
+                "than one, consider passing --yes-i-know-what-im-doing"
+            ),
         )
         parser.add_argument(
             "--set-maintenance",
@@ -69,13 +79,6 @@ class DrainNode(CookbookBase):
                 "not have to rebalance, might wait forever for the rebalancing to start)."
             ),
         )
-        parser.add_argument(
-            "--cluster-name",
-            required=True,
-            choices=list(CephClusterName),
-            type=CephClusterName,
-            help="Ceph cluster to roll restart.",
-        )
 
         return parser
 
@@ -86,7 +89,7 @@ class DrainNode(CookbookBase):
             args,
             DrainNodeRunner,
         )(
-            hosts_to_drain=args.node,
+            osd_hostnames=args.osd_hostname,
             set_maintenance=args.set_maintenance,
             cluster_name=args.cluster_name,
             force=args.force,
@@ -101,7 +104,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        hosts_to_drain: list[str],
+        osd_hostnames: list[str],
         cluster_name: CephClusterName,
         force: bool,
         wait: bool,
@@ -110,7 +113,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
     ):  # pylint: disable=too-many-arguments
         """Init"""
         self.common_opts = common_opts
-        self.hosts_to_drain = hosts_to_drain
+        self.osd_hostnames = osd_hostnames
         self.set_maintenance = set_maintenance
         self.force = force
         self.wait = wait
@@ -121,13 +124,13 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
             spicerack=self.spicerack,
         )
         cluster_nodes = self.controller.get_nodes()["osd"]
-        for host in self.hosts_to_drain:
+        for host in self.osd_hostnames:
             if host not in cluster_nodes:
                 raise Exception(f"Host {host} is not in the cluster {', '.join(cluster_nodes.keys())}")
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
-        LOGGER.info("Draining nodes %s", self.hosts_to_drain)
+        LOGGER.info("Draining nodes %s", self.osd_hostnames)
 
         if not self.force:
             self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)
@@ -135,19 +138,19 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         if self.set_maintenance:
             cluster_silences = self.controller.set_maintenance(
                 task_id=self.common_opts.task_id,
-                reason=f"Draining node {self.hosts_to_drain}",
+                reason=f"Draining node {self.osd_hostnames}",
             )
         else:
             cluster_silences = []
 
-        for idx, maybe_host_name in enumerate(self.hosts_to_drain):
+        for idx, maybe_host_name in enumerate(self.osd_hostnames):
             host_name = maybe_host_name.split(".", 1)[0]
             LOGGER.info(
                 "[%s] Draining node %s (%d/%d), waiting for cluster to stabilize...",
                 datetime.datetime.now(),
                 maybe_host_name,
                 idx,
-                len(self.hosts_to_drain),
+                len(self.osd_hostnames),
             )
             silence_id = silence_host(
                 spicerack=self.spicerack,
@@ -173,7 +176,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
                     datetime.datetime.now(),
                     maybe_host_name,
                     idx,
-                    len(self.hosts_to_drain),
+                    len(self.osd_hostnames),
                 )
                 self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)
                 remove_silence(spicerack=self.spicerack, silence_id=silence_id)
@@ -182,4 +185,4 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         if self.set_maintenance:
             self.controller.unset_maintenance(silences=cluster_silences)
 
-        LOGGER.info("Finished draining nodes %s", self.hosts_to_drain)
+        LOGGER.info("Finished draining nodes %s", self.osd_hostnames)
