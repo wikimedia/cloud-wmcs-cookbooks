@@ -65,11 +65,11 @@ class UndrainNode(CookbookBase):
             help="If passed, will continue even if the cluster is not in a healthy state.",
         )
         parser.add_argument(
-            "--wait",
+            "--no-wait",
             required=False,
             action="store_true",
             help=(
-                "If passed, will wait until the cluster finishes rebalancing (note that if it does "
+                "If not passed, will not wait until the cluster finishes rebalancing (note that if it does "
                 "not have to rebalance, might wait forever for the rebalancing to start)."
             ),
         )
@@ -94,7 +94,7 @@ class UndrainNode(CookbookBase):
             cluster_name=args.cluster_name,
             set_maintenance=args.set_maintenance,
             force=args.force,
-            wait=args.wait,
+            wait=not args.no_wait,
             spicerack=self.spicerack,
             batch_size=args.batch_size,
         )
