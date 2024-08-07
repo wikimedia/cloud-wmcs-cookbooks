@@ -371,10 +371,14 @@ class CephOSDNodeController:
 
         return _is_disk() and _does_not_have_partitions() and _its_not_mounted()
 
-    def do_lsblk(self) -> list[dict[str, Any]]:
+    def do_lsblk(self, device: str | None = None) -> list[dict[str, Any]]:
         """Simple lsblk on the host to get the devices."""
+        command = ["lsblk", "--json", "--bytes"]
+        if device:
+            command.append(device)
+
         structured_output = run_one_formatted(
-            command=["lsblk", "--json"],
+            command=command,
             node=self._node,
             cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
         )
@@ -842,6 +846,13 @@ class CephClusterController(CommandRunnerMixin):
             stray=flat_nodes["stray"],
         )
 
+    def get_osd_size_bytes(self, osd_id: int, osd_fqdn: str) -> int:
+        osd_host = osd_fqdn.split(".", 1)[0]
+        osd_device = self.get_device_for_osds(hostname=osd_host, osds=[osd_id])[0]
+        osd_controller = CephOSDNodeController(remote=self._remote, node_fqdn=osd_fqdn)
+        lsblk = osd_controller.do_lsblk(device=osd_device)
+        return lsblk[0]["size"]
+
     def get_all_osd_ips(self) -> set[str]:
         """Returns all the known ips for all the osd, deduplicated.
 
@@ -891,7 +902,9 @@ class CephClusterController(CommandRunnerMixin):
     def get_device_for_osds(self, hostname: str, osds: list[int]) -> list[str]:
         """Given a host and a list of osd ids (ex. 247) returns the devices that correspond to those osds."""
 
-        host_devices = self.run_formatted_as_list("device", "ls-by-host", hostname)
+        host_devices = self.run_formatted_as_list(
+            "device", "ls-by-host", hostname, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
+        )
         # Example of return value:
         # [
         #   {
@@ -1050,7 +1063,9 @@ class CephClusterController(CommandRunnerMixin):
 
         return any_changes
 
-    def undrain_osds_in_chunks(self, osd_ids: list[int], batch_size: int = 0, wait: bool = False) -> None:
+    def undrain_osds_in_chunks(
+        self, osd_ids: list[int], osd_fqdn: str, batch_size: int = 0, wait: bool = False
+    ) -> None:
         if not osd_ids:
             LOGGER.info("No osd ids passed, skipping")
             return
@@ -1071,7 +1086,7 @@ class CephClusterController(CommandRunnerMixin):
             chunk_start = chunk_num * batch_size
             next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
             info("Undraining osd batch %d of %d: %s", chunk_num + 1, 1 + len(osd_ids) // batch_size, str(next_chunk))
-            self.undrain_osds(osd_ids=next_chunk)
+            self.undrain_osds(osd_ids=next_chunk, osd_fqdn=osd_fqdn)
             if wait:
                 info("Waiting for the cluster to shift data around...")
                 # give some time for the cluster to start shifting things around
@@ -1083,23 +1098,28 @@ class CephClusterController(CommandRunnerMixin):
         end_time = datetime.now()
         info("All osds undrained (%s), took %s", osd_ids, (end_time - start_time))
 
-    def undrain_osds(self, osd_ids: list[int], crush_weight: float = 0.0) -> None:
+    def undrain_osds(self, osd_ids: list[int], osd_fqdn: str, crush_weight: float = 0.0) -> None:
         """Undrains OSD daemons.
 
-        It sets their weight to whatever the current osds have (or falling back to `crush_weight`).
+        It sets their weight to whatever the current osds have (or falling back to the number ot TiB of the drive).
         """
         osd_tree = self.get_osd_tree()
         osds = osd_tree.get_nodes_by_type(wanted_type="osd")
-        pooled_weight = next((osd.crush_weight for osd in osds if osd.crush_weight > 0), crush_weight)
-
-        if pooled_weight <= 0:
-            raise CephException(
-                "Unable to guess the proper crush weight for the osd, you might have to pass one, gotten from "
-                f"the pool:\n{osds}"
-            )
 
         for osd_id in osd_ids:
-            self.crush_reweight_osd(osd_id=osd_id, new_weight=pooled_weight)
+            new_weight = crush_weight
+            if not new_weight:
+                osd_size_bytes = self.get_osd_size_bytes(osd_id=osd_id, osd_fqdn=osd_fqdn)
+                # TiB as a float (kb * mb * gb * tb)
+                new_weight = osd_size_bytes / (1024 * 1024 * 1024 * 1024)
+
+            if new_weight <= 0:
+                raise CephException(
+                    "Unable to guess the proper crush weight for the osd, you might have to pass one, gotten from "
+                    f"the pool:\n{osds}"
+                )
+
+            self.crush_reweight_osd(osd_id=osd_id, new_weight=new_weight)
 
         # marking in at the end, makes the rebalancing start, this avoid having to rebalance several times
         for osd_id in osd_ids:
@@ -1120,17 +1140,18 @@ class CephClusterController(CommandRunnerMixin):
 
     def undrain_osd_node(
         self,
-        osd_host: str,
+        osd_fqdn: str,
         wait: bool = False,
         batch_size: int = 0,
     ) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
+        osd_host = osd_fqdn.split(".", 1)[0]
         osds = self.get_host_osds(osd_host=osd_host)
 
         if not batch_size:
             batch_size = len(osds)
 
-        self.undrain_osds_in_chunks(osd_ids=osds, batch_size=batch_size, wait=wait)
+        self.undrain_osds_in_chunks(osd_ids=osds, batch_size=batch_size, wait=wait, osd_fqdn=osd_fqdn)
 
     def remove_crush_bucket(self, bucket_name: str) -> None:
         """Remove a CRUSH bucket (host/rack/...).

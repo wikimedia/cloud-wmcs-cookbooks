@@ -316,5 +316,5 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         # And bring them in in batches, we need to give the cluster a few seconds to start rebalancing
         time.sleep(10)
         self.cluster_controller.undrain_osds_in_chunks(
-            osd_ids=new_osds_ids, batch_size=batch_size, wait=wait_for_rebalance
+            osd_ids=new_osds_ids, batch_size=batch_size, wait=wait_for_rebalance, osd_fqdn=host_fqdn
         )

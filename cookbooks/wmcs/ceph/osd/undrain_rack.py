@@ -116,6 +116,7 @@ class UndrainRackRunner(WMCSCookbookRunnerBase):
         self.common_opts = common_opts
         self.rack_to_undrain = rack_to_undrain
         self.set_maintenance = set_maintenance
+        self.cluster_name = cluster_name
         self.force = force
         self.wait = wait
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -141,11 +142,12 @@ class UndrainRackRunner(WMCSCookbookRunnerBase):
         hosts = [child.name for child in rack.children]
         undrain_node_cookbook = UndrainNodeRunner(
             common_opts=self.common_opts,
-            hosts_to_undrain=hosts,
+            osd_hostnames=hosts,
             force=self.force,
             set_maintenance=self.set_maintenance,
             spicerack=self.spicerack,
             wait=self.wait,
+            cluster_name=self.cluster_name,
             batch_size=0,
         )
         undrain_node_cookbook.run()

@@ -2,7 +2,8 @@ r"""WMCS Ceph - Undrain all the osd damons from a host
 
 Usage example:
     cookbook wmcs.ceph.reboot_node \
-        --node cloudcephosd2001-dev
+        --osd-hostname cloudcephosd2001-dev \
+        --cluster-name codfw1
 
 """
 
@@ -14,8 +15,9 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 
-from wmcs_libs.ceph import CephClusterController, get_node_cluster_name
+from wmcs_libs.ceph import CephClusterController
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.inventory.ceph import CephClusterName
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,10 +36,20 @@ class UndrainNode(CookbookBase):
         )
         add_common_opts(parser)
         parser.add_argument(
-            "--node",
+            "--cluster-name",
+            required=True,
+            choices=list(CephClusterName),
+            type=CephClusterName,
+            help="Ceph cluster to roll restart.",
+        )
+        parser.add_argument(
+            "--osd-hostname",
             required=True,
             action="append",
-            help="Hostname (no subdomain) of the node to drain. Pass more than once to drain multiple nodes.",
+            help=(
+                "Hostname of the new OSDs to add. Repeat for each new OSD. If specifying more "
+                "than one, consider passing --yes-i-know-what-im-doing"
+            ),
         )
         parser.add_argument(
             "--set-maintenance",
@@ -78,7 +90,8 @@ class UndrainNode(CookbookBase):
             args,
             UndrainNodeRunner,
         )(
-            hosts_to_undrain=args.node,
+            osd_hostnames=args.osd_hostname,
+            cluster_name=args.cluster_name,
             set_maintenance=args.set_maintenance,
             force=args.force,
             wait=args.wait,
@@ -93,7 +106,8 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
-        hosts_to_undrain: list[str],
+        osd_hostnames: list[str],
+        cluster_name: CephClusterName,
         force: bool,
         wait: bool,
         set_maintenance: bool,
@@ -102,21 +116,22 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
     ):  # pylint: disable=too-many-arguments
         """Init"""
         self.common_opts = common_opts
-        self.hosts_to_undrain = hosts_to_undrain
+        self.osd_fqdns = [
+            hostname.split(".", 1)[0] + f".{cluster_name.get_site().get_domain()}" for hostname in osd_hostnames
+        ]
         self.set_maintenance = set_maintenance
+        self.cluster_name = cluster_name
         self.force = force
         self.wait = wait
         self.batch_size = batch_size
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.controller = CephClusterController(
-            remote=self.spicerack.remote(),
-            cluster_name=get_node_cluster_name(node=self.hosts_to_undrain[0]),
-            spicerack=self.spicerack,
+            remote=self.spicerack.remote(), cluster_name=cluster_name, spicerack=self.spicerack
         )
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
-        LOGGER.info("Undraining nodes %s", self.hosts_to_undrain)
+        LOGGER.info("Undraining nodes %s", self.osd_fqdns)
 
         if not self.force:
             self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)
@@ -124,20 +139,20 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
         if self.set_maintenance:
             silences = self.controller.set_maintenance(
                 task_id=self.common_opts.task_id,
-                reason=f"Undraining node {self.hosts_to_undrain}",
+                reason=f"Undraining node {self.osd_fqdns}",
             )
         else:
             silences = []
 
-        for node in self.hosts_to_undrain:
-            self.controller.undrain_osd_node(osd_host=node, wait=self.wait, batch_size=self.batch_size)
+        for node in self.osd_fqdns:
+            self.controller.undrain_osd_node(osd_fqdn=node, wait=self.wait, batch_size=self.batch_size)
 
         if self.force:
             LOGGER.info("Force passed, ignoring cluster health and continuing")
         else:
             LOGGER.info(
                 "Undrained node %s, waiting for cluster to stabilize...",
-                self.hosts_to_undrain,
+                self.osd_fqdns,
             )
             self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)
             LOGGER.info("Cluster healthy, continuing")
@@ -145,4 +160,4 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
         if self.set_maintenance:
             self.controller.unset_maintenance(silences=silences)
 
-        LOGGER.info("Finished undraining node %s", self.hosts_to_undrain)
+        LOGGER.info("Finished undraining node %s", self.osd_fqdns)

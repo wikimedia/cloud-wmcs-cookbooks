@@ -91,7 +91,6 @@ class MigrateDatabaseInstanceToOvsRunner(MigrateServerToOvsRunner):
         original_status = server["status"]
 
         with self._downtimed():
-
             if original_status != "ACTIVE":
                 print("Only running Trove VMs can be resized.")
 
