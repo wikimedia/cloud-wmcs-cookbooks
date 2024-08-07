@@ -217,7 +217,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
             info("checks OK")
 
             if self.only_check:
-                info("Skipping adding the new devices and fixing their class")
+                info("Skipping adding the new devices, fixing their class and undraining")
                 continue
 
             osd_controller.add_all_available_devices(interactive=(not self.yes_i_know))
@@ -226,10 +226,6 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
                 f"Added all available disks ({new_devices}) from node {new_osd_fqdn}... "
                 f"({index + 1}/{len(self.osd_fqdns)})",
             )
-
-            if self.only_check:
-                info("Skipping undraining the new devices.")
-                continue
 
             info(
                 "The new OSDs are up and running, the cluster will now start rebalancing the data to them, that might "

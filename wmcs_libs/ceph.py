@@ -409,10 +409,13 @@ class CephOSDNodeController:
 
     def add_all_available_devices(self, interactive: bool = True) -> None:
         """Discover and add all the available devices of the node as new OSDs."""
-        for device_path in self.get_available_devices():
-            if interactive:
-                ask_confirmation(f"I'm going to destroy and create a new OSD on {self.node_fqdn}:{device_path}.")
+        available_devices = self.get_available_devices()
+        if interactive and available_devices:
+            ask_confirmation(
+                f"I'm going to destroy and create a new OSD on {self.node_fqdn}:{', '.join(available_devices)}."
+            )
 
+        for device_path in available_devices:
             self.zap_device(device_path=device_path)
             self.initialize_and_start_osd(device_path=device_path)
 
@@ -1067,7 +1070,7 @@ class CephClusterController(CommandRunnerMixin):
         for chunk_num in range(1 + len(osd_ids) // batch_size):
             chunk_start = chunk_num * batch_size
             next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
-            info("Unraining osd batch %d of %d: %s", chunk_num + 1, 1 + len(osd_ids) // batch_size, str(next_chunk))
+            info("Undraining osd batch %d of %d: %s", chunk_num + 1, 1 + len(osd_ids) // batch_size, str(next_chunk))
             self.undrain_osds(osd_ids=next_chunk)
             if wait:
                 info("Waiting for the cluster to shift data around...")
