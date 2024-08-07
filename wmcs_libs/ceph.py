@@ -1125,9 +1125,18 @@ class CephClusterController(CommandRunnerMixin):
         for osd_id in osd_ids:
             self.mark_osd_in(osd_id=osd_id)
 
-    def drain_osd_node(self, osd_host: str, be_unsafe: bool = False, wait: bool = False, batch_size: int = 0) -> None:
+    def drain_osd_node(
+        self,
+        osd_host: str,
+        be_unsafe: bool = False,
+        wait: bool = False,
+        batch_size: int = 0,
+        osd_ids: list[int] | None = None,
+    ) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
         osds = self.get_host_osds(osd_host=osd_host)
+        if osd_ids:
+            osds = [osd for osd in osds if osd in osd_ids]
 
         LOGGER.info("Draining osds from host %s: %s", osd_host, str(osds))
         self.drain_osds_in_chunks(
@@ -1143,10 +1152,13 @@ class CephClusterController(CommandRunnerMixin):
         osd_fqdn: str,
         wait: bool = False,
         batch_size: int = 0,
+        osd_ids: list[int] | None = None,
     ) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
         osd_host = osd_fqdn.split(".", 1)[0]
         osds = self.get_host_osds(osd_host=osd_host)
+        if osd_ids:
+            osds = [osd for osd in osds if osd in osd_ids]
 
         if not batch_size:
             batch_size = len(osds)

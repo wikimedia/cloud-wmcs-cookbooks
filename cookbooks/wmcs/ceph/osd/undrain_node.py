@@ -80,6 +80,16 @@ class UndrainNode(CookbookBase):
             type=int,
             help="Amount of osd daemons to undrain at a time (0 for no batches).",
         )
+        parser.add_argument(
+            "--osd-id",
+            required=False,
+            action="append",
+            type=int,
+            help=(
+                "If passed, will only undrain the given OSD daemon ids. Use multiple times to destroy more than one "
+                "osd."
+            ),
+        )
 
         return parser
 
@@ -95,6 +105,7 @@ class UndrainNode(CookbookBase):
             set_maintenance=args.set_maintenance,
             force=args.force,
             wait=not args.no_wait,
+            osd_ids=args.osd_id,
             spicerack=self.spicerack,
             batch_size=args.batch_size,
         )
@@ -107,6 +118,7 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         osd_hostnames: list[str],
+        osd_ids: list[int],
         cluster_name: CephClusterName,
         force: bool,
         wait: bool,
@@ -124,6 +136,7 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
         self.force = force
         self.wait = wait
         self.batch_size = batch_size
+        self.osd_ids = osd_ids
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.controller = CephClusterController(
             remote=self.spicerack.remote(), cluster_name=cluster_name, spicerack=self.spicerack
@@ -145,7 +158,9 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
             silences = []
 
         for node in self.osd_fqdns:
-            self.controller.undrain_osd_node(osd_fqdn=node, wait=self.wait, batch_size=self.batch_size)
+            self.controller.undrain_osd_node(
+                osd_fqdn=node, wait=self.wait, batch_size=self.batch_size, osd_ids=self.osd_ids
+            )
 
         if self.force:
             LOGGER.info("Force passed, ignoring cluster health and continuing")

@@ -80,6 +80,16 @@ class DrainRack(CookbookBase):
                 "not have to rebalance, might wait forever for the rebalancing to start)."
             ),
         )
+        parser.add_argument(
+            "--osd-id",
+            required=False,
+            action="append",
+            type=int,
+            help=(
+                "If passed, will only undrain the given OSD daemon ids. Use multiple times to destroy more than one "
+                "osd."
+            ),
+        )
 
         return parser
 
@@ -94,6 +104,7 @@ class DrainRack(CookbookBase):
             set_maintenance=args.set_maintenance,
             cluster_name=args.cluster_name,
             force=args.force,
+            osd_ids=args.osd_id,
             wait=not args.no_wait,
             spicerack=self.spicerack,
         )
@@ -109,6 +120,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
         force: bool,
         wait: bool,
         cluster_name: CephClusterName,
+        osd_ids: list[int],
         set_maintenance: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
@@ -116,6 +128,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
         self.common_opts = common_opts
         self.rack_to_drain = rack_to_drain
         self.set_maintenance = set_maintenance
+        self.osd_ids = osd_ids
         self.force = force
         self.wait = wait
         self.cluster_name = cluster_name
@@ -148,6 +161,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
             cluster_name=self.cluster_name,
             spicerack=self.spicerack,
             wait=self.wait,
+            osd_ids=self.osd_ids,
         )
         drain_node_cookbook.run()
 

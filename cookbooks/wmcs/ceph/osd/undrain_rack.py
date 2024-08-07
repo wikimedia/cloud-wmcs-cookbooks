@@ -80,6 +80,16 @@ class UndrainRack(CookbookBase):
                 "not have to rebalance, might wait forever for the rebalancing to start)."
             ),
         )
+        parser.add_argument(
+            "--osd-id",
+            required=False,
+            action="append",
+            type=int,
+            help=(
+                "If passed, will only undrain the given OSD daemon ids. Use multiple times to destroy more than one "
+                "osd."
+            ),
+        )
 
         return parser
 
@@ -93,6 +103,7 @@ class UndrainRack(CookbookBase):
             rack_to_undrain=args.rack,
             set_maintenance=args.set_maintenance,
             cluster_name=args.cluster_name,
+            osd_ids=args.osd_ids,
             force=args.force,
             wait=not args.no_wait,
             spicerack=self.spicerack,
@@ -109,6 +120,7 @@ class UndrainRackRunner(WMCSCookbookRunnerBase):
         force: bool,
         wait: bool,
         cluster_name: CephClusterName,
+        osd_ids: list[int],
         set_maintenance: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
@@ -116,6 +128,7 @@ class UndrainRackRunner(WMCSCookbookRunnerBase):
         self.common_opts = common_opts
         self.rack_to_undrain = rack_to_undrain
         self.set_maintenance = set_maintenance
+        self.osd_ids = osd_ids
         self.cluster_name = cluster_name
         self.force = force
         self.wait = wait
@@ -149,6 +162,7 @@ class UndrainRackRunner(WMCSCookbookRunnerBase):
             wait=self.wait,
             cluster_name=self.cluster_name,
             batch_size=0,
+            osd_ids=self.osd_ids,
         )
         undrain_node_cookbook.run()
 

@@ -79,6 +79,16 @@ class DrainNode(CookbookBase):
                 "not have to rebalance, might wait forever for the rebalancing to start)."
             ),
         )
+        parser.add_argument(
+            "--osd-id",
+            required=False,
+            action="append",
+            type=int,
+            help=(
+                "If passed, will only undrain the given OSD daemon ids. Use multiple times to destroy more than one "
+                "osd."
+            ),
+        )
 
         return parser
 
@@ -90,6 +100,7 @@ class DrainNode(CookbookBase):
             DrainNodeRunner,
         )(
             osd_hostnames=args.osd_hostname,
+            osd_ids=args.osd_id,
             set_maintenance=args.set_maintenance,
             cluster_name=args.cluster_name,
             force=args.force,
@@ -105,6 +116,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         osd_hostnames: list[str],
+        osd_ids: list[int],
         cluster_name: CephClusterName,
         force: bool,
         wait: bool,
@@ -114,6 +126,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         """Init"""
         self.common_opts = common_opts
         self.osd_hostnames = osd_hostnames
+        self.osd_ids = osd_ids
         self.set_maintenance = set_maintenance
         self.force = force
         self.wait = wait
@@ -130,7 +143,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
-        LOGGER.info("Draining nodes %s", self.osd_hostnames)
+        LOGGER.info("Draining nodes %s, osds %s", self.osd_hostnames, self.osd_ids if self.osd_ids else "all")
 
         if not self.force:
             self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)
@@ -146,9 +159,10 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         for idx, maybe_host_name in enumerate(self.osd_hostnames):
             host_name = maybe_host_name.split(".", 1)[0]
             LOGGER.info(
-                "[%s] Draining node %s (%d/%d), waiting for cluster to stabilize...",
+                "[%s] Draining node %s, osds %s (%d/%d), waiting for cluster to stabilize...",
                 datetime.datetime.now(),
                 maybe_host_name,
+                self.osd_ids if self.osd_ids else "all",
                 idx,
                 len(self.osd_hostnames),
             )
@@ -166,6 +180,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
                 be_unsafe=self.force,
                 wait=self.wait,
                 batch_size=2,
+                osd_ids=self.osd_ids,
             )
 
             if self.force:
