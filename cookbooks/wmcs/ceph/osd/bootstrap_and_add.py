@@ -87,12 +87,13 @@ class BootstrapAndAdd(CookbookBase):
             help="Number of osds to bring up at a time to avoid congesting the network, use 0 for all at once.",
         )
         parser.add_argument(
-            "--wait-for-rebalance",
+            "--no-wait",
             required=False,
             action="store_true",
             help=(
-                "If passed, will wait for the cluster to do the rebalancing after adding the new OSDs. Note that this "
-                "might take several hours."
+                "If passed, it will not wait for the cluster to do the rebalancing after adding the new OSDs. Note "
+                "that this might take several hours, so you might want to use this flag if you know everything is "
+                "going to be ok."
             ),
         )
         parser.add_argument(
@@ -110,7 +111,7 @@ class BootstrapAndAdd(CookbookBase):
             osd_hostnames=args.osd_hostname,
             yes_i_know=args.yes_i_know_what_im_doing,
             skip_reboot=args.skip_reboot,
-            wait_for_rebalance=args.wait_for_rebalance,
+            wait_for_rebalance=not args.no_wait,
             force=args.force,
             batch_size=args.batch_size,
             only_check=args.only_check,
