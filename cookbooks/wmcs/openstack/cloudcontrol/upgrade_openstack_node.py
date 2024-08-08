@@ -188,6 +188,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
                 run_one_raw(node=node_to_upgrade, command=Command("nova-manage db sync"))
                 run_one_raw(node=node_to_upgrade, command=Command("placement-manage db sync"))
                 run_one_raw(node=node_to_upgrade, command=Command("glance-manage db_sync"))
+                run_one_raw(node=node_to_upgrade, command=Command("glance-manage db load_metadefs"))
                 run_one_raw(node=node_to_upgrade, command=Command("keystone-manage db_sync"))
                 run_one_raw(node=node_to_upgrade, command=Command("cinder-manage db online_data_migrations"))
                 run_one_raw(node=node_to_upgrade, command=Command("cinder-manage db sync"))
