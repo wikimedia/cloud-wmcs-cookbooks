@@ -84,7 +84,7 @@ class LiveUpgradeRunner(WMCSCookbookRunnerBase):
                 "nova-compute",
                 "neutron-common",
                 "nova-compute-kvm",
-                "neutron-linuxbridge-agent",
+                "neutron-openvswitch-agent",
                 "python3-neutron ",
                 "python3-eventlet",
                 "python3-oslo.messaging",
@@ -114,7 +114,7 @@ class LiveUpgradeRunner(WMCSCookbookRunnerBase):
             ],
         )
         run_one_raw(node=node_to_upgrade, command=Command("run-puppet-agent", ok_codes=[]))
-        run_one_raw(node=node_to_upgrade, command=["systemctl", "restart", "neutron-linuxbridge-agent"])
+        run_one_raw(node=node_to_upgrade, command=["systemctl", "restart", "neutron-openvswitch-agent"])
         run_one_raw(node=node_to_upgrade, command=["systemctl", "stop", "libvirtd"])
         run_one_raw(node=node_to_upgrade, command=["systemctl", "start", "libvirtd-tls.socket"])
         run_one_raw(node=node_to_upgrade, command=["systemctl", "start", "libvirtd"])
