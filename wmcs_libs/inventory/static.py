@@ -129,7 +129,7 @@ _INVENTORY: Inventory = {
                         OpenstackNodeRoleName.CONTROL: [
                             "cloudcontrol2004-dev.codfw.wmnet",
                             "cloudcontrol2005-dev.codfw.wmnet",
-                            "cloudcontrol2001-dev.codfw.wmnet",
+                            "cloudcontrol2006-dev.codfw.wmnet",
                         ],
                         OpenstackNodeRoleName.GATEWAY: [
                             "cloudgw2001-dev.codfw.wmnet",

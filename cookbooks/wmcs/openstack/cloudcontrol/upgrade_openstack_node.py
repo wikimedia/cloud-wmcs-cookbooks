@@ -139,7 +139,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
                     ]
                 )
                 if "control" not in self.fqdn_to_upgrade:
-                    backupnode = self.spicerack.remote().query("D{cloudcontrol2001-dev.codfw.wmnet}", use_sudo=True)
+                    backupnode = self.spicerack.remote().query("D{cloudcontrol2006-dev.codfw.wmnet}", use_sudo=True)
             else:
                 LOGGER.info(
                     "Unable to determine deployment for node %s, skipping some database backups.",
