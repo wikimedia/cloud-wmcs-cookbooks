@@ -166,7 +166,7 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Force passed, ignoring cluster health and continuing")
         else:
             LOGGER.info(
-                "Undrained node %s, waiting for cluster to stabilize...",
+                "Undrained node %s",
                 self.osd_fqdns,
             )
             self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)

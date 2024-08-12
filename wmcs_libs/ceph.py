@@ -102,6 +102,12 @@ class CephOSDFlag(ArgparsableEnum):
     PGLOG_HARDLIMIT = "pglog_hardlimit"
 
 
+class OSDInOut(ArgparsableEnum):
+    IN = "in"
+    OUT = "out"
+    ALL = "all"
+
+
 class OSDClass(ArgparsableEnum):
     """Supported OSD classes."""
 
@@ -1085,7 +1091,6 @@ class CephClusterController(CommandRunnerMixin):
         def info(msg, *args):
             LOGGER.info(f"[%d/%d osds] {msg}", chunk_start, len(osd_ids), *args)
 
-        info("Undraining osds: %s", str(osd_ids))
         for chunk_num in range(0, len(osd_ids), batch_size):
             chunk_num = chunk_start // batch_size
             next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
@@ -1142,11 +1147,15 @@ class CephClusterController(CommandRunnerMixin):
         osd_ids: list[int] | None = None,
     ) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
-        osds = self.get_host_osds(osd_host=osd_host)
+        osds = self.get_host_osds(osd_host=osd_host, in_out=OSDInOut.IN)
+        if not osds:
+            LOGGER.info("No %s osds found for host %s, skipping...", OSDInOut.IN, osd_host)
+            return
+
         if osd_ids:
             osds = [osd for osd in osds if osd in osd_ids]
 
-        LOGGER.info("Draining osds from host %s: %s", osd_host, str(osds))
+        LOGGER.info("Draining IN osds from host %s: %s", osd_host, str(osds))
         self.drain_osds_in_chunks(
             osd_ids=osds,
             batch_size=batch_size,
@@ -1164,13 +1173,18 @@ class CephClusterController(CommandRunnerMixin):
     ) -> None:
         """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
         osd_host = osd_fqdn.split(".", 1)[0]
-        osds = self.get_host_osds(osd_host=osd_host)
+        osds = self.get_host_osds(osd_host=osd_host, in_out=OSDInOut.OUT)
         if osd_ids:
             osds = [osd for osd in osds if osd in osd_ids]
+
+        if not osds:
+            LOGGER.info("No %s osds found for host %s, skipping...", OSDInOut.OUT, osd_host)
+            return
 
         if not batch_size:
             batch_size = len(osds)
 
+        LOGGER.info("Undraining OUT osds from host %s: %s", osd_host, str(osds))
         self.undrain_osds_in_chunks(osd_ids=osds, batch_size=batch_size, wait=wait, osd_fqdn=osd_fqdn)
 
     def remove_crush_bucket(self, bucket_name: str) -> None:
@@ -1216,13 +1230,20 @@ class CephClusterController(CommandRunnerMixin):
         if f"purged osd.{osd_id}" not in response:
             raise CephException(f"Got unexpected output while purging osd {osd_id}: {response}")
 
-    def get_host_osds(self, osd_host: str) -> list[int]:
+    def get_host_osds(self, osd_host: str, in_out: OSDInOut = OSDInOut.ALL) -> list[int]:
         """Retrieve the list of osd ids that are there in a host (from the ceph cluster rbdmap)."""
         osd_tree = self.get_osd_tree()
         hosts = list(osd_tree.get_nodes_by_type(wanted_type="host"))
+
         for host in hosts:
             if host.name == osd_host:
-                return [osd.node_id for osd in host.children]
+                return [
+                    osd.node_id
+                    for osd in host.children
+                    if (in_out == OSDInOut.OUT and osd.crush_weight == 0)
+                    or (in_out == OSDInOut.IN and osd.crush_weight != 0)
+                    or in_out == OSDInOut.ALL
+                ]
 
         raise CephException(f"Unable to find osd host {osd_host} on: {hosts}")
 

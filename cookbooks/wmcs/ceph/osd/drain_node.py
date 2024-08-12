@@ -159,7 +159,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         for idx, maybe_host_name in enumerate(self.osd_hostnames):
             host_name = maybe_host_name.split(".", 1)[0]
             LOGGER.info(
-                "[%s] Draining node %s, osds %s (%d/%d), waiting for cluster to stabilize...",
+                "[%s] Draining node %s, osds %s (%d/%d)",
                 datetime.datetime.now(),
                 maybe_host_name,
                 self.osd_ids if self.osd_ids else "all",
@@ -187,7 +187,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
                 LOGGER.info("Force passed, ignoring cluster health and continuing")
             else:
                 LOGGER.info(
-                    "[%s] Drained node %s (%d/%d), waiting for cluster to stabilize...",
+                    "[%s] Drained node %s (%d/%d)",
                     datetime.datetime.now(),
                     maybe_host_name,
                     idx,
