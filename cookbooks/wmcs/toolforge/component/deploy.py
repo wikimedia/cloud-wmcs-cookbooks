@@ -84,6 +84,11 @@ class ToolforgeComponentDeploy(CookbookBase):
             action="store_true",
             help="If passed, will also run the tests.",
         )
+        parser.add_argument(
+            "--no-wait",
+            action="store_true",
+            help="(k8s components only) If passed, it will not wait for the helm deployment to finish up.",
+        )
         parser.add_argument("--filter-tags", action="append", default=[], help="filter tests with the given tags")
         return parser
 
@@ -93,6 +98,7 @@ class ToolforgeComponentDeploy(CookbookBase):
             component=args.component,
             git_branch=args.git_branch,
             run_tests=args.run_tests,
+            wait=not args.no_wait,
             filter_tags=args.filter_tags,
             spicerack=self.spicerack,
         )
@@ -115,6 +121,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         component: str,
         git_branch: str | None,
         run_tests: bool,
+        wait: bool,
         filter_tags: list[str],
         spicerack: Spicerack,
     ):
@@ -124,6 +131,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self.component = component
         self.git_branch = git_branch or f"bump_{component}"
         self.run_tests = run_tests
+        self.wait = wait
         self.filter_tags = filter_tags
         if filter_tags and not run_tests:
             raise Exception("You passed --filter-tags but not --run-tests, did you forget about it?")
@@ -326,7 +334,7 @@ unzip artifacts
         self._install_package_on_bastions(component=component, cluster_name=cluster_name)
 
     def _deploy_k8s_component(
-        self, component: str, git_branch: str, cluster_name: ToolforgeKubernetesClusterName
+        self, component: str, git_branch: str, cluster_name: ToolforgeKubernetesClusterName, wait: bool = True
     ) -> None:
         deploy_node_fqdn = get_control_nodes(self.cluster_name)[0]
         deploy_node = self.spicerack.remote().query(f"D{{{deploy_node_fqdn}}}", use_sudo=True)
@@ -354,7 +362,7 @@ unzip artifacts
         )
 
         # deploy!
-        cmd = f"{repo_dir}/deploy.sh '{component}'"
+        cmd = f"{repo_dir}/deploy.sh '{component}' {wait and '--wait' or ''}"
         LOGGER.info("INFO: deploying ...")
         run_one_raw(node=deploy_node, command=[cmd], cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
