@@ -26,7 +26,9 @@ class RBDRunner(CommandRunnerMixin):
         self.control_node = remote.query(f"D{{{self.control_node_fqdn}}}", use_sudo=True)
         super().__init__(command_runner_node=self.control_node)
 
-    def _get_full_command(self, *command: str, json_output: bool = True, project_as_arg: bool = False):
+    def _get_full_command(
+        self, *command: str, json_output: bool = True, project_as_arg: bool = False, with_env_var: bool = True
+    ):
         # some commands don't have formatted output
         if json_output:
             format_args = ["-f", "json"]

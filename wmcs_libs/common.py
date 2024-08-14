@@ -583,7 +583,9 @@ class CommandRunnerMixin:
         """Simple mixin to provide command running functions to a class."""
         self.command_runner_node = command_runner_node
 
-    def _get_full_command(self, *command: str, json_output: bool = True, project_as_arg: bool = False):
+    def _get_full_command(
+        self, *command: str, json_output: bool = True, project_as_arg: bool = False, with_env_var: bool = True
+    ):
         raise NotImplementedError
 
     def run_raw(
@@ -592,13 +594,16 @@ class CommandRunnerMixin:
         capture_errors: bool = False,
         json_output=True,
         project_as_arg: bool = False,
+        with_env_var: bool = True,
         cumin_params: CuminParams | None = None,
     ) -> str:
         """Run a command on a runner node.
 
         Returns the raw output (not loaded from json).
         """
-        full_command = self._get_full_command(*command, json_output=json_output, project_as_arg=project_as_arg)
+        full_command = self._get_full_command(
+            *command, json_output=json_output, project_as_arg=project_as_arg, with_env_var=with_env_var
+        )
         return run_one_raw(
             command=full_command,
             node=self.command_runner_node,
@@ -614,6 +619,7 @@ class CommandRunnerMixin:
         cumin_params: CuminParams | None = None,
         try_format: OutputFormat = OutputFormat.JSON,
         last_line_only: bool = False,
+        with_env_var: bool = True,
         skip_first_line: bool = False,
     ) -> dict[str, Any]:
         """Run a command on a runner node forcing json output.
@@ -633,7 +639,9 @@ class CommandRunnerMixin:
             }
 
         """
-        full_command = self._get_full_command(*command, json_output=True, project_as_arg=project_as_arg)
+        full_command = self._get_full_command(
+            *command, json_output=True, project_as_arg=project_as_arg, with_env_var=with_env_var
+        )
         return run_one_as_dict(
             command=full_command,
             node=self.command_runner_node,
@@ -650,6 +658,7 @@ class CommandRunnerMixin:
         capture_errors: bool = False,
         project_as_arg: bool = False,
         skip_first_line: bool = False,
+        with_env_var: bool = True,
         cumin_params: CuminParams | None = None,
     ) -> list[Any]:
         """Run an command on a runner node forcing json output.
@@ -686,7 +695,9 @@ class CommandRunnerMixin:
             ]
 
         """
-        full_command = self._get_full_command(*command, json_output=True, project_as_arg=project_as_arg)
+        full_command = self._get_full_command(
+            *command, json_output=True, project_as_arg=project_as_arg, with_env_var=with_env_var
+        )
         return run_one_formatted_as_list(
             command=full_command,
             node=self.command_runner_node,

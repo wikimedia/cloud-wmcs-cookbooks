@@ -39,7 +39,9 @@ class EncPrefix(CommandRunnerMixin):
         self.project_id = project_id
         self.prefix_name = prefix_name
 
-    def _get_full_command(self, *command: str, json_output: bool = True, project_as_arg: bool = False):
+    def _get_full_command(
+        self, *command: str, json_output: bool = True, project_as_arg: bool = False, with_env_var: bool = True
+    ):
         return [
             "wmcs-enc-cli",
             *(["--openstack-project", self.project_id] if project_as_arg else []),

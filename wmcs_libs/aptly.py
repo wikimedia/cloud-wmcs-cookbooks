@@ -12,7 +12,9 @@ SUPPORTED_DISTROS = ["buster", "bullseye", "bookworm"]
 class Aptly(CommandRunnerMixin):
     """Class to manage an Aptly-based apt repository."""
 
-    def _get_full_command(self, *command: str, json_output: bool = True, project_as_arg: bool = False):
+    def _get_full_command(
+        self, *command: str, json_output: bool = True, project_as_arg: bool = False, with_env_var: bool = True
+    ):
         return command
 
     def get_repositories(self) -> list[str]:

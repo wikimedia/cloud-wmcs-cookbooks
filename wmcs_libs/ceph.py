@@ -495,7 +495,9 @@ class CephClusterController(CommandRunnerMixin):
         self._spicerack = spicerack
         super().__init__(command_runner_node=self._controlling_node)
 
-    def _get_full_command(self, *command: str, json_output: bool = True, project_as_arg: bool = False):
+    def _get_full_command(
+        self, *command: str, json_output: bool = True, project_as_arg: bool = False, with_env_var: bool = True
+    ):
         if json_output:
             format_args = ["-f", "json"]
         else:

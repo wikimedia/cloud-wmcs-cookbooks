@@ -472,7 +472,9 @@ class OpenstackAPI(CommandRunnerMixin):
         self.control_node = remote.query(f"D{{{self.control_node_fqdn}}}", use_sudo=True)
         super().__init__(command_runner_node=self.control_node)
 
-    def _get_full_command(self, *command: str, json_output: bool = True, project_as_arg: bool = False):
+    def _get_full_command(
+        self, *command: str, json_output: bool = True, project_as_arg: bool = False, with_env_var: bool = True
+    ):
         # some commands don't have formatted output
         if json_output:
             format_args = ["-f", "json"]
@@ -490,7 +492,12 @@ class OpenstackAPI(CommandRunnerMixin):
         if project_as_arg:
             return ["wmcs-openstack", *command, self.project, *format_args, *oscloud_args]
 
-        return ["env", f"OS_PROJECT_ID={self.project}", "wmcs-openstack", *command, *format_args, *oscloud_args]
+        final_command = ["wmcs-openstack", *command, *format_args, *oscloud_args]
+        # sometimes we don't want to set the envvar or we get unauthorized, ex. when creating roles
+        if with_env_var:
+            final_command = ["env", f"OS_PROJECT_ID={self.project}"] + final_command
+
+        return final_command
 
     def hypervisor_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Returns a list of hypervisors."""
@@ -1114,11 +1121,27 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def role_add(self, role_name: OpenstackName, user_name: OpenstackName) -> None:
         """Add a user to a role for a project, it will not fail if the user is already has that role."""
-        self.run_raw("role", "add", f"--project={self.project}", f"--user={user_name}", role_name, json_output=False)
+        self.run_raw(
+            "role",
+            "add",
+            f"--project={self.project}",
+            f"--user={user_name}",
+            role_name,
+            json_output=False,
+            with_env_var=False,
+        )
 
     def role_remove(self, role: OpenstackIdentifier, user_name: OpenstackName) -> None:
         """Remove a user from a role for a project, it will not fail if the user is not in that that role."""
-        self.run_raw("role", "remove", f"--project={self.project}", f"--user={user_name}", role, json_output=False)
+        self.run_raw(
+            "role",
+            "remove",
+            f"--project={self.project}",
+            f"--user={user_name}",
+            role,
+            json_output=False,
+            with_env_var=False,
+        )
 
     def project_create(self, project: OpenstackName, description: str) -> None:
         """Creates a new project."""
