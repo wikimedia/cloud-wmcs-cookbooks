@@ -1082,7 +1082,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
         Note that this sets the final value, not an increase.
         """
-        self.run_raw("database", "quota", "update", self.project, resource, value)
+        self.run_raw("database", "quota", "update", self.project, resource, value, with_env_var=False)
 
     def quota_increase(self, *quota_increases: OpenstackQuotaEntry) -> None:
         """Set a quota to the current value plus the given increase."""

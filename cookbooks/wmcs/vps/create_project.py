@@ -118,6 +118,8 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
             )
 
         self.openstack_api.project_create(project=self.common_opts.project, description=self.description)
+        # change to the newly created project
+        self.openstack_api.project = self.common_opts.project
         if self.trove_only:
             self.openstack_api.quota_set(
                 OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.INSTANCES, human_spec="0")
