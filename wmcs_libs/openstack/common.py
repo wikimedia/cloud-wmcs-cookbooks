@@ -869,7 +869,14 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def security_group_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Retrieve the list of security groups."""
-        return self.run_formatted_as_list("security", "group", "list", cumin_params=CuminParams.as_safe(cumin_params))
+        return self.run_formatted_as_list(
+            "security",
+            "group",
+            "list",
+            f"--project={self.project}",
+            cumin_params=CuminParams.as_safe(cumin_params),
+            with_env_var=False,
+        )
 
     def security_group_create(self, name: OpenstackName, description: str) -> None:
         """Create a security group."""
@@ -930,7 +937,14 @@ class OpenstackAPI(CommandRunnerMixin):
 
         Note:  it seems that on cli the project flag shows nothing :/ so we get the list all of them.
         """
-        return self.run_formatted_as_list("server", "group", "list", cumin_params=CuminParams.as_safe(cumin_params))
+        return self.run_formatted_as_list(
+            "server",
+            "group",
+            "list",
+            f"--os-project-id={self.project}",
+            cumin_params=CuminParams.as_safe(cumin_params),
+            with_env_var=False,
+        )
 
     def server_group_create(self, name: OpenstackName, policy: OpenstackServerGroupPolicy) -> None:
         """Create a server group."""
