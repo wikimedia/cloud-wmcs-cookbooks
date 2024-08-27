@@ -6,6 +6,7 @@ set -o nounset
 
 DEFAULT_CONFIG_DIR="$HOME/.config/spicerack"
 DEFAULT_COOKBOOK_CONFIG_PATH="$DEFAULT_CONFIG_DIR/cookbook.yaml"
+DEFAULT_WMCS_CONFIG_PATH="$DEFAULT_CONFIG_DIR/wmcs.yaml"
 DEFAULT_ALERTMANAGER_CONFIG_PATH="$DEFAULT_CONFIG_DIR/alertmanager/config.yaml"
 DEFAULT_LOGS_DIR="/tmp/spicerack_logs"
 DEFAULT_COOKBOOKS_WMCS_DIR="$PWD"
@@ -28,6 +29,7 @@ help() {
             Defaults:
                 DEFAULT_CONFIG_DIR=$DEFAULT_CONFIG_DIR
                 DEFAULT_COOKBOOK_CONFIG_PATH=$DEFAULT_COOKBOOK_CONFIG_PATH
+                DEFAULT_WMCS_CONFIG_PATH=$DEFAULT_WMCS_CONFIG_PATH
                 DEFAULT_ALERTMANAGER_CONFIG_PATH=$DEFAULT_ALERTMANAGER_CONFIG_PATH
                 DEFAULT_LOGS_DIR=$DEFAULT_LOGS_DIR
                 DEFAULT_COOKBOOKS_WMCS_DIR=$DEFAULT_COOKBOOKS_WMCS_DIR
@@ -47,6 +49,7 @@ main() {
         cookbooks_sre_dir \
         cumin_config_path \
         rewrite="no" \
+        gitlab_token \
         use_defaults="no"
 
     if [[ $# -eq 1 ]]; then
@@ -77,6 +80,12 @@ main() {
         read -r cookbook_config_path
         if [[ $cookbook_config_path = "" ]]; then
             cookbook_config_path=$DEFAULT_COOKBOOK_CONFIG_PATH
+        fi
+
+        echo "What will be the path for wmcs.yaml config? [default: $DEFAULT_WMCS_CONFIG_PATH]"
+        read -r wmcs_config_path
+        if [[ $wmcs_config_path = "" ]]; then
+            wmcs_config_path=$DEFAULT_WMCS_CONFIG_PATH
         fi
 
         echo "What will be the path for alertmanager.yaml config? [default: $DEFAULT_ALERTMANAGER_CONFIG_PATH]"
@@ -111,6 +120,7 @@ main() {
     else
         config_dir="$DEFAULT_CONFIG_DIR"
         cookbook_config_path=$DEFAULT_COOKBOOK_CONFIG_PATH
+        wmcs_config_path=$DEFAULT_WMCS_CONFIG_PATH
         alertmanager_config_path=$DEFAULT_ALERTMANAGER_CONFIG_PATH
         logs_dir="$DEFAULT_LOGS_DIR"
         cumin_config_path="$DEFAULT_CUMIN_CONFIG_PATH"
@@ -153,6 +163,35 @@ instance_params:
 #
 
 # jenkins_api_token = sometoken
+EOC
+    fi
+
+    rewrite="yes"
+    if [[ -f $wmcs_config_path ]]; then
+        echo "The configuration file $wmcs_config_path already exists, overwrite?[Ny] (Ctr+C to abort)"
+        read -r answer
+        if ! [[ $answer =~ [yY].* ]]; then
+            rewrite="no"
+            echo "Skipping $wmcs_config_path"
+        fi
+    fi
+    if [[ $rewrite == "yes" ]]; then
+        echo "If you have a gitlab api token, paste it, hit enter otherwise (you'll have to add it manually to $wmcs_config_path later): "
+        read -r answer
+        gitlab_token="$answer"
+        if [[ $answer == "" ]]; then
+            gitlab_token="YOURSECRETTOKEN"
+        fi
+
+        cat > "$wmcs_config_path" <<EOC
+# custom socks proxy port if you want to overwrite the default (54321)
+#socks_proxy_port: 54321
+
+# custom puppet ca path
+#puppet_ca_path: ~/.cache/puppet_ca.crt
+
+# gitlab api token
+gitlab_token: "$gitlab_token"
 EOC
     fi
 
