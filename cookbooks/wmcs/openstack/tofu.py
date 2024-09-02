@@ -18,12 +18,11 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.common import (
-    CUMIN_SAFE_WITHOUT_OUTPUT,
-    CUMIN_UNSAFE_WITHOUT_OUTPUT,
     CommonOpts,
+    CuminParams,
     WMCSCookbookRunnerBase,
     add_common_opts,
-    run_script,
+    run_one_raw,
     with_common_opts,
     with_temporary_file,
 )
@@ -96,6 +95,17 @@ class OpenstackTofu(CookbookBase):
         )
 
 
+def _concat(commands: list[str]) -> str:
+    return " && ".join(commands)
+
+
+def _sh_wrap(cmd: str) -> list[str]:
+    return ["/bin/sh", "-c", "--", f"'{cmd}'"]
+
+
+cumin_params = CuminParams(print_progress_bars=False)
+
+
 class OpenstackTofuRunner(WMCSCookbookRunnerBase):
     """Runner for OpenstackTofu"""
 
@@ -142,50 +152,68 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         )
         return f"running tofu plan{apply} {branch}"
 
+    @staticmethod
+    def _exec(node: Any, commands: list[str]) -> None:
+        _command = _sh_wrap(_concat(commands))
+        LOGGER.info("INFO: running command: %s", _command)
+        try:
+            run_one_raw(node=node, command=_command, cumin_params=cumin_params)
+        except Exception as e:
+            error_msg = f"ERROR: failed to run command: '{_command}': '{e}'"
+            LOGGER.error(error_msg)
+            raise RuntimeError(error_msg) from e
+
     def _git_cleanup_and_checkout_main_branch(self, node: Any) -> None:
         main_branch = "main"
-        script = f"""
-cd '{self.TOFU_INFRA_DIR}'
-# flush any local changes first
-git checkout -f
-git clean -fd
-# checkout main branch
-git checkout '{main_branch}'
-git pull --rebase
-"""
-        run_script(node=node, script=script, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
+        commands = [
+            f"cd {self.TOFU_INFRA_DIR}",
+            # flush any local changes first
+            "git checkout -f",
+            "git clean -fd",
+            # checkout main branch
+            f"git checkout {main_branch}",
+            "git pull --rebase",
+        ]
+        self._exec(node, commands)
 
     def _git_checkout_mr(self, node: Any) -> None:
         # see https://gitlab.wikimedia.org/help/user/project/merge_requests/merge_request_troubleshooting
         remote = "origin"
-        script = f"""
-cd '{self.TOFU_INFRA_DIR}'
-# force ignores errors due to diverging mr branches (case if the MR is updated and the cookbook rerun)
-git fetch --force '{remote}' 'merge-requests/{self.gitlab_mr}/head:mr-{remote}-{self.gitlab_mr}'
-git checkout --force 'mr-{remote}-{self.gitlab_mr}'
-"""
-        run_script(node=node, script=script, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
+        commands = [
+            f"cd {self.TOFU_INFRA_DIR}",
+            # force ignores errors due to diverging mr branches (case if the MR is updated and the cookbook rerun)
+            f"git fetch --force {remote} merge-requests/{self.gitlab_mr}/head:mr-{remote}-{self.gitlab_mr}",
+            f"git checkout --force mr-{remote}-{self.gitlab_mr}",
+        ]
+        self._exec(node, commands)
 
     def _tofu_plan(self, node: Any, plan_file: str) -> None:
-        script = f"""
-cd '{self.TOFU_INFRA_DIR}'
-tofu init
-tofu validate
-tofu plan -out='{plan_file}'
-"""
-        run_script(node=node, script=script, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
+        commands = [
+            f"cd {self.TOFU_INFRA_DIR}",
+            "tofu init",
+            "tofu validate",
+            f"tofu plan -out={plan_file}",
+        ]
+        self._exec(node, commands)
 
     def _tofu_apply(self, node: Any, plan_file: str) -> None:
-        script = f"cd '{self.TOFU_INFRA_DIR}' && tofu apply {plan_file}"
-        run_script(node=node, script=script, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
+        commands = [
+            f"cd {self.TOFU_INFRA_DIR}",
+            f"tofu apply {plan_file}",
+        ]
+        self._exec(node, commands)
 
     def _tofu_plan_to_gitlab_note(self, node: Any, cluster_name: str, plan_file: str) -> None:
         if not self.gitlab_controller:
             return
 
-        script = f"cd {self.TOFU_INFRA_DIR} && tofu show -no-color '{plan_file}'"
+        commands = [
+            f"cd {self.TOFU_INFRA_DIR}",
+            f"tofu show -no-color {plan_file}",
+        ]
+        tofu_show_cumin_params = CuminParams(print_progress_bars=False, print_output=False, is_safe=True)
         try:
-            plan = run_script(node=node, script=script, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+            plan = run_one_raw(node=node, command=_sh_wrap(_concat(commands)), cumin_params=tofu_show_cumin_params)
         except Exception as e:  # pylint: disable=broad-except
             LOGGER.warning("WARNING: unable to get content of the tofu plan: %s", str(e))
             return
@@ -203,12 +231,13 @@ tofu plan -out='{plan_file}'
         LOGGER.info("INFO: writing note with tofu plan to gitlab merge request")
 
         # TODO: apparently, code blocks aren't created correctly inside <details> blocks :-(
-        note_body = f"""tofu plan was run for this merge request in cluster `{cluster_name}`:
-<details>
-<summary>Click to expand tofu plan</summary>
-{plan}
-</details>
-        """
+        note_body = (
+            f"tofu plan was run for this merge request in cluster `{cluster_name}`:\n"
+            "<details>\n"
+            "<summary>Click to expand tofu plan</summary>\n"
+            f"{plan}\n"
+            "</details>\n"
+        )
         self.gitlab_controller.create_mr_note(
             project_id=project_id, merge_request_iid=self.gitlab_mr, note_body=note_body
         )
@@ -238,7 +267,7 @@ tofu plan -out='{plan_file}'
 
         self._git_cleanup_and_checkout_main_branch(node)
 
-        with with_temporary_file(dst_node=node, contents="", cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT) as plan_file:
+        with with_temporary_file(dst_node=node, contents="", cumin_params=cumin_params) as plan_file:
             with self._with_merge_request(node):
                 self._tofu_plan(node, plan_file=plan_file)
 
