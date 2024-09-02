@@ -115,6 +115,8 @@ class CuminParams:
 # Handy pre-set common cumin params
 CUMIN_SAFE_WITHOUT_OUTPUT = CuminParams(print_output=False, print_progress_bars=False, is_safe=True)
 CUMIN_UNSAFE_WITHOUT_OUTPUT = CuminParams(print_output=False, print_progress_bars=False)
+CUMIN_SAFE_WITHOUT_PROGRESS = CuminParams(print_progress_bars=False, is_safe=True)
+CUMIN_UNSAFE_WITHOUT_PROGRESS = CuminParams(print_progress_bars=False)
 CUMIN_SAFE_WITH_OUTPUT = CuminParams(is_safe=True)
 CUMIN_UNSAFE_WITH_OUTPUT = CuminParams()
 
