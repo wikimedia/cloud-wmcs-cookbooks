@@ -405,7 +405,7 @@ def with_temporary_file(
 
         yield file_path
     finally:
-        run_one_raw(node=dst_node, command=["rm", "-v", file_path], cumin_params=cumin_params)
+        run_one_raw(node=dst_node, command=["rm", "-f", "-v", file_path], cumin_params=cumin_params)
 
 
 def natural_sort_key(element: str) -> list[str | int]:
