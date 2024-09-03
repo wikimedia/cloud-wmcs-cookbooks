@@ -70,6 +70,7 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
     KYVERNO_IMAGE_BASE_URL = "ghcr.io/kyverno/"
     KYVERNO_IMAGES_NAMES = [
         "kyverno",
+        "kyverno-cli",
         "kyvernopre",
         "background-controller",
         "cleanup-controller",
