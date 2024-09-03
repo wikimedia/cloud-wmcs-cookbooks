@@ -38,6 +38,18 @@ class CopyImagesToRepo(CookbookBase):
             default="tools-imagebuilder-2.tools.eqiad1.wikimedia.cloud",
             help="Host to use to pull and push to the given repository.",
         )
+        parser.add_argument(
+            "--kyverno-version",
+            required=False,
+            default="v1.12.5",
+            help="Version of kyverno to upgrade to (matches the image tag).",
+        )
+        parser.add_argument(
+            "--bitnami-kubectl-version",
+            required=False,
+            default="1.28.5",
+            help="Version of bitname/kubectl image to upgrade to (matches the image tag).",
+        )
 
         return parser
 
@@ -46,6 +58,8 @@ class CopyImagesToRepo(CookbookBase):
         return with_common_opts(self.spicerack, args, CopyImagesToRepoRunner)(
             image_repo_url=args.image_repo_url,
             uploader_node=args.uploader_node,
+            kyverno_version=args.kyverno_version,
+            bitnami_kubectl_version=args.bitnami_kubectl_version,
             spicerack=self.spicerack,
         )
 
@@ -53,7 +67,6 @@ class CopyImagesToRepo(CookbookBase):
 class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
     """Runner for CopyImagesToRepo."""
 
-    KYVERNO_IMAGE_VERSION = "v1.10.7"
     KYVERNO_IMAGE_BASE_URL = "ghcr.io/kyverno/"
     KYVERNO_IMAGES_NAMES = [
         "kyverno",
@@ -63,19 +76,23 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         "reports-controller",
     ]
 
-    KYVERNO_KUBECTL_PULL = "bitnami/kubectl:1.26.4"
-    KYVERNO_KUBECTL_PUSH_NAME = "bitnami-kubectl:1.26.4"
+    KYVERNO_KUBECTL_PULL = "bitnami/kubectl"
+    KYVERNO_KUBECTL_PUSH_NAME = "bitnami-kubectl"
 
     def __init__(
         self,
         common_opts: CommonOpts,
         image_repo_url: str,
         uploader_node: str,
+        kyverno_version: str,
+        bitnami_kubectl_version: str,
         spicerack: Spicerack,
     ):
         """Init"""
         self.image_repo_url = image_repo_url
         self.uploader_node = uploader_node
+        self.kyverno_version = kyverno_version
+        self.bitnami_kubectl_version = bitnami_kubectl_version
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
@@ -85,10 +102,10 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         image_ctrl = ImageController(spicerack=self.spicerack, uploader_node=uploader_node)
 
         for image in self.KYVERNO_IMAGES_NAMES:
-            pull_url = f"{self.KYVERNO_IMAGE_BASE_URL}{image}:{self.KYVERNO_IMAGE_VERSION}"
-            push_url = f"{self.image_repo_url}/toolforge-kyverno-{image}:{self.KYVERNO_IMAGE_VERSION}"
+            pull_url = f"{self.KYVERNO_IMAGE_BASE_URL}{image}:{self.kyverno_version}"
+            push_url = f"{self.image_repo_url}/toolforge-kyverno-{image}:{self.kyverno_version}"
             image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
 
-        pull_url = self.KYVERNO_KUBECTL_PULL
-        push_url = f"{self.image_repo_url}/{self.KYVERNO_KUBECTL_PUSH_NAME}"
+        pull_url = f"{self.KYVERNO_KUBECTL_PULL}:{self.bitnami_kubectl_version}"
+        push_url = f"{self.image_repo_url}/{self.KYVERNO_KUBECTL_PUSH_NAME}:{self.bitnami_kubectl_version}"
         image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
