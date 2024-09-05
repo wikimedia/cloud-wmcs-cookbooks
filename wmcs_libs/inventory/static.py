@@ -91,9 +91,9 @@ _INVENTORY: Inventory = {
                     api_vip_fqdn="k8s.svc.toolsbeta.eqiad1.wikimedia.cloud",
                     nodes_by_role={
                         ToolforgeKubernetesNodeRoleName.CONTROL: [
-                            "toolsbeta-test-k8s-control-7.toolsbeta.eqiad1.wikimedia.cloud",
-                            "toolsbeta-test-k8s-control-8.toolsbeta.eqiad1.wikimedia.cloud",
-                            "toolsbeta-test-k8s-control-9.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-test-k8s-control-10.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-test-k8s-control-11.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-test-k8s-control-12.toolsbeta.eqiad1.wikimedia.cloud",
                         ],
                         ToolforgeKubernetesNodeRoleName.SERVICES: [
                             "tools-services-06.tools.eqiad1.wikimedia.cloud",
