@@ -105,6 +105,10 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
     GITLAB_BASE_URL = "https://gitlab.wikimedia.org"
     GITLAB_REPO_NAME = "tofu-infra"
     GITLAB_REPO_URL = f"{GITLAB_BASE_URL}/repos/cloud/cloud-vps/{GITLAB_REPO_NAME}"
+    # long tofu plans in gitlab notes without collapse are annoying. But also, markdown formatting inside
+    # gitlab notes is broken, so we don't want to collapse _all_ tofu plan, only those with line count
+    # above this arbitrary threshold
+    GITLAB_MR_NOTE_COLLAPSE_AT_LINES_THRESHOLD = 500
     TOFU_INFRA_DIR = Path("/srv/tofu-infra")
 
     def __init__(
@@ -217,11 +221,17 @@ tofu validate
         LOGGER.info("INFO: writing note with tofu plan to gitlab merge request")
 
         # TODO: apparently, code blocks aren't created correctly inside <details> blocks :-(
+        # otherwise, we would collapse every tofu plan
+        plan_block_header = "```"
+        plan_block_footer = "```"
+        if len(plan.splitlines()) >= self.GITLAB_MR_NOTE_COLLAPSE_AT_LINES_THRESHOLD:
+            plan_block_header = "<details><summary>Click to expand tofu plan</summary>"
+            plan_block_footer = "</details>"
+
         note_body = f"""tofu plan was run for this merge request in cluster `{cluster_name}`:
-<details>
-<summary>Click to expand tofu plan</summary>
+{plan_block_header}
 {plan}
-</details>
+{plan_block_footer}
         """
         self.gitlab_controller.create_mr_note(
             project_id=project_id, merge_request_iid=self.gitlab_mr, note_body=note_body
