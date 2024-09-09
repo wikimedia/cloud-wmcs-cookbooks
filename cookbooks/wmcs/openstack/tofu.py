@@ -255,7 +255,7 @@ tofu validate
 
         control_node_fqdn = get_control_nodes(cluster_name=OpenstackClusterName(cluster_name))[0]
 
-        LOGGER.info("INFO: running tofu for deployment '%s', node '%s", cluster_name, control_node_fqdn)
+        LOGGER.info("INFO: running tofu for deployment '%s', node '%s'", cluster_name, control_node_fqdn)
 
         query = f"P{{{control_node_fqdn}}}"
         node = self.spicerack.remote().query(query, use_sudo=True)
