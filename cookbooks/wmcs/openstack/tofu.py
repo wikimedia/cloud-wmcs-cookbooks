@@ -174,18 +174,19 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
         run_script(node=node, script=script, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
     def _tofu_plan(self, node: Any, plan_file: str) -> None:
-        script = f"""
-cd '{self.TOFU_INFRA_DIR}'
-tofu init
-tofu validate
-"""
-        run_script(node=node, script=script, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
-        # to show to the user with colors
-        run_one_raw(
-            command=["tofu", f"-chdir={self.TOFU_INFRA_DIR}", "plan", f"-out={plan_file}"],
-            node=node,
-            cumin_params=CUMIN_SAFE_WITHOUT_PROGRESS,
-        )
+        chdir = f"-chdir={self.TOFU_INFRA_DIR}"
+        commands = [
+            f"tofu {chdir} init",
+            f"tofu {chdir} validate",
+            f"tofu {chdir} plan -out={plan_file}",
+        ]
+
+        for command in commands:
+            run_one_raw(
+                command=command.split(),
+                node=node,
+                cumin_params=CUMIN_SAFE_WITHOUT_PROGRESS,
+            )
 
     def _tofu_apply(self, node: Any, plan_file: str) -> None:
         run_one_raw(
