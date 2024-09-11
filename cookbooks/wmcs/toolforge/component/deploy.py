@@ -80,9 +80,9 @@ class ToolforgeComponentDeploy(CookbookBase):
             ),
         )
         parser.add_argument(
-            "--run-tests",
+            "--skip-tests",
             action="store_true",
-            help="If passed, will also run the tests.",
+            help="If passed, will skip running the tests.",
         )
         parser.add_argument(
             "--no-wait",
@@ -97,7 +97,7 @@ class ToolforgeComponentDeploy(CookbookBase):
         return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeComponentDeployRunner)(
             component=args.component,
             git_branch=args.git_branch,
-            run_tests=args.run_tests,
+            run_tests=not args.skip_tests,
             wait=not args.no_wait,
             filter_tags=args.filter_tags,
             spicerack=self.spicerack,
@@ -134,7 +134,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self.wait = wait
         self.filter_tags = filter_tags
         if filter_tags and not run_tests:
-            raise Exception("You passed --filter-tags but not --run-tests, did you forget about it?")
+            raise Exception("You passed --filter-tags but also --skip-tests, only one of them is allowed.")
 
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.random_dir = f"/tmp/cookbook-toolforge-k8s-component-deploy-{_random_word(10)}"  # nosec
@@ -219,7 +219,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         version, post_version = version.split("Running tests from branch: ", 1)
         post_version = "Running tests from branch: " + post_version
 
-        gitlab_controller.create_mr_note(
+        note = gitlab_controller.create_mr_note(
             project_id=project["id"],
             merge_request_iid=mr_iid,
             note_body=f"""Ran the tests on {cluster_name}: **{status}**
@@ -234,6 +234,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
 ```
 """,
         )
+        LOGGER.info("Wrote note in MR %s", str(note))
         if " 0 failures " not in logs:
             raise Exception(f"TESTS FAILED:\n{logs}")
 

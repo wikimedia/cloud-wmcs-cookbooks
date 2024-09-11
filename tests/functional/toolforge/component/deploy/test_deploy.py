@@ -12,6 +12,7 @@ def test_deploy_package(run_cookbook_with_recording, monkeypatch):
             "--git-branch=bump_to_0.0.18",
             "--no-dologmsg",
             "--cluster-name=toolsbeta",
+            "--skip-tests",
         ],
     )
 
@@ -27,6 +28,7 @@ def test_deploy_component(run_cookbook_with_recording, monkeypatch):
             "--git-branch=bump_builds-builder",
             "--no-dologmsg",
             "--cluster-name=toolsbeta",
+            "--skip-tests",
         ],
     )
 
