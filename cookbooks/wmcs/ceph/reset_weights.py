@@ -134,8 +134,6 @@ class ResetWeightRunner(WMCSCookbookRunnerBase):
             )
             # If we ever change the tree, and have another level this will have to change
             hosts = list(rack.children)
-            # for caching, otherwise it will get the tree for each osd
-            osd_tree = self.controller.get_osd_tree()
             for host_idx, host in enumerate(hosts):
                 LOGGER.info(
                     "%s[%s|%d of %d] Reweighting all osds in host (%d osds)",
@@ -147,7 +145,7 @@ class ResetWeightRunner(WMCSCookbookRunnerBase):
                 )
                 node_fqdn = f"{host.name}.{self.cluster_name.get_site().get_domain()}"
                 for osd in host.children:
-                    self.controller.crush_reset_weight_osd(osd_id=osd.node_id, osd_tree=osd_tree, node_fqdn=node_fqdn)
+                    self.controller.crush_reset_weight_osd(osd_id=osd.node_id, node_fqdn=node_fqdn)
                     self.controller.reweight_osd(osd_id=osd.node_id, new_weight=1.0)
 
         if self.wait:

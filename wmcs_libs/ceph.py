@@ -10,8 +10,8 @@ import time
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from itertools import chain
-from typing import Any, Iterable, Literal, cast
+from itertools import chain, cycle, islice
+from typing import Any, Generator, Iterable, Literal, TypeVar, cast
 
 from spicerack import Spicerack
 from spicerack.remote import Remote, RemoteExecutionError
@@ -41,6 +41,33 @@ LOGGER = logging.getLogger(__name__)
 OSD_EXPECTED_OS_DRIVES = 2
 
 OSDTreeNodeType = Literal["host", "rack", "root", "osd"]
+
+
+@dataclass(frozen=True)
+class OSDIdNode:
+    osd_id: int
+    node_fqdn: str
+
+
+T = TypeVar("T")
+
+
+def round_robin(*iterables: Iterable[T]) -> Generator[T, None, None]:
+    """
+    roundrobin('ABC', 'D', 'EF') --> A D E B F C
+
+    From https://docs.python.org/3.3/library/itertools.html#itertools-recipes
+    """
+    # Recipe credited to George Sakkis
+    pending = len(iterables)
+    next_fns = cycle(iter(it).__next__ for it in iterables)
+    while pending:
+        try:
+            for next_fn in next_fns:
+                yield next_fn()
+        except StopIteration:
+            pending -= 1
+            next_fns = cycle(islice(next_fns, pending))
 
 
 class CephException(Exception):
@@ -921,14 +948,11 @@ class CephClusterController(CommandRunnerMixin):
         ]
         return devices
 
-    def crush_reset_weight_osd(self, osd_id: int, node_fqdn: str, osd_tree: OSDTree | None = None) -> bool:
+    def crush_reset_weight_osd(self, osd_id: int, node_fqdn: str) -> bool:
         """Re-weights an OSD daemon at the CRUSH table.
 
         Returns True if any changes were made, False otherwise.
         """
-        if not osd_tree:
-            osd_tree = self.get_osd_tree()
-
         osd_size_bytes = self.get_osd_size_bytes(osd_id=osd_id, osd_fqdn=node_fqdn)
         # TiB as a float (kb * mb * gb * tb)
         new_weight = osd_size_bytes / (1024 * 1024 * 1024 * 1024)
@@ -1102,10 +1126,8 @@ class CephClusterController(CommandRunnerMixin):
 
         return any_changes
 
-    def undrain_osds_in_chunks(
-        self, osd_ids: list[int], osd_fqdn: str, batch_size: int = 0, wait: bool = False
-    ) -> None:
-        if not osd_ids:
+    def undrain_osds_in_chunks(self, osd_id_nodes: list[OSDIdNode], batch_size: int = 0, wait: bool = False) -> None:
+        if not osd_id_nodes:
             LOGGER.info("No osd ids passed, skipping")
             return
 
@@ -1113,22 +1135,22 @@ class CephClusterController(CommandRunnerMixin):
         timeout = timedelta(hours=5)
 
         if batch_size == 0:
-            batch_size = len(osd_ids)
+            batch_size = len(osd_id_nodes)
 
         chunk_start = 0
 
         def info(msg, *args):
-            LOGGER.info(f"[%d/%d osds] {msg}", chunk_start, len(osd_ids), *args)
+            LOGGER.info(f"[%d/%d osds] {msg}", chunk_start, len(osd_id_nodes), *args)
 
-        for chunk_start in range(0, len(osd_ids), batch_size):
+        for chunk_start in range(0, len(osd_id_nodes), batch_size):
             chunk_num = chunk_start // batch_size
-            next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
+            next_chunk = osd_id_nodes[chunk_start : chunk_start + batch_size]
             info(
                 "Undraining osd batch %d: %s",
                 chunk_num + 1,
                 str(next_chunk),
             )
-            self.undrain_osds(osd_ids=next_chunk, osd_fqdn=osd_fqdn)
+            self.undrain_osd_id_nodes(osd_id_nodes=next_chunk)
             if wait:
                 info("Waiting for the cluster to shift data around...")
                 # give some time for the cluster to start shifting things around
@@ -1136,23 +1158,26 @@ class CephClusterController(CommandRunnerMixin):
                     info("Rebalancing has not started yet, sleeping another 10s for the rebalance to start")
                     time.sleep(10)
 
-        chunk_start = len(osd_ids)
+        chunk_start = len(osd_id_nodes)
         end_time = datetime.now()
-        info("All osds undrained (%s), took %s", osd_ids, (end_time - start_time))
+        info("All osds undrained (%s), took %s", osd_id_nodes, (end_time - start_time))
 
-    def undrain_osds(self, osd_ids: list[int], osd_fqdn: str) -> None:
+    def undrain_osd_id_nodes(self, osd_id_nodes: list[OSDIdNode]) -> None:
         """Undrains OSD daemons.
 
         It sets their weight to the number ot TiB of the drive.
         """
-        osd_tree = self.get_osd_tree()
+        for osd_id_node in osd_id_nodes:
+            self.crush_reset_weight_osd(osd_id=osd_id_node.osd_id, node_fqdn=osd_id_node.node_fqdn)
 
-        for osd_id in osd_ids:
-            self.crush_reset_weight_osd(osd_id=osd_id, osd_tree=osd_tree, node_fqdn=osd_fqdn)
+    def undrain_osds(self, osd_ids: list[int], osd_fqdn: str) -> None:
+        """Undrains OSD daemons.
 
-        # marking in at the end, makes the rebalancing start, this avoid having to rebalance several times
-        for osd_id in osd_ids:
-            self.mark_osd_in(osd_id=osd_id)
+        It sets their weight to whatever the current osds have (or falling back to the number ot TiB of the drive).
+        This signature is useful when you have a single node you want to drain from, otherwise prefer
+        `undrain_osd_id_nodes`.
+        """
+        self.undrain_osd_id_nodes([OSDIdNode(osd_id, osd_fqdn) for osd_id in osd_ids])
 
     def drain_osd_node(
         self,
@@ -1180,28 +1205,35 @@ class CephClusterController(CommandRunnerMixin):
         )
         LOGGER.info("All osds drained on node %s", osd_host)
 
-    def undrain_osd_node(
+    def smart_undrain_osd_nodes(
         self,
-        osd_fqdn: str,
+        node_fqdns: list[str],
         wait: bool = False,
         batch_size: int = 0,
         osd_ids: list[int] | None = None,
     ) -> None:
-        """Given an OSD hostname, depool all it's OSD daemons from the cluster."""
-        osd_host = osd_fqdn.split(".", 1)[0]
-        osds = self.get_host_osds(osd_host=osd_host, in_out=OSDInOut.OUT)
-        if osd_ids:
-            osds = [osd for osd in osds if osd in osd_ids]
+        """
+        This will depool the given list of OSDIdNodes and sort them so it tries to drain osd daemons from different
+        nodes in parallel.
+        """
+        osd_id_node_pools: list[list[OSDIdNode]] = []
+        osd_tree = self.get_osd_tree()
+        for node_fqdn in node_fqdns:
+            node_host = node_fqdn.split(".", 1)[0]
+            node_osd_ids = self.get_host_osds(osd_host=node_host, in_out=OSDInOut.OUT, osd_tree=osd_tree)
+            osd_id_node_pools.append(
+                [
+                    OSDIdNode(osd_id=osd_id, node_fqdn=node_fqdn)
+                    for osd_id in node_osd_ids
+                    if not osd_ids or osd_id in osd_ids
+                ]
+            )
 
-        if not osds:
-            LOGGER.info("No %s osds found for host %s, skipping...", OSDInOut.OUT, osd_host)
-            return
+        sorted_osd_id_nodes: list[OSDIdNode] = [
+            osd_id_node for osd_id_node in round_robin(*osd_id_node_pools) if osd_id_node is not None
+        ]
 
-        if not batch_size:
-            batch_size = len(osds)
-
-        LOGGER.info("Undraining OUT osds from host %s: %s", osd_host, str(osds))
-        self.undrain_osds_in_chunks(osd_ids=osds, batch_size=batch_size, wait=wait, osd_fqdn=osd_fqdn)
+        self.undrain_osds_in_chunks(osd_id_nodes=sorted_osd_id_nodes, batch_size=batch_size, wait=wait)
 
     def remove_crush_bucket(self, bucket_name: str) -> None:
         """Remove a CRUSH bucket (host/rack/...).
@@ -1246,9 +1278,12 @@ class CephClusterController(CommandRunnerMixin):
         if f"purged osd.{osd_id}" not in response:
             raise CephException(f"Got unexpected output while purging osd {osd_id}: {response}")
 
-    def get_host_osds(self, osd_host: str, in_out: OSDInOut = OSDInOut.ALL) -> list[int]:
+    def get_host_osds(
+        self, osd_host: str, in_out: OSDInOut = OSDInOut.ALL, osd_tree: OSDTree | None = None
+    ) -> list[int]:
         """Retrieve the list of osd ids that are there in a host (from the ceph cluster rbdmap)."""
-        osd_tree = self.get_osd_tree()
+        if not osd_tree:
+            osd_tree = self.get_osd_tree()
         hosts = list(osd_tree.get_nodes_by_type(wanted_type="host"))
 
         for host in hosts:

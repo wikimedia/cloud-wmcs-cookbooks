@@ -103,7 +103,7 @@ class UndrainRack(CookbookBase):
             rack_to_undrain=args.rack,
             set_maintenance=args.set_maintenance,
             cluster_name=args.cluster_name,
-            osd_ids=args.osd_ids,
+            osd_ids=args.osd_id,
             force=args.force,
             wait=not args.no_wait,
             spicerack=self.spicerack,

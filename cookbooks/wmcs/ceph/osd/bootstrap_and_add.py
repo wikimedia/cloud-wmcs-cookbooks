@@ -20,7 +20,14 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts
 
 from cookbooks.wmcs.ceph.reboot_node import RebootNode
-from wmcs_libs.ceph import CephClusterController, CephOSDFlag, CephOSDNodeController, OSDClass, OSDTreeOSDNode
+from wmcs_libs.ceph import (
+    CephClusterController,
+    CephOSDFlag,
+    CephOSDNodeController,
+    OSDClass,
+    OSDIdNode,
+    OSDTreeOSDNode,
+)
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.ceph import CephClusterName
 
@@ -317,5 +324,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         # And bring them in in batches, we need to give the cluster a few seconds to start rebalancing
         time.sleep(10)
         self.cluster_controller.undrain_osds_in_chunks(
-            osd_ids=new_osds_ids, batch_size=batch_size, wait=wait_for_rebalance, osd_fqdn=host_fqdn
+            osd_id_nodes=[OSDIdNode(osd_id=osd_id, node_fqdn=host_fqdn) for osd_id in new_osds_ids],
+            batch_size=batch_size,
+            wait=wait_for_rebalance,
         )

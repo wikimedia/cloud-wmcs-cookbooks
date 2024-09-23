@@ -157,10 +157,12 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
         else:
             silences = []
 
-        for node in self.osd_fqdns:
-            self.controller.undrain_osd_node(
-                osd_fqdn=node, wait=self.wait, batch_size=self.batch_size, osd_ids=self.osd_ids
-            )
+        self.controller.smart_undrain_osd_nodes(
+            node_fqdns=self.osd_fqdns,
+            wait=self.wait,
+            batch_size=self.batch_size,
+            osd_ids=self.osd_ids,
+        )
 
         if self.force:
             LOGGER.info("Force passed, ignoring cluster health and continuing")
