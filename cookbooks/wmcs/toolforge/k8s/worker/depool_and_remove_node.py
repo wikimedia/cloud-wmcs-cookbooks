@@ -4,7 +4,8 @@ Usage example:
     cookbook wmcs.toolforge.k8s.worker.depool_and_remove_node \
         --cluster-name toolsbeta \
         --role worker \
-        --hostname-to-remove toolsbeta-test-worker-4
+        --hostname-to-remove toolsbeta-test-worker-4 \
+        --force
 
 """
 
@@ -16,6 +17,7 @@ from typing import Any
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from wmflib.interactive import ask_confirmation
 
 from cookbooks.wmcs.toolforge.k8s.worker.drain import Drain
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
@@ -27,7 +29,7 @@ from wmcs_libs.k8s.clusters import (
     get_control_nodes,
     with_toolforge_kubernetes_cluster_opts,
 )
-from wmcs_libs.k8s.kubernetes import KubernetesController, KubernetesNodeNotFound
+from wmcs_libs.k8s.kubernetes import KubernetesController, KubernetesNodeNotFound, KubernetesTimeoutForDrain
 from wmcs_libs.openstack.common import OpenstackAPI
 from wmcs_libs.openstack.enc import Enc
 
@@ -60,6 +62,12 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
             type=ToolforgeKubernetesNodeRoleName.from_str,
             help="Role of the node to remove",
         )
+        parser.add_argument(
+            "--force",
+            required=False,
+            action="store_true",
+            help="If passed, will remove the node even if the drain fails.",
+        )
 
         return parser
 
@@ -72,6 +80,7 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
         )(
             hostname_to_remove=args.hostname_to_remove,
             role=args.role,
+            force=args.force,
             spicerack=self.spicerack,
         )
 
@@ -79,6 +88,7 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
 class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
     """Runner for ToolforgeDepoolAndRemoveNode"""
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -86,6 +96,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
         hostname_to_remove: str,
         role: ToolforgeKubernetesNodeRoleName,
+        force: bool,
     ):
         """Init"""
         self.common_opts = common_opts
@@ -93,6 +104,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.hostname_to_remove = hostname_to_remove
         self.role = role
+        self.force = force
 
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
@@ -186,16 +198,41 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             self.cluster_name.value,
         ]
 
-        drain_cookbook.get_runner(args=drain_cookbook.argument_parser().parse_args(args=drain_args)).run()
+        drain_cookbook_runner: WMCSCookbookRunnerBase = drain_cookbook.get_runner(
+            args=drain_cookbook.argument_parser().parse_args(args=drain_args),
+        )
+        drain_cookbook_err: KubernetesTimeoutForDrain | None = None
 
         control_node_fqdn = self._pick_a_control_node()
         LOGGER.info("Found control node %s", control_node_fqdn)
         kubectl = KubernetesController(remote=remote, controlling_node_fqdn=control_node_fqdn)
         try:
+            drain_cookbook_runner.run()
             kubectl.delete_node(self.hostname_to_remove)
+        except KubernetesTimeoutForDrain as exc:
+            evictable_pods = kubectl.get_evictable_pods_for_node(self.hostname_to_remove)
+            log_msg = (
+                f"Failed to drain node {self.hostname_to_remove}.\n"
+                f"Still has {len(evictable_pods)} pod(s) running. Running pods:\n"
+                + "\n".join([f"* {pod['metadata']['name']}" for pod in evictable_pods])
+            )
+            LOGGER.warning(log_msg)
+            drain_cookbook_err = exc
         except KubernetesNodeNotFound:
             # ignore! this is OK
             pass
+
+        if drain_cookbook_err:
+            if self.force:
+                LOGGER.info("Force flag passed, removing node %s anyway", self.hostname_to_remove)
+            else:
+                try:
+                    ask_confirmation(
+                        "Would you like to remove the node anyway "
+                        "(use --force to skip this question and remove the node without interaction)?"
+                    )
+                except Exception as exc:
+                    raise exc from drain_cookbook_err
 
         LOGGER.info("Removing k8s %s node %s...", self.role, self.hostname_to_remove)
         remove_instance_cookbook = RemoveInstance(spicerack=self.spicerack)
