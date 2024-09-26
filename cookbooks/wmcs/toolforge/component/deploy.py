@@ -53,6 +53,7 @@ COMPONENT_TO_PACKAGE_NAME = {
     "envvars-cli": "toolforge-envvars-cli",
     "builds-cli": "toolforge-builds-cli",
     "toolforge-cli": "toolforge-cli",
+    "toolforge-weld": "python3-toolforge-weld",
 }
 
 
