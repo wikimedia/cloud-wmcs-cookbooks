@@ -84,6 +84,7 @@ class BootstrapAndAdd(CookbookBase):
             "--batch-size",
             required=False,
             default=2,
+            type=int,
             help="Number of osds to bring up at a time to avoid congesting the network, use 0 for all at once.",
         )
         parser.add_argument(
