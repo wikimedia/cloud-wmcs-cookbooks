@@ -96,7 +96,11 @@ def with_proxy(spicerack: Spicerack, config: dict[str, Any]):
 
     Used to be able to access internal apis when running from your laptop/remotely.
     """
-    if "socks_proxy_host" not in config and "socks_proxy_port" not in config:
+    if (
+        config.get("socks_proxy_enable", False)
+        or "socks_proxy_enable" not in config
+        and ("socks_proxy_host" in config or "socks_proxy_port" not in config)
+    ):
         LOGGER.debug("Skipping proxy start, no proxy-specific config found.")
         yield
         return

@@ -184,8 +184,12 @@ EOC
         fi
 
         cat > "$wmcs_config_path" <<EOC
+# Needed when running cookbooks from your laptop
+socks_proxy_enable: true
 # custom socks proxy port if you want to overwrite the default (54321)
 #socks_proxy_port: 54321
+# if you want to do the socks proxy from any other VM change this
+#socks_proxy_host: cloudcumin1001.eqiad.wmnet
 
 # custom puppet ca path
 #puppet_ca_path: ~/.cache/puppet_ca.crt
