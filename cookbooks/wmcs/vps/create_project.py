@@ -117,7 +117,11 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
                 "Are you sure you want to use an underscore in the name?"
             )
 
-        self.openstack_api.project_create(project=self.common_opts.project, description=self.description)
+        ask_confirmation(
+            "We track project lifecycle now via opentofu. This cookbook can't handle it yet, so you have to send a patch, merge and run tofu to apply.\n"  # noqa: E501
+            "See: https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle#Creating_a_new_project\n"  # noqa: E501
+            "Enter go when the patch is merged:"
+        )
         # change to the newly created project
         self.openstack_api.project = self.common_opts.project
         if self.trove_only:
