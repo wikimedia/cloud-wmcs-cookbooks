@@ -1136,7 +1136,7 @@ class CephClusterController(CommandRunnerMixin):
         def info(msg, *args):
             LOGGER.info(f"[%d/%d osds] {msg}", chunk_start, len(osd_ids), *args)
 
-        for chunk_num in range(0, len(osd_ids), batch_size):
+        for chunk_start in range(0, len(osd_ids), batch_size):
             chunk_num = chunk_start // batch_size
             next_chunk = osd_ids[chunk_start : chunk_start + batch_size]
             info(
