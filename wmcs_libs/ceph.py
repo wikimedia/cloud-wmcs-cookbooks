@@ -937,8 +937,49 @@ class CephClusterController(CommandRunnerMixin):
         ]
         return devices
 
-    def crush_reweight_osd(self, osd_id: int, new_weight: float) -> bool:
+    def crush_reset_weight_osd(self, osd_id: int, node_fqdn: str, osd_tree: OSDTree | None = None) -> bool:
         """Re-weights an OSD daemon at the CRUSH table.
+
+        Returns True if any changes were made, False otherwise.
+        """
+        if not osd_tree:
+            osd_tree = self.get_osd_tree()
+
+        osd_size_bytes = self.get_osd_size_bytes(osd_id=osd_id, osd_fqdn=node_fqdn)
+        # TiB as a float (kb * mb * gb * tb)
+        new_weight = osd_size_bytes / (1024 * 1024 * 1024 * 1024)
+
+        if new_weight <= 0:
+            raise CephException(
+                "Unable to guess the proper crush weight for the osd, you might have to pass one, gotten from "
+                f"the osd size from node:\n{node_fqdn}"
+            )
+
+        return self.crush_reweight_osd(osd_id=osd_id, new_weight=new_weight)
+
+    def reweight_osd(self, osd_id: int, new_weight: float) -> None:
+        """Re-weights an OSD daemon.
+
+        Note that this is not changing the crush table, but the reweight value, see:
+            https://ceph.io/en/news/blog/2014/difference-between-ceph-osd-reweight-and-ceph-osd-crush-reweight/
+        """
+        if new_weight > 1.0 or new_weight < 0.0:
+            raise ValueError(f"Reweighting an osd needs a float between 0.0 and 1.0, got {new_weight}")
+
+        self.run_raw(
+            "osd",
+            "reweight",
+            f"osd.{osd_id}",
+            str(new_weight),
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
+        )
+        LOGGER.info("[osd.%d] Reweighted to %f", osd_id, new_weight)
+
+    def crush_reweight_osd(self, osd_id: int, new_weight: float = -1.0) -> bool:
+        """Re-weights an OSD daemon at the CRUSH table.
+
+        Note that this is actually changing crush table, not the temporary reweight, see:
+            https://ceph.io/en/news/blog/2014/difference-between-ceph-osd-reweight-and-ceph-osd-crush-reweight/
 
         Returns True if any changes were made, False otherwise.
         """
@@ -952,6 +993,7 @@ class CephClusterController(CommandRunnerMixin):
         )
 
         if cur_weight == new_weight:
+            LOGGER.info("[osd.%d] Skipping crush reweight, already at weight %f", osd_id, new_weight)
             return False
 
         response = self.run_raw(
@@ -963,6 +1005,7 @@ class CephClusterController(CommandRunnerMixin):
             cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )
         if f"reweighted item id {osd_id}" in response:
+            LOGGER.info("[osd.%d] Crush reweighted to %f", osd_id, new_weight)
             return True
 
         raise CephException(f"Unexpected response when reweighting osd {osd_id} to {new_weight}: {response}")
@@ -1113,28 +1156,15 @@ class CephClusterController(CommandRunnerMixin):
         end_time = datetime.now()
         info("All osds undrained (%s), took %s", osd_ids, (end_time - start_time))
 
-    def undrain_osds(self, osd_ids: list[int], osd_fqdn: str, crush_weight: float = 0.0) -> None:
+    def undrain_osds(self, osd_ids: list[int], osd_fqdn: str) -> None:
         """Undrains OSD daemons.
 
-        It sets their weight to whatever the current osds have (or falling back to the number ot TiB of the drive).
+        It sets their weight to the number ot TiB of the drive.
         """
         osd_tree = self.get_osd_tree()
-        osds = osd_tree.get_nodes_by_type(wanted_type="osd")
 
         for osd_id in osd_ids:
-            new_weight = crush_weight
-            if not new_weight:
-                osd_size_bytes = self.get_osd_size_bytes(osd_id=osd_id, osd_fqdn=osd_fqdn)
-                # TiB as a float (kb * mb * gb * tb)
-                new_weight = osd_size_bytes / (1024 * 1024 * 1024 * 1024)
-
-            if new_weight <= 0:
-                raise CephException(
-                    "Unable to guess the proper crush weight for the osd, you might have to pass one, gotten from "
-                    f"the pool:\n{osds}"
-                )
-
-            self.crush_reweight_osd(osd_id=osd_id, new_weight=new_weight)
+            self.crush_reset_weight_osd(osd_id=osd_id, osd_tree=osd_tree, node_fqdn=osd_fqdn)
 
         # marking in at the end, makes the rebalancing start, this avoid having to rebalance several times
         for osd_id in osd_ids:
