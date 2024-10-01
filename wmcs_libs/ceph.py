@@ -429,35 +429,19 @@ class CephOSDNodeController:
             self.zap_device(device_path=device_path)
             self.initialize_and_start_osd(device_path=device_path)
 
-    def check_jumbo_frames_to(self, dst_ip: str) -> bool:
-        """Check if this node is ready to be setup as a new osd."""
+    def check_jumbo_frames(self) -> bool:
+        """Check if this node network is ready to be setup as a new osd.
+
+        We rely on the prometheus-node-pinger script to be installed in the node (added by puppet).
+        """
         try:
             run_one_raw(
-                command=[
-                    "ping",
-                    # the following is to avoid fragmenting packages
-                    "-M",
-                    "do",
-                    # force ipv4
-                    "-4",
-                    # count, we use two because sometimes after reboot the
-                    # first ping to the new network is lost by the router
-                    # (while resolving arp addresses)
-                    "-c",
-                    "2",
-                    # timeout
-                    "-W",
-                    "1",
-                    # the following size generates a 9000 jumbo frame packet
-                    "-s",
-                    "8972",
-                    dst_ip,
-                ],
+                command=["prometheus-node-pinger"],
                 node=self._node,
                 cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
             )
         except RemoteExecutionError as err:
-            LOGGER.warning("Failed to ping %s with a jumbo frame: %s", dst_ip, str(err))
+            LOGGER.warning("Failed network checks %s", str(err))
             return False
 
         return True
@@ -1325,33 +1309,14 @@ class CephClusterController(CommandRunnerMixin):
         """
         failures: list[str] = []
 
-        other_nodes = self.get_all_osd_ips()
-        total_num = len(other_nodes)
-        ok = 0
-        failed = 0
         LOGGER.info(
-            "Checking that jumbo frames are allowed to all other nodes in the cluster (%d of them)...",
-            len(other_nodes),
+            "Checking that jumbo frames are allowed to all other nodes in the cluster...",
         )
-        for other_node_ip in other_nodes:
-            if not osd_controller.check_jumbo_frames_to(other_node_ip):
-                failures.append(f"Unable to send jumbo frames to {other_node_ip} from node {osd_controller.node_fqdn}")
-                failed += 1
-                LOGGER.info(
-                    "  [%d ok/%d error/%d pending] Got failure",
-                    ok,
-                    failed,
-                    total_num - (ok + failed),
-                )
+        if not osd_controller.check_jumbo_frames():
+            failures.append("Ping checks failed, see output for details")
+            LOGGER.info("    NOOK")
 
-            ok += 1
-            LOGGER.info(
-                "  [%d ok/%d error/%d pending] Got pass for %s",
-                ok,
-                failed,
-                total_num - (ok + failed),
-                other_node_ip,
-            )
+        LOGGER.info("    OK")
 
         LOGGER.info("Checking that we have the right amount of drives in the host...")
         host_devices = osd_controller.do_lsblk()
