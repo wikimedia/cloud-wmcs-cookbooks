@@ -238,7 +238,11 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
 ```
 """,
         )
-        LOGGER.info("Wrote note in MR %s", str(note))
+        mr_link = (
+            "https://gitlab.wikimedia.org/repos/cloud/toolforge/"
+            f"{project_name}/-/merge_requests/{note.mr_iid}#note_{note.get_id()}"
+        )
+        LOGGER.info("Wrote note in MR: %s", mr_link)
         if " 0 failures " not in logs:
             raise Exception(f"TESTS FAILED:\n{logs}")
 
