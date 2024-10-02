@@ -35,7 +35,7 @@ from wmcs_libs.common import (
     run_one_raw,
     run_script,
 )
-from wmcs_libs.gitlab import GitlabController, get_artifacts_url, get_branch_mr, get_project
+from wmcs_libs.gitlab import GitlabController, MrNotFound, get_artifacts_url, get_branch_mr, get_project
 from wmcs_libs.inventory.static import get_static_inventory
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
@@ -181,9 +181,12 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         )
         test_logs = tests_cookbook.run_tests(filter_tags=filter_tags)
 
-        self._send_mr_comment(
-            logs=test_logs, branch=branch, cluster_name=cluster_name, filter_tags=filter_tags, component=component
-        )
+        try:
+            self._send_mr_comment(
+                logs=test_logs, branch=branch, cluster_name=cluster_name, filter_tags=filter_tags, component=component
+            )
+        except MrNotFound:
+            LOGGER.warning("Unable to find an MR for branch %s, skipping sending a comment.", branch)
 
     def _send_mr_comment(
         self,

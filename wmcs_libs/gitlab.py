@@ -21,6 +21,14 @@ CLI_TO_PACKAGE_NAME = {
 }
 
 
+class GitlabError(Exception):
+    pass
+
+
+class MrNotFound(GitlabError):
+    pass
+
+
 def _do_get_dict(path: str, **kwargs) -> dict[str, Any]:
     if not path.startswith("http"):
         path = f"{GITLAB_API_BASE_URL}{path}"
@@ -82,7 +90,7 @@ def get_branch_mr(project: dict[str, Any], branch: str) -> int:
         if mr["source_branch"] == branch:
             return int(mr["iid"])
 
-    raise Exception(f"No merge requests found for branch {branch} for project {project['name']}")
+    raise MrNotFound(f"No merge requests found for branch {branch} for project {project['name']}")
 
 
 def get_artifacts_url(component: str, branch: str) -> str:
