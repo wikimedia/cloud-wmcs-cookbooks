@@ -110,6 +110,7 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
     # above this arbitrary threshold
     GITLAB_MR_NOTE_COLLAPSE_AT_LINES_THRESHOLD = 500
     TOFU_INFRA_DIR = Path("/srv/tofu-infra")
+    TOFU_NO_CHANGES_LINE = "No changes. Your infrastructure matches the configuration."
 
     def __init__(
         self,
@@ -195,10 +196,7 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
             cumin_params=CUMIN_UNSAFE_WITHOUT_PROGRESS,
         )
 
-    def _tofu_plan_to_gitlab_note(self, node: Any, cluster_name: str, plan_file: str) -> None:
-        if not self.gitlab_controller:
-            return
-
+    def _tofu_show_plan(self, node: Any, plan_file: str) -> str:
         try:
             plan = run_one_raw(
                 command=["tofu", f"-chdir={self.TOFU_INFRA_DIR}", "show", "-no-color", plan_file],
@@ -206,7 +204,20 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
                 cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
             )
         except Exception as e:  # pylint: disable=broad-except
-            LOGGER.warning("WARNING: unable to get content of the tofu plan: %s", str(e))
+            LOGGER.warning("WARNING: unable to run tofu show plan: %s", str(e))
+            return ""
+
+        return plan
+
+    def _tofu_plan_is_noop(self, plan: str) -> bool:
+        for line in plan.splitlines():
+            if line == self.TOFU_NO_CHANGES_LINE:
+                return True
+
+        return False
+
+    def _tofu_plan_to_gitlab_note(self, cluster_name: str, plan: str) -> None:
+        if not self.gitlab_controller:
             return
 
         if not plan:
@@ -266,10 +277,13 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
         with with_temporary_file(dst_node=node, contents="", cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT) as plan_file:
             with self._with_merge_request(node):
                 self._tofu_plan(node, plan_file=plan_file)
-                self._tofu_plan_to_gitlab_note(node=node, cluster_name=cluster_name, plan_file=plan_file)
+                plan = self._tofu_show_plan(node, plan_file=plan_file)
+                self._tofu_plan_to_gitlab_note(cluster_name=cluster_name, plan=plan)
+
+            plan_is_noop = self._tofu_plan_is_noop(plan=plan)
 
             run_apply = False
-            if self.apply:
+            if self.apply and not plan_is_noop:
                 try:
                     ask_confirmation(f"Before apply, Is tofu plan correct ({cluster_name} @ {control_node_fqdn})?")
                     run_apply = True
