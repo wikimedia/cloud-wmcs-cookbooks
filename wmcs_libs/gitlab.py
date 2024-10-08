@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from logging import getLogger
 from typing import Any, cast
 
 import gitlab as upstream_gitlab_lib
@@ -19,6 +20,7 @@ CLI_TO_PACKAGE_NAME = {
     "builds-cli": "toolforge-builds-cli",
     "toolforge-cli": "toolforge-cli",
 }
+LOGGER = getLogger(__name__)
 
 
 class GitlabError(Exception):
@@ -93,14 +95,6 @@ def get_branch_mr(project: dict[str, Any], branch: str) -> int:
     raise MrNotFound(f"No merge requests found for branch {branch} for project {project['name']}")
 
 
-def get_artifacts_url(component: str, branch: str) -> str:
-    project = get_project(component=component)
-    mr_number = get_branch_mr(project=project, branch=branch)
-    pipeline = get_last_pipeline(project=project, mr_number=mr_number)
-    package_job = get_package_job(project=project, pipeline=pipeline)
-    return f"{GITLAB_API_BASE_URL}/projects/{project['id']}/jobs/{package_job['id']}/artifacts"
-
-
 class GitlabController:
     def __init__(self, private_token: str | None = None):
         # this combo is needed as sometimes it decides that Gitlab is not a member (so no-member), but sometimes it
@@ -127,3 +121,47 @@ class GitlabController:
         mr = project.mergerequests.get(merge_request_iid)
         note = mr.notes.create({"body": note_body})
         return note
+
+    def get_artifact_job_id_from_branch(self, branch: str, component: str) -> str:
+        maybe_project = list(self.gitlab.projects.list(all=True, search=component))[:1]
+        if not maybe_project:
+            raise Exception(f"Unable to find project for component {component}")
+
+        project = maybe_project[0]
+
+        maybe_jobs = [
+            job
+            for job in project.jobs.list(get_all=False, query_params={"scope[]": ["success", "pending"]})
+            if job.name == PACKAGE_JOB_NAME and job.ref == branch
+        ]
+        if not maybe_jobs:
+            raise Exception(f"Unable to find project for component {component}")
+
+        job = maybe_jobs[0]
+        while job.status in ["running", "pending"]:
+            print(f"Job {job.id} is still {job.status}, waiting for it to finish....")
+            time.sleep(10)
+            maybe_jobs = [
+                job
+                for job in project.jobs.list(get_all=False, query_params={"scope[]": ["success", "pending"]})
+                if job.name == PACKAGE_JOB_NAME and job.ref == branch
+            ]
+            if not maybe_jobs:
+                raise Exception(f"Unable to find project for component {component}")
+            job = maybe_jobs[0]
+
+        return job.id
+
+    def get_artifacts_url(self, component: str, branch: str) -> str:
+        project = get_project(component=component)
+        try:
+            mr_number = get_branch_mr(project=project, branch=branch)
+            LOGGER.info("Found mr %d for branch %s", mr_number, branch)
+            pipeline = get_last_pipeline(project=project, mr_number=mr_number)
+            package_job_id = get_package_job(project=project, pipeline=pipeline)["id"]
+        except MrNotFound:
+            LOGGER.info("No mr found for branch %s, using latest branch package job", branch)
+            # we try to get it from the branch directly, instead of an open MR
+            package_job_id = self.get_artifact_job_id_from_branch(branch=branch, component=component)
+
+        return f"{GITLAB_API_BASE_URL}/projects/{project['id']}/jobs/{package_job_id}/artifacts"

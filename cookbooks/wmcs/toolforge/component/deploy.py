@@ -35,7 +35,7 @@ from wmcs_libs.common import (
     run_one_raw,
     run_script,
 )
-from wmcs_libs.gitlab import GitlabController, MrNotFound, get_artifacts_url, get_branch_mr, get_project
+from wmcs_libs.gitlab import GitlabController, MrNotFound, get_branch_mr, get_project
 from wmcs_libs.inventory.static import get_static_inventory
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
@@ -140,6 +140,8 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.random_dir = f"/tmp/cookbook-toolforge-k8s-component-deploy-{_random_word(10)}"  # nosec
 
+        self.gitlab_controller = GitlabController(private_token=self.wmcs_config.get("gitlab_token", None))
+
     @property
     def runtime_description(self) -> str:
         """Return a nicely formatted string that represents the cookbook action."""
@@ -206,8 +208,6 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         project = get_project(component=project_name)
         mr_iid = get_branch_mr(branch=branch, project=project)
 
-        gitlab_controller = GitlabController(private_token=self.wmcs_config.get("gitlab_token", None))
-
         status = "🗹 PASSED"
         if " 0 failures " not in logs:
             status = "🗷 FAILED"
@@ -223,7 +223,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         version, post_version = version.split("Running tests from branch: ", 1)
         post_version = "Running tests from branch: " + post_version
 
-        note = gitlab_controller.create_mr_note(
+        note = self.gitlab_controller.create_mr_note(
             project_id=project["id"],
             merge_request_iid=mr_iid,
             note_body=f"""Ran the tests on {cluster_name}: **{status}**
@@ -259,7 +259,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         cluster_name: ToolforgeKubernetesClusterName,
         component: str,
         branch: str | None = None,
-    ) -> None:
+    ) -> str:
         site = cluster_name.get_openstack_cluster_name().get_site()
         service_node_fqdn = (
             get_static_inventory()[site]
@@ -268,7 +268,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         )[0]
         service_node = self.spicerack.remote().query(f"D{{{service_node_fqdn}}}", use_sudo=True)
 
-        artifacts_url = get_artifacts_url(component=component, branch=branch or "main")
+        artifacts_url = self.gitlab_controller.get_artifacts_url(component=component, branch=branch or "main")
 
         project = cluster_name.value
         LOGGER.info(
@@ -305,7 +305,13 @@ unzip artifacts
 
         self._cleanup_temp_dir(node=service_node)
 
-    def _install_package_on_bastions(self, component: str, cluster_name: ToolforgeKubernetesClusterName) -> None:
+        # We rely on the format <package>_<version>_all.deb
+        package_version = package_path.name.split(f"{package}_", 1)[-1].rsplit("_all.deb", 1)[0]
+        return package_version
+
+    def _install_package_on_bastions(
+        self, component: str, cluster_name: ToolforgeKubernetesClusterName, version: str
+    ) -> None:
         LOGGER.info("INFO: Installing packages on all bastions for project %s", cluster_name.value)
         site = cluster_name.get_openstack_cluster_name().get_site()
         bastions_fqdns = (
@@ -318,8 +324,11 @@ unzip artifacts
         package = COMPONENT_TO_PACKAGE_NAME[component]
         run_one_raw(command=["apt", "update"], node=bastions, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
         run_one_raw(
-            command=["apt", "install", "--upgrade", package], node=bastions, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT
+            command=["apt", "install", "--yes", "--upgrade", f"{package}={version}"],
+            node=bastions,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )
+        # to make sure that's the one that got installed
         package_version = next(
             line.split(":", 1)[-1]
             for line in run_one_raw(
@@ -338,9 +347,10 @@ unzip artifacts
 
     def _deploy_package(
         self, component: str, cluster_name: ToolforgeKubernetesClusterName, branch: str | None = None
-    ) -> None:
-        self._upload_package_to_repos(cluster_name=cluster_name, branch=branch, component=component)
-        self._install_package_on_bastions(component=component, cluster_name=cluster_name)
+    ) -> str:
+        version = self._upload_package_to_repos(cluster_name=cluster_name, branch=branch, component=component)
+        self._install_package_on_bastions(component=component, cluster_name=cluster_name, version=version)
+        return version
 
     def _deploy_k8s_component(
         self, component: str, git_branch: str, cluster_name: ToolforgeKubernetesClusterName, wait: bool = True
