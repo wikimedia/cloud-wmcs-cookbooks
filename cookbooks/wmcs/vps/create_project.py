@@ -16,6 +16,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmflib.interactive import ask_confirmation
 
+from cookbooks.wmcs.vps.add_user_to_project import AddUserToProjectRunner
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackQuotaEntry, OpenstackQuotaName
@@ -72,10 +73,32 @@ class CreateProject(CookbookBase):
             "creation of VMs or volumes and elevated DB quotas.",
         )
 
+        for quota_name in OpenstackQuotaName:
+            parser.add_argument(
+                f"--{quota_name.value}",
+                required=False,
+                help=f"Amount to increase the {quota_name.value} by",
+            )
+
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
         """Get runner"""
+        quotas = [
+            OpenstackQuotaEntry.from_human_spec(
+                name=quota_name,
+                human_spec=getattr(args, quota_name.value.replace("-", "_")),
+            )
+            for quota_name in OpenstackQuotaName
+            if getattr(args, quota_name.value.replace("-", "_"), None) is not None
+        ]
+        for quota in quotas:
+            if quota.name == OpenstackQuotaName.RAM and quota.value < 1024:
+                ask_confirmation(
+                    "Are you sure you want to set the ram with less than 1G? (got "
+                    f"{quota}M, maybe you forgot to add 'G' to the value?)"
+                )
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -85,6 +108,7 @@ class CreateProject(CookbookBase):
             cluster_name=args.cluster_name,
             trove_only=args.trove_only,
             users=args.users,
+            quotas=quotas,
             spicerack=self.spicerack,
         )
 
@@ -99,6 +123,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         trove_only: bool,
         cluster_name: OpenstackClusterName,
         users: list[str],
+        quotas: list[OpenstackQuotaEntry],
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
         """Init"""
@@ -110,6 +135,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         self.description = description
         self.trove_only = trove_only
         self.users = users
+        self.quotas = quotas
 
         self.common_opts = common_opts
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -172,8 +198,10 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
             "See: https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle#Creating_a_new_project\n"  # noqa: E501
             "Enter go when the patch is merged:"
         )
-        # change to the newly created project
+
+        # NOTE! change to the newly created project
         self.openstack_api.project = self.common_opts.project
+
         if self.trove_only:
             self.openstack_api.quota_set(
                 OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.INSTANCES, human_spec="0")
@@ -193,3 +221,19 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
             # confusingly, 'volumes' here refers to GB of database storage. It defaults to '2' so we need
             # to increase it for trove-only projects.
             self.openstack_api.trove_quota_set("volumes", "80")
+
+        if self.quotas:
+            LOGGER.info("Setting quotas")
+            self.openstack_api.quota_set(*self.quotas)
+
+        if self.users:
+            LOGGER.info("Adding users %r", self.users)
+
+            for user in self.users:
+                AddUserToProjectRunner(
+                    common_opts=self.common_opts,
+                    user=user,
+                    as_member=True,
+                    cluster_name=self.openstack_api.cluster_name,
+                    spicerack=self.spicerack,
+                ).run_with_proxy()
