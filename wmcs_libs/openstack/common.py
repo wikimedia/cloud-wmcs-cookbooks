@@ -1157,9 +1157,17 @@ class OpenstackAPI(CommandRunnerMixin):
             with_env_var=False,
         )
 
-    def project_create(self, project: OpenstackName, description: str) -> None:
-        """Creates a new project."""
-        self.run_raw("project", "create", "--enable", f"'--description={description}'", project, json_output=False)
+    def get_vm_proxy_recordsets(self) -> list[dict[str, Any]]:
+        proxy_domain = "wmcloud.org."
+        if self.cluster_name == OpenstackClusterName.CODFW1DEV:
+            proxy_domain = "codfw1dev.wmcloud.org."
+
+        return self.run_formatted_as_list(
+            "recordset", "list", "--all-projects", proxy_domain, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
+        )
+
+    def get_all_users(self) -> list[dict[str, Any]]:
+        return self.run_formatted_as_list("user", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
 
 def get_node_cluster_name(node: str) -> OpenstackClusterName:

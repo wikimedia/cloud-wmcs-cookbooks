@@ -58,6 +58,14 @@ class CreateProject(CookbookBase):
             help="Description for the new CloudVps project",
         )
         parser.add_argument(
+            "--user",
+            required=False,
+            action="append",
+            dest="users",
+            default=[],
+            help="Users to add as maintainers to the project.",
+        )
+        parser.add_argument(
             "--trove-only",
             action="store_true",
             help="If set, the new project will have quotas that prevent "
@@ -76,6 +84,7 @@ class CreateProject(CookbookBase):
             description=args.description,
             cluster_name=args.cluster_name,
             trove_only=args.trove_only,
+            users=args.users,
             spicerack=self.spicerack,
         )
 
@@ -89,8 +98,9 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         description: str,
         trove_only: bool,
         cluster_name: OpenstackClusterName,
+        users: list[str],
         spicerack: Spicerack,
-    ):
+    ):  # pylint: disable=too-many-arguments
         """Init"""
         self.common_opts = common_opts
         self.openstack_api = OpenstackAPI(
@@ -99,6 +109,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         )
         self.description = description
         self.trove_only = trove_only
+        self.users = users
 
         self.common_opts = common_opts
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -111,11 +122,50 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
 
     def run(self) -> None:
         """Main entry point"""
+        # Checks mentioned in:
+        # https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle#Creating_a_new_project
+        LOGGER.info("Doing some pre-flight checks...")
+
         if "_" in self.common_opts.project:
             ask_confirmation(
-                "Project names should generally be limited to alphanumeric characters and dashes. "
-                "Are you sure you want to use an underscore in the name?"
+                "Project names should generally be limited to alphanumeric characters and dashes, otherwise they "
+                "might have issues with DNS. Are you sure you want to use an underscore in the name? "
+                f"(current name {self.common_opts.project})"
             )
+
+        if self.common_opts.project.lower() != self.common_opts.project:
+            ask_confirmation(
+                "Project names should be lowercase, otherwise they have issues with puppet certificates. "
+                "Are you sure you want to use an underscore in the name? "
+                f"(current name {self.common_opts.project})"
+            )
+
+        recordsets = self.openstack_api.get_vm_proxy_recordsets()
+        for recordset_data in recordsets:
+            if recordset_data["name"].lower() == f"{self.common_opts.project.lower()}.wmcloud.org.":
+                message = (
+                    f"There's already an old recordset matching the name '{recordset_data['name']}', maybe a "
+                    "proxy with that name already exists? See T360294. Aborting."
+                )
+                LOGGER.error(message)
+                raise Exception(message)
+
+        all_users_data = self.openstack_api.get_all_users()
+        # Openstack allows passing the user id or the user name, it does not care
+        user_names_and_ids = set()
+        for user_data in all_users_data:
+            user_names_and_ids.add(user_data["ID"])
+            user_names_and_ids.add(user_data["Name"])
+
+        missed_users: list[str] = []
+        for user in self.users:
+            if user not in user_names_and_ids:
+                missed_users.append(user)
+
+        if missed_users:
+            message = f"Unable to find users {missed_users} in LDAP, can you double check the spelling?"
+            LOGGER.error(message)
+            raise Exception(message)
 
         ask_confirmation(
             "We track project lifecycle now via opentofu. This cookbook can't handle it yet, so you have to send a patch, merge and run tofu to apply.\n"  # noqa: E501
