@@ -30,10 +30,10 @@ from wmcs_libs.common import (
     with_common_opts,
     with_temporary_file,
 )
-from wmcs_libs.gitlab import GitlabController
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.clusters import get_openstack_clusters
 from wmcs_libs.openstack.common import get_control_nodes
+from wmcs_libs.wm_gitlab import GitlabController
 
 LOGGER = logging.getLogger(__name__)
 
@@ -117,10 +117,10 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         plan: bool,
         apply: bool,
-        gitlab_mr: int,
-        cluster_name: OpenstackClusterName,
-        no_gitlab_mr_note: bool,
         spicerack: Spicerack,
+        no_gitlab_mr_note: bool = True,
+        gitlab_mr: int | None = None,
+        cluster_name: OpenstackClusterName | None = None,
     ):  # pylint: disable=too-many-arguments
         """Init"""
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -217,7 +217,7 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
         return False
 
     def _tofu_plan_to_gitlab_note(self, cluster_name: str, plan: str) -> None:
-        if not self.gitlab_controller:
+        if not self.gitlab_controller or not self.gitlab_mr:
             return
 
         if not plan:
@@ -282,16 +282,10 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
 
             plan_is_noop = self._tofu_plan_is_noop(plan=plan)
 
-            run_apply = False
             if self.apply and not plan_is_noop:
-                try:
-                    ask_confirmation(f"Before apply, Is tofu plan correct ({cluster_name} @ {control_node_fqdn})?")
-                    run_apply = True
-                except Exception:  # pylint: disable=broad-except:
-                    LOGGER.warning("WARNING: not running tofu apply because plan was not accepted")
+                ask_confirmation(f"Before apply, Is tofu plan correct ({cluster_name} @ {control_node_fqdn})?")
 
-            if run_apply:
-                self._tofu_apply(node, plan_file=plan_file)
+            self._tofu_apply(node, plan_file=plan_file)
 
     def run_with_proxy(self) -> None:
         """Main entry point"""

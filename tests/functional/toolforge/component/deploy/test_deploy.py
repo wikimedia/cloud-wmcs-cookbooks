@@ -4,7 +4,7 @@ from __future__ import annotations
 
 def test_deploy_package(run_cookbook_with_recording, monkeypatch):
     monkeypatch.setattr(
-        "wmcs_libs.gitlab.GitlabController.get_artifacts_url", lambda *args, **kwargs: "http://silly.url.local"
+        "wmcs_libs.wm_gitlab.GitlabController.get_artifacts_url", lambda *args, **kwargs: "http://silly.url.local"
     )
     run_result = run_cookbook_with_recording(
         record_file_name="deploy_package.yaml",

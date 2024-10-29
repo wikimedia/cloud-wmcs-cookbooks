@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import base64
 import time
 from logging import getLogger
 from typing import Any, cast
 
 import gitlab as upstream_gitlab_lib
 import requests
+from gitlab.client import Gitlab
 
 GITLAB_BASE_URL = "https://gitlab.wikimedia.org"
 GITLAB_API_BASE_URL = f"{GITLAB_BASE_URL}/api/v4"
@@ -102,7 +104,7 @@ class GitlabController:
         # pylint: disable=useless-suppression
         # pylint: disable=no-member
         # ssl_verify false needed to run on laptops as they don't have the CA installed
-        self.gitlab = upstream_gitlab_lib.Gitlab(
+        self.gitlab: Gitlab = upstream_gitlab_lib.Gitlab(
             url=GITLAB_BASE_URL,
             private_token=private_token,
             ssl_verify=False,
@@ -165,3 +167,60 @@ class GitlabController:
             package_job_id = self.get_artifact_job_id_from_branch(branch=branch, component=component)
 
         return f"{GITLAB_API_BASE_URL}/projects/{project['id']}/jobs/{package_job_id}/artifacts"
+
+    def get_file_at_commit(self, project: str, file_path: str, commit_sha: str) -> str:
+        project_id = self.get_project_id_by_name(project_name=project)
+        project_obj = self.gitlab.projects.get(id=project_id)
+        return base64.b64decode(project_obj.files.get(file_path=file_path, ref=commit_sha).content).decode("utf8")
+
+    def update_file(  # pylint: disable=too-many-arguments
+        self,
+        project: str,
+        new_branch: str,
+        file_path: str,
+        new_content: str,
+        commit_message: str,
+        author_email: str,
+        author_name: str,
+        base_branch: str = "main",
+    ) -> dict[str, Any]:
+        """Creates a new branch with the a new commit with the single file updated."""
+        project_id = self.get_project_id_by_name(project_name=project)
+        project_obj = self.gitlab.projects.get(id=project_id)
+        return project_obj.files.update(
+            file_path=file_path,
+            new_data={
+                "content": new_content,
+                "commit_message": commit_message,
+                "start_branch": base_branch,
+                "branch": new_branch,
+                "author_email": author_email,
+                "author_name": author_name,
+            },
+        )
+
+    def create_mr(
+        self, project: str, source_branch: str, title: str, target_branch: str = "main"
+    ) -> upstream_gitlab_lib.v4.objects.merge_requests.ProjectMergeRequest:
+        project_id = self.get_project_id_by_name(project_name=project)
+        project_obj = self.gitlab.projects.get(id=project_id)
+        new_mr = project_obj.mergerequests.create(
+            data={
+                "title": title,
+                "source_branch": source_branch,
+                "target_branch": target_branch,
+                "remove_source_branch": True,
+            },
+        )
+        # needed as the api return a proxy and the types are not properly declared
+        return cast(upstream_gitlab_lib.v4.objects.merge_requests.ProjectMergeRequest, new_mr)
+
+    def get_mr(
+        self,
+        project: str,
+        mr_iid: str,
+    ) -> upstream_gitlab_lib.v4.objects.merge_requests.ProjectMergeRequest:
+        project_id = self.get_project_id_by_name(project_name=project)
+        project_obj = self.gitlab.projects.get(id=project_id)
+        mr = project_obj.mergerequests.get(id=mr_iid)
+        return cast(upstream_gitlab_lib.v4.objects.merge_requests.ProjectMergeRequest, mr)

@@ -11,15 +11,20 @@ from __future__ import annotations
 
 import argparse
 import logging
+from typing import Any
 
+import gitlab
+import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
-from wmflib.interactive import ask_confirmation
+from wmflib.interactive import ask_confirmation, ask_input
 
+from cookbooks.wmcs.openstack.tofu import OpenstackTofuRunner
 from cookbooks.wmcs.vps.add_user_to_project import AddUserToProjectRunner
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackQuotaEntry, OpenstackQuotaName
+from wmcs_libs.wm_gitlab import GitlabController
 
 LOGGER = logging.getLogger(__name__)
 
@@ -72,6 +77,11 @@ class CreateProject(CookbookBase):
             help="If set, the new project will have quotas that prevent "
             "creation of VMs or volumes and elevated DB quotas.",
         )
+        parser.add_argument(
+            "--skip-mr",
+            action="store_true",
+            help="If set, it will not send a merge request to tofu." " Useful if you already merged the MR manually.",
+        )
 
         for quota_name in OpenstackQuotaName:
             parser.add_argument(
@@ -108,6 +118,7 @@ class CreateProject(CookbookBase):
             cluster_name=args.cluster_name,
             trove_only=args.trove_only,
             users=args.users,
+            skip_mr=args.skip_mr,
             quotas=quotas,
             spicerack=self.spicerack,
         )
@@ -123,6 +134,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         trove_only: bool,
         cluster_name: OpenstackClusterName,
         users: list[str],
+        skip_mr: bool,
         quotas: list[OpenstackQuotaEntry],
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
@@ -136,9 +148,12 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         self.trove_only = trove_only
         self.users = users
         self.quotas = quotas
+        self.skip_mr = skip_mr
 
         self.common_opts = common_opts
         super().__init__(spicerack=spicerack, common_opts=common_opts)
+
+        self.gitlab_controller = GitlabController(private_token=self.wmcs_config.get("gitlab_token", None))
 
     @property
     def runtime_description(self) -> str:
@@ -208,16 +223,113 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         # to increase it for trove-only projects.
         self.openstack_api.trove_quota_set("volumes", "80")
 
+    def _get_tofu_project_data(self, task_id: str | None) -> dict[str, Any]:
+        project_data = {
+            "description": self.description,
+        }
+
+        if task_id:
+            project_data["task_id"] = task_id
+
+        return project_data
+
+    def _create_tofu_mr(self) -> gitlab.v4.objects.merge_requests.ProjectMergeRequest:
+        branch_name = f"add_project_{self.common_opts.project}"
+        projects_file = f"projects_{self.openstack_api.cluster_name}.yaml"
+        projects_content = self.gitlab_controller.get_file_at_commit(
+            project="tofu-infra", file_path=projects_file, commit_sha="main"
+        )
+        projects_data = yaml.safe_load(projects_content)
+        projects_data[self.common_opts.project] = self._get_tofu_project_data(task_id=self.common_opts.task_id)
+
+        title = f"projects: added project {self.common_opts.project}"
+        self.gitlab_controller.update_file(
+            project="tofu-infra",
+            new_branch=branch_name,
+            file_path=projects_file,
+            new_content=yaml.safe_dump(projects_data),
+            commit_message=(
+                f"{title}\nAutomatic commit by cookbook wmcs.vps.create_project\n\nBug: "
+                f"{self.common_opts.task_id or 'no task'}"
+            ),
+            author_email="donotreply@cookbook.wmcs.local",
+            author_name="Cookbook",
+        )
+        mr = self.gitlab_controller.create_mr(
+            project="tofu-infra",
+            source_branch=branch_name,
+            target_branch="main",
+            title=title,
+        )
+        return mr
+
+    def _is_mr_merged(self, mr_iid: str) -> bool:
+        mr = self.gitlab_controller.get_mr(project="tofu-infra", mr_iid=mr_iid)
+        if mr.state != "merged":
+            LOGGER.error("The MR is not yet merged! It's %s", mr.state)
+            return False
+
+        return True
+
+    def _wait_for_merged_loop(self, change_mr: gitlab.v4.objects.merge_requests.ProjectMergeRequest) -> None:
+        is_merged = False
+        while not is_merged:
+            response = ask_input(
+                message=(
+                    "We track project lifecycle now via opentofu.\n"
+                    f"I created the merge request {change_mr.web_url} and ran tofu plan on it, "
+                    "get it reviewed and merged before continuing\n\n"
+                    "See: https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle#Creating_a_new_project\n"  # noqa: E501
+                    "\n"
+                    "Enter go when the patch is merged, plan to rerun the tofu plan, or abort to exit:"
+                ),
+                choices=["abort", "go", "plan"],
+            )
+
+            if response == "go":
+                break
+
+            if response == "abort":
+                raise Exception("Aborted at user request.")
+
+            if response == "plan":
+                OpenstackTofuRunner(
+                    common_opts=self.common_opts,
+                    plan=True,
+                    apply=False,
+                    gitlab_mr=change_mr.iid,
+                    no_gitlab_mr_note=False,
+                    spicerack=self.spicerack,
+                ).run()
+
+            else:
+                is_merged = self._is_mr_merged(mr_iid=change_mr.mr_iid)
+
     def run(self) -> None:
         """Main entry point"""
 
         self._do_preflight_checks()
 
-        ask_confirmation(
-            "We track project lifecycle now via opentofu. This cookbook can't handle it yet, so you have to send a patch, merge and run tofu to apply.\n"  # noqa: E501
-            "See: https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle#Creating_a_new_project\n"  # noqa: E501
-            "Enter go when the patch is merged:"
-        )
+        if not self.skip_mr:
+            change_mr = self._create_tofu_mr()
+
+            OpenstackTofuRunner(
+                common_opts=self.common_opts,
+                plan=True,
+                apply=False,
+                gitlab_mr=change_mr.iid,
+                no_gitlab_mr_note=False,
+                spicerack=self.spicerack,
+            ).run()
+
+            self._wait_for_merged_loop(change_mr=change_mr)
+
+        OpenstackTofuRunner(
+            common_opts=self.common_opts,
+            plan=True,
+            apply=True,
+            spicerack=self.spicerack,
+        ).run()
 
         # NOTE! change to the newly created project
         self.openstack_api.project = self.common_opts.project
@@ -231,7 +343,6 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
 
         if self.users:
             LOGGER.info("Adding users %r", self.users)
-
             for user in self.users:
                 AddUserToProjectRunner(
                     common_opts=self.common_opts,
@@ -239,4 +350,8 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
                     as_member=True,
                     cluster_name=self.openstack_api.cluster_name,
                     spicerack=self.spicerack,
-                ).run_with_proxy()
+                ).run()
+
+        LOGGER.info("The project %s has been created.", self.common_opts.project)
+        if self.users:
+            LOGGER.info("  NOTE: make sure that the users ar instructed to join the cloud-announce mailing list.")

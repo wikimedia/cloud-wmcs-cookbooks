@@ -35,7 +35,6 @@ from wmcs_libs.common import (
     run_one_raw,
     run_script,
 )
-from wmcs_libs.gitlab import GitlabController, MrNotFound, get_branch_mr, get_project
 from wmcs_libs.inventory.static import get_static_inventory
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
@@ -43,6 +42,7 @@ from wmcs_libs.k8s.clusters import (
     get_control_nodes,
     with_toolforge_kubernetes_cluster_opts,
 )
+from wmcs_libs.wm_gitlab import GitlabController, MrNotFound, get_branch_mr, get_project
 
 LOGGER = logging.getLogger(__name__)
 
