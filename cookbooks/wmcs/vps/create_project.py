@@ -146,8 +146,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         trove_only = "trove-only " if self.trove_only else ""
         return f"for {trove_only}project {self.common_opts.project} in {self.openstack_api.cluster_name.value}"
 
-    def run(self) -> None:
-        """Main entry point"""
+    def _do_preflight_checks(self) -> None:
         # Checks mentioned in:
         # https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle#Creating_a_new_project
         LOGGER.info("Doing some pre-flight checks...")
@@ -193,6 +192,27 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
             LOGGER.error(message)
             raise Exception(message)
 
+    def _create_trove_project(self) -> None:
+        self.openstack_api.quota_set(
+            OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.INSTANCES, human_spec="0")
+        )
+        self.openstack_api.quota_set(OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.CORES, human_spec="0"))
+        self.openstack_api.quota_set(OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.RAM, human_spec="0"))
+        self.openstack_api.quota_set(
+            OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.GIGABYTES, human_spec="0")
+        )
+        self.openstack_api.quota_set(
+            OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.VOLUMES, human_spec="0")
+        )
+        # confusingly, 'volumes' here refers to GB of database storage. It defaults to '2' so we need
+        # to increase it for trove-only projects.
+        self.openstack_api.trove_quota_set("volumes", "80")
+
+    def run(self) -> None:
+        """Main entry point"""
+
+        self._do_preflight_checks()
+
         ask_confirmation(
             "We track project lifecycle now via opentofu. This cookbook can't handle it yet, so you have to send a patch, merge and run tofu to apply.\n"  # noqa: E501
             "See: https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle#Creating_a_new_project\n"  # noqa: E501
@@ -203,24 +223,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         self.openstack_api.project = self.common_opts.project
 
         if self.trove_only:
-            self.openstack_api.quota_set(
-                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.INSTANCES, human_spec="0")
-            )
-            self.openstack_api.quota_set(
-                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.CORES, human_spec="0")
-            )
-            self.openstack_api.quota_set(
-                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.RAM, human_spec="0")
-            )
-            self.openstack_api.quota_set(
-                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.GIGABYTES, human_spec="0")
-            )
-            self.openstack_api.quota_set(
-                OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.VOLUMES, human_spec="0")
-            )
-            # confusingly, 'volumes' here refers to GB of database storage. It defaults to '2' so we need
-            # to increase it for trove-only projects.
-            self.openstack_api.trove_quota_set("volumes", "80")
+            self._create_trove_project()
 
         if self.quotas:
             LOGGER.info("Setting quotas")
