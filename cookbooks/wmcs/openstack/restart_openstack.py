@@ -94,6 +94,17 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=cluster_name)
         self.filter_nodes = filter_nodes
 
+    @property
+    def runtime_description(self) -> str:
+        """Return a nicely formatted string that represents the cookbook action."""
+        if self.args.all_services:
+            services = "all services"
+        else:
+            _services = ",".join([*vars(self.args)])
+            services = f"service: {_services}"
+
+        return f"on deployment {self.cluster_name} for {services}"
+
     # OpenStack services will give us info about hosts and services, but in a different format
     #  depending on the service. These little helper functions adjust that into standard
     #  (host, service) pairs
