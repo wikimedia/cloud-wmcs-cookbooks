@@ -2,6 +2,9 @@ r"""WMCS VPS - Create a new project
 
 Usage example:
     cookbook wmcs.vps.create_project \
+        --user projectUser1 \
+        --user projectUser2 \
+        --cpu 32 \
         --cluster-name eqiad1 \
         --project my_fancy_new_project
 
