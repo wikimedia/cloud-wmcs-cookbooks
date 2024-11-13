@@ -48,12 +48,13 @@ LOGGER = logging.getLogger(__name__)
 
 DEPLOY_REPO_URL = "https://gitlab.wikimedia.org/repos/cloud/toolforge/toolforge-deploy.git"
 COMPONENT_TO_PACKAGE_NAME = {
-    "jobs-cli": "toolforge-jobs-framework-cli",
-    "tools-webservice": "toolforge-webservice",
-    "envvars-cli": "toolforge-envvars-cli",
     "builds-cli": "toolforge-builds-cli",
+    "components-cli": "toolforge-components-cli",
+    "envvars-cli": "toolforge-envvars-cli",
+    "jobs-cli": "toolforge-jobs-framework-cli",
     "toolforge-cli": "toolforge-cli",
     "toolforge-weld": "python3-toolforge-weld",
+    "tools-webservice": "toolforge-webservice",
 }
 
 
