@@ -8,7 +8,6 @@ from typing import Any, cast
 
 import gitlab as upstream_gitlab_lib
 import requests
-from gitlab.client import Gitlab
 
 GITLAB_BASE_URL = "https://gitlab.wikimedia.org"
 GITLAB_API_BASE_URL = f"{GITLAB_BASE_URL}/api/v4"
@@ -104,7 +103,7 @@ class GitlabController:
         # pylint: disable=useless-suppression
         # pylint: disable=no-member
         # ssl_verify false needed to run on laptops as they don't have the CA installed
-        self.gitlab: Gitlab = upstream_gitlab_lib.Gitlab(
+        self.gitlab = upstream_gitlab_lib.Gitlab(
             url=GITLAB_BASE_URL,
             private_token=private_token,
             ssl_verify=False,
@@ -201,7 +200,7 @@ class GitlabController:
 
     def create_mr(
         self, project: str, source_branch: str, title: str, target_branch: str = "main"
-    ) -> upstream_gitlab_lib.v4.objects.merge_requests.ProjectMergeRequest:
+    ) -> upstream_gitlab_lib.v4.objects.ProjectMergeRequest:
         project_id = self.get_project_id_by_name(project_name=project)
         project_obj = self.gitlab.projects.get(id=project_id)
         new_mr = project_obj.mergerequests.create(
@@ -213,14 +212,14 @@ class GitlabController:
             },
         )
         # needed as the api return a proxy and the types are not properly declared
-        return cast(upstream_gitlab_lib.v4.objects.merge_requests.ProjectMergeRequest, new_mr)
+        return cast(upstream_gitlab_lib.v4.objects.ProjectMergeRequest, new_mr)
 
     def get_mr(
         self,
         project: str,
         mr_iid: str,
-    ) -> upstream_gitlab_lib.v4.objects.merge_requests.ProjectMergeRequest:
+    ) -> upstream_gitlab_lib.v4.objects.ProjectMergeRequest:
         project_id = self.get_project_id_by_name(project_name=project)
         project_obj = self.gitlab.projects.get(id=project_id)
         mr = project_obj.mergerequests.get(id=mr_iid)
-        return cast(upstream_gitlab_lib.v4.objects.merge_requests.ProjectMergeRequest, mr)
+        return cast(upstream_gitlab_lib.v4.objects.ProjectMergeRequest, mr)

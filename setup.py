@@ -8,7 +8,7 @@ install_requires = [
     "pyyaml",
     "wikimedia-spicerack>=8.5.0",
     "requests[socks]",
-    "python-gitlab",
+    "python-gitlab==2.5.0",
 ]
 
 # Extra dependencies
