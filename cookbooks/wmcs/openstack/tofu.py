@@ -285,7 +285,7 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
             if self.apply and not plan_is_noop:
                 ask_confirmation(f"Before apply, Is tofu plan correct ({cluster_name} @ {control_node_fqdn})?")
 
-            self._tofu_apply(node, plan_file=plan_file)
+                self._tofu_apply(node, plan_file=plan_file)
 
     def run_with_proxy(self) -> None:
         """Main entry point"""
