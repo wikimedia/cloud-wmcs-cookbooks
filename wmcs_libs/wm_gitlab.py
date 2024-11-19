@@ -124,11 +124,16 @@ class GitlabController:
         return note
 
     def get_artifact_job_id_from_branch(self, branch: str, component: str) -> str:
-        maybe_project = list(self.gitlab.projects.list(all=True, search=component))[:1]
-        if not maybe_project:
-            raise Exception(f"Unable to find project for component {component}")
+        all_projects_with_name = list(self.gitlab.projects.list(all=True, search=component))
+        maybe_projects = [
+            project for project in all_projects_with_name if project.namespace["id"] == TOOLFORGE_GROUP_ID
+        ]
+        if not maybe_projects:
+            raise Exception(
+                f"Unable to find project for component {component} under the toolforge group (id={TOOLFORGE_GROUP_ID})"
+            )
 
-        project = maybe_project[0]
+        project = maybe_projects[0]
 
         maybe_jobs = [
             job
@@ -136,7 +141,7 @@ class GitlabController:
             if job.name == PACKAGE_JOB_NAME and job.ref == branch
         ]
         if not maybe_jobs:
-            raise Exception(f"Unable to find project for component {component}")
+            raise Exception(f"Unable to find package build job for component {component}, branch {branch}")
 
         job = maybe_jobs[0]
         while job.status in ["running", "pending"]:
