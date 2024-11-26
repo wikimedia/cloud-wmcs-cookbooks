@@ -364,7 +364,7 @@ class KubernetesController:
         node = self._remote.query(f"D{{{node_fqdn}}}", use_sudo=True)
         reboot_time = datetime.utcnow()
         node.reboot()
-        node.wait_reboot_since(since=reboot_time, tries=6)
+        node.wait_reboot_since(since=reboot_time)
 
         yield KubernetesRebootNodePhase.UNCORDON
         self.uncordon_node(node_hostname)

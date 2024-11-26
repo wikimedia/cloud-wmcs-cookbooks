@@ -134,7 +134,8 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
 
     def run(self) -> None:
         """Main entry point"""
-        control_node_fqdn = get_control_nodes(self.cluster_name)[0]
+        control_nodes = get_control_nodes(self.cluster_name)
+        control_node_fqdn = control_nodes[0]
         k8s_controller = KubernetesController(self.spicerack.remote(), control_node_fqdn)
         LOGGER.info("INFO: using control node %s", control_node_fqdn)
 
@@ -148,6 +149,14 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
             self.hostname_list = [node for node in self.hostname_list if "-worker-" in node]
 
         for node_hostname in self.hostname_list:
+            if control_node_fqdn.startswith(node_hostname):
+                if control_nodes[0].startswith(node_hostname):
+                    control_node_fqdn = control_nodes[1]
+                else:
+                    control_node_fqdn = control_nodes[0]
+                LOGGER.info("INFO: swapping to control node %s", control_node_fqdn)
+                k8s_controller = KubernetesController(self.spicerack.remote(), control_node_fqdn)
+
             try:
                 for phase in k8s_controller.reboot_node(node_hostname, self.domain):
                     LOGGER.info("INFO: %s: reboot phase: %s", node_hostname, phase)
