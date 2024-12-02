@@ -219,10 +219,11 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             status += " (ran all tests)"
 
         logs = self._cleanup_terminal_colors(logs)
-        pre_version = logs.split("toolforge components versions:", 1)[0] + "toolforge components versions:"
-        version = logs.split("toolforge components versions:", 1)[1]
-        version, post_version = version.split("Running tests from branch: ", 1)
-        post_version = "Running tests from branch: " + post_version
+        # DO NOT CHANGE without updating https://gitlab.wikimedia.org/repos/cloud/toolforge/toolforge-deploy/-/blob/main/utils/run_functional_tests.sh  # noqa: E501
+        version_output_delimiter = "-" * 47
+        pre_version = logs.split(version_output_delimiter, 1)[0]
+        version = logs.split(version_output_delimiter, 1)[1]
+        version, post_version = version.split(version_output_delimiter, 1)
 
         note = self.gitlab_controller.create_mr_note(
             project_id=project["id"],
