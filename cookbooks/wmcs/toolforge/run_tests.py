@@ -48,6 +48,7 @@ class ToolforgeRunTests(CookbookBase):
             formatter_class=ArgparseFormatter,
         )
         add_toolforge_kubernetes_cluster_opts(parser)
+        parser.add_argument("--branch", default="main", help="branch to run tests on")
         parser.add_argument("--filter-tags", action="append", default=[], help="filter tests with the given tags")
         return parser
 
@@ -56,6 +57,7 @@ class ToolforgeRunTests(CookbookBase):
         return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeRunTestsRunner)(
             spicerack=self.spicerack,
             filter_tags=args.filter_tags,
+            branch=args.branch,
         )
 
 
@@ -70,19 +72,21 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         cluster_name: ToolforgeKubernetesClusterName,
         filter_tags: list[str],
         spicerack: Spicerack,
+        branch: str = "main",
     ):
         """Init"""
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         self.filter_tags = filter_tags
+        self.branch = branch
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
-        test_logs = self.run_tests(filter_tags=self.filter_tags)
+        test_logs = self.run_tests(filter_tags=self.filter_tags, branch=self.branch)
         if " 0 failures " not in test_logs:
             raise Exception(f"FAILED:\n{test_logs}")
 
-    def run_tests(self, filter_tags: list[str]) -> str:
+    def run_tests(self, filter_tags: list[str], branch: str) -> str:
         site = self.cluster_name.get_openstack_cluster_name().get_site()
         bastions_fqdns = (
             get_static_inventory()[site]
@@ -93,7 +97,15 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         bastion_node = self.spicerack.remote().query(f"D{{{chosen_bastion}}}", use_sudo=True)
         test_logs = run_one_raw(
             # TERM needed for bats(tput actually) to run properly
-            command=["env", "TERM=xterm-256color", "toolforge-deploy/utils/run_functional_tests.sh", "-r", "--"]
+            command=[
+                "env",
+                "TERM=xterm-256color",
+                "toolforge-deploy/utils/run_functional_tests.sh",
+                "-r",
+                "-b",
+                branch,
+                "--",
+            ]
             + [f"--filter-tags {tag}" for tag in filter_tags],
             user=TESTS_USER,
             node=bastion_node,

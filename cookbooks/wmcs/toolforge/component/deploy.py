@@ -179,10 +179,11 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             common_opts=self.common_opts,
             cluster_name=cluster_name,
             spicerack=self.spicerack,
-            # this one is not really used as we use the internal method
+            # these ones is not really used as we use the internal method
+            branch=branch,
             filter_tags=filter_tags,
         )
-        test_logs = tests_cookbook.run_tests(filter_tags=filter_tags)
+        test_logs = tests_cookbook.run_tests(filter_tags=filter_tags, branch=branch)
 
         try:
             self._send_mr_comment(
