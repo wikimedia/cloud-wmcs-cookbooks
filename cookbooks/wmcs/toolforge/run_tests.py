@@ -82,11 +82,11 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
-        test_logs = self.run_tests(filter_tags=self.filter_tags, branch=self.branch)
-        if " 0 failures " not in test_logs:
-            raise Exception(f"FAILED:\n{test_logs}")
+        test_result = self.run_tests(filter_tags=self.filter_tags, branch=self.branch)
+        if "FAILED" in test_result["status"]:
+            raise Exception(f"FAILED:\n{test_result['logs']}")
 
-    def run_tests(self, filter_tags: list[str], branch: str) -> str:
+    def run_tests(self, filter_tags: list[str], branch: str) -> dict[str, str]:
         site = self.cluster_name.get_openstack_cluster_name().get_site()
         bastions_fqdns = (
             get_static_inventory()[site]
@@ -112,7 +112,20 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
             capture_errors=True,
             cumin_params=CUMIN_UNSAFE_WITH_OUTPUT,
         )
-        return test_logs
+
+        status = "🗹 PASSED"
+        if test_logs.count(" 0 failures ") != 2:  # both admin and tools tests must all pass
+            status = "🗷 FAILED"
+
+        if filter_tags:
+            status += f" (ran tests {filter_tags})"
+        else:
+            status += " (ran all tests)"
+
+        return {
+            "status": status,
+            "logs": test_logs,
+        }
 
     def _ensure_deploy_repo_cloned(self, bastion_node: RemoteHosts) -> None:
         try:

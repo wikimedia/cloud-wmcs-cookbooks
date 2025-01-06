@@ -183,21 +183,20 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             branch=branch,
             filter_tags=filter_tags,
         )
-        test_logs = tests_cookbook.run_tests(filter_tags=filter_tags, branch=branch)
+        test_result = tests_cookbook.run_tests(filter_tags=filter_tags, branch=branch)
 
         try:
             self._send_mr_comment(
-                logs=test_logs, branch=branch, cluster_name=cluster_name, filter_tags=filter_tags, component=component
+                test_result=test_result, branch=branch, cluster_name=cluster_name, component=component
             )
         except MrNotFound:
             LOGGER.warning("Unable to find an MR for branch %s, skipping sending a comment.", branch)
 
     def _send_mr_comment(
         self,
-        logs: str,
+        test_result: dict[str, str],
         branch: str,
         cluster_name: ToolforgeKubernetesClusterName,
-        filter_tags: list[str],
         component: str,
     ) -> None:
         if component in COMPONENT_TO_PACKAGE_NAME:
@@ -210,16 +209,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         project = get_project(component=project_name)
         mr_iid = get_branch_mr(branch=branch, project=project)
 
-        status = "🗹 PASSED"
-        if " 0 failures " not in logs:
-            status = "🗷 FAILED"
-
-        if filter_tags:
-            status += f" (ran tests {filter_tags})"
-        else:
-            status += " (ran all tests)"
-
-        logs = self._cleanup_terminal_colors(logs)
+        logs = self._cleanup_terminal_colors(test_result["logs"])
         # DO NOT CHANGE without updating https://gitlab.wikimedia.org/repos/cloud/toolforge/toolforge-deploy/-/blob/main/utils/run_functional_tests.sh  # noqa: E501
         version_output_delimiter = "-" * 47
         pre_version = logs.split(version_output_delimiter, 1)[0]
@@ -229,7 +219,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         note = self.gitlab_controller.create_mr_note(
             project_id=project["id"],
             merge_request_iid=mr_iid,
-            note_body=f"""Ran the tests on {cluster_name}: **{status}**
+            note_body=f"""Ran the tests on {cluster_name}: **{test_result["status"]}**
 ```
 {pre_version}
 ```
