@@ -88,7 +88,7 @@ def test_get_nodes_happy_path(expected_nodes: list[str], nodes_command_output: s
     {
         "When there's only one other node, returns the other node.": {
             "expected_controlling_node": "monhost2.eqiad.wmnet",
-            "nodes_command_output": '{"mon":{"cloudcephmon1001":["mon1"],"monhost2":["mon2"]}}',
+            "nodes_command_output": '{"mon":{"cloudcephmon1004":["mon1"],"monhost2":["mon2"]}}',
         },
     },
 )
@@ -108,7 +108,7 @@ def test_change_controlling_node_happy_path(expected_controlling_node: str, node
 @parametrize(
     {
         "When there's no other nodes it raises CephNoControllerNode": {
-            "nodes_command_output": '{"mon":{"cloudcephmon1001":["mon1"]}}'
+            "nodes_command_output": '{"mon":{"cloudcephmon1004":["mon1"]}}'
         },
     },
 )

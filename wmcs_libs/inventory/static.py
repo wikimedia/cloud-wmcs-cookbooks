@@ -37,9 +37,9 @@ _INVENTORY: Inventory = {
                     name=CephClusterName.EQIAD1,
                     nodes_by_role={
                         CephNodeRoleName.MON: [
-                            "cloudcephmon1001.eqiad.wmnet",
-                            "cloudcephmon1002.eqiad.wmnet",
-                            "cloudcephmon1003.eqiad.wmnet",
+                            "cloudcephmon1004.eqiad.wmnet",
+                            "cloudcephmon1005.eqiad.wmnet",
+                            "cloudcephmon1006.eqiad.wmnet",
                         ]
                     },
                     osd_drives_count=8,
