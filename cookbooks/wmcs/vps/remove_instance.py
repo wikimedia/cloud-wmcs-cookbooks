@@ -16,14 +16,13 @@ from datetime import timedelta
 from spicerack import Spicerack, SpicerackError
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from spicerack.puppet import PuppetHosts, PuppetServer
-from spicerack.remote import RemoteExecutionError, RemoteHosts
+from spicerack.remote import RemoteExecutionError
 
 from wmcs_libs.common import (
     CommonOpts,
     CuminParams,
     WMCSCookbookRunnerBase,
     add_common_opts,
-    run_one_raw,
     with_common_opts,
 )
 from wmcs_libs.inventory.openstack import OpenstackClusterName
@@ -104,26 +103,6 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         """Return a nicely formatted string that represents the cookbook action."""
         return f"for instance {self.name_to_remove}"
 
-    def _guess_puppet_cert_hostname(self, remote: RemoteHosts | None, node_fqdn: str) -> str:
-        if remote:
-            try:
-                # for legacy VMs in .eqiad.wmflabs
-                result = run_one_raw(
-                    command=["hostname", "-f"],
-                    node=remote,
-                    cumin_params=CuminParams(print_output=False, print_progress_bars=False),
-                )
-
-                # idk why this is needed but it filters out 'mesg: ttyname failed: Inappropriate ioctl for device'
-                return [
-                    line
-                    for line in result.splitlines()
-                    if line.endswith(".wikimedia.cloud") or line.endswith(".wmflabs")
-                ][0]
-            except IndexError:
-                LOGGER.warning("Failed to query the hostname, falling back to the generated one")
-        return node_fqdn
-
     def _find_puppetserver(self, puppet_hosts: PuppetHosts | None, node_fqdn: str) -> str:
         if puppet_hosts:
             try:
@@ -185,9 +164,8 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         # if it's the central puppetmaster, this will be handled by wmf_sink
         if puppet_server_hostname not in ("puppet", "puppetmaster.cloudinfra.wmflabs.org"):
             puppet_server = PuppetServer(self.spicerack.remote().query(f"D{{{puppet_server_hostname}}}", use_sudo=True))
-            puppet_cert_hostname = self._guess_puppet_cert_hostname(remote, node_fqdn)
             try:
-                puppet_server.delete(puppet_cert_hostname)
+                puppet_server.delete(node_fqdn)
             except RemoteExecutionError:
                 # workaround T360293
                 LOGGER.warning("Ignoring certificate destruction failure", exc_info=True)
