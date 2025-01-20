@@ -26,6 +26,7 @@ from spicerack import ICINGA_DOMAIN, Spicerack
 from spicerack.cookbook import CookbookRunnerBase
 from spicerack.remote import NodeSet, Remote, RemoteHosts
 from wmflib.config import load_yaml_config
+from wmflib.interactive import AbortError, ask_input
 from wmflib.irc import SocketHandler
 
 from wmcs_libs.proxy import with_proxy
@@ -843,3 +844,12 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
     def run_with_proxy(self) -> int | None:
         """Main entry point, use in place of `run` to execute it's code with a socks proxy running."""
         return 0
+
+
+def ask_confirmation_with_all(message: str) -> bool:
+    """Asks for confirmation, and returns true if the user select all (to not ask again)."""
+    response = ask_input(f"{message}", choices=["go", "abort", "all"])
+    if response == "abort":
+        raise AbortError("Task manually aborted")
+
+    return response == "all"

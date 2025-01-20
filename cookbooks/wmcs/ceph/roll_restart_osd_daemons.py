@@ -14,7 +14,6 @@ import logging
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
-from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.ceph import CephClusterController, CephClusterUnhealthy
 from wmcs_libs.common import (
@@ -22,6 +21,7 @@ from wmcs_libs.common import (
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
+    ask_confirmation_with_all,
     run_one_raw,
     with_common_opts,
 )
@@ -128,9 +128,10 @@ class RollRestartOsdDaemonsRunner(WMCSCookbookRunnerBase):
         else:
             current_health_issues = {}
 
+        continue_asking = self.interactive
         for index, osd_node in enumerate(osd_nodes):
-            if self.interactive:
-                ask_confirmation(f"Ready to restart the OSD daemons for node {osd_node}?")
+            if continue_asking:
+                continue_asking = ask_confirmation_with_all(f"Ready to restart the OSD daemons for node {osd_node}?")
 
             LOGGER.info("Restarting osds from node %s, %d done, %d to go", osd_node, index, len(osd_nodes) - index)
             remote_node = self.spicerack.remote().query(
