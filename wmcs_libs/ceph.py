@@ -178,6 +178,7 @@ class OSDTreeNode:
       "type": "host",
       "type_id": 1,
       "crush_weight": 0.87779,
+      "reweight": 1.0,
       "pool_weights": {},
       "children": [
         262,
@@ -195,6 +196,7 @@ class OSDTreeNode:
     node_id: int
     name: str
     crush_weight: float
+    reweight: float
     type: OSDTreeNodeType
     children: list[OSDTreeNode]
 
@@ -224,6 +226,7 @@ class OSDTreeOSDNode(OSDTreeNode):
     device_class: OSDClass
     status: OSDStatus
     crush_weight: float
+    reweight: float
 
     @classmethod
     def from_json_data(cls, json_data: dict[str, Any]) -> "OSDTreeOSDNode":
@@ -236,6 +239,7 @@ class OSDTreeOSDNode(OSDTreeNode):
             device_class=OSDClass.from_str(json_data["device_class"]),
             status=OSDStatus.from_str(json_data["status"]),
             crush_weight=json_data["crush_weight"],
+            reweight=json_data["reweight"],
             children=[],
         )
 
@@ -851,6 +855,7 @@ class CephClusterController(CommandRunnerMixin):
                 type=plain_node["type"],
                 name=plain_node["name"],
                 crush_weight=plain_node.get("crush_weight", sum(child.crush_weight for child in children)),
+                reweight=plain_node.get("reweight", 1.0),
             )
 
         def _get_expanded_root_node(nodes_list: list[dict[str, Any]]) -> OSDTreeNode:
@@ -1169,6 +1174,7 @@ class CephClusterController(CommandRunnerMixin):
         """
         for osd_id_node in osd_id_nodes:
             self.crush_reset_weight_osd(osd_id=osd_id_node.osd_id, node_fqdn=osd_id_node.node_fqdn)
+            self.reweight_osd(osd_id=osd_id_node.osd_id, new_weight=1.0)
 
     def undrain_osds(self, osd_ids: list[int], osd_fqdn: str) -> None:
         """Undrains OSD daemons.
@@ -1291,8 +1297,8 @@ class CephClusterController(CommandRunnerMixin):
                 return [
                     osd.node_id
                     for osd in host.children
-                    if (in_out == OSDInOut.OUT and osd.crush_weight == 0)
-                    or (in_out == OSDInOut.IN and osd.crush_weight != 0)
+                    if (in_out == OSDInOut.OUT and (osd.crush_weight == 0 or osd.reweight == 0))
+                    or (in_out == OSDInOut.IN and osd.crush_weight != 0 and osd.reweight != 0)
                     or in_out == OSDInOut.ALL
                 ]
 

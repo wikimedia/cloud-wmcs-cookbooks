@@ -706,12 +706,15 @@ def test_wait_for_cluster_health_raises(
             "expected_tree": OSDTree(
                 root_node=OSDTreeNode(
                     crush_weight=5.2379150390625,  # sum of the children
+                    reweight=1.0,
                     children=[
                         OSDTreeNode(
                             crush_weight=1.7459716796875,
+                            reweight=1.0,
                             children=[
                                 OSDTreeNode(
                                     crush_weight=1.7459716796875,
+                                    reweight=1.0,
                                     children=[
                                         OSDTreeOSDNode(
                                             node_id=5,
@@ -722,6 +725,7 @@ def test_wait_for_cluster_health_raises(
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=0.87298583984375,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=4,
@@ -732,6 +736,7 @@ def test_wait_for_cluster_health_raises(
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=0.87298583984375,
+                                            reweight=1.0,
                                         ),
                                     ],
                                     node_id=-7,
@@ -745,9 +750,11 @@ def test_wait_for_cluster_health_raises(
                         ),
                         OSDTreeNode(
                             crush_weight=1.7459716796875,
+                            reweight=1.0,
                             children=[
                                 OSDTreeNode(
                                     crush_weight=1.7459716796875,
+                                    reweight=1.0,
                                     children=[
                                         OSDTreeOSDNode(
                                             node_id=3,
@@ -758,6 +765,7 @@ def test_wait_for_cluster_health_raises(
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=0.87298583984375,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=2,
@@ -768,6 +776,7 @@ def test_wait_for_cluster_health_raises(
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=0.87298583984375,
+                                            reweight=1.0,
                                         ),
                                     ],
                                     node_id=-5,
@@ -781,9 +790,11 @@ def test_wait_for_cluster_health_raises(
                         ),
                         OSDTreeNode(
                             crush_weight=1.7459716796875,
+                            reweight=1.0,
                             children=[
                                 OSDTreeNode(
                                     crush_weight=1.7459716796875,
+                                    reweight=1.0,
                                     children=[
                                         OSDTreeOSDNode(
                                             node_id=1,
@@ -794,6 +805,7 @@ def test_wait_for_cluster_health_raises(
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=0.87298583984375,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=0,
@@ -804,6 +816,7 @@ def test_wait_for_cluster_health_raises(
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=0.87298583984375,
+                                            reweight=1.0,
                                         ),
                                     ],
                                     node_id=-3,
@@ -843,12 +856,14 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
             "osd_tree": OSDTree(
                 root_node=OSDTreeNode(
                     crush_weight=1.0,
+                    reweight=1.0,
                     node_id=-1,
                     name="root",
                     type="root",
                     children=[
                         OSDTreeNode(
                             crush_weight=1.0,
+                            reweight=1.0,
                             node_id=-12,
                             name="F4",
                             type="rack",
@@ -856,12 +871,14 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                         ),
                         OSDTreeNode(
                             crush_weight=1.0,
+                            reweight=1.0,
                             node_id=-11,
                             name="E4",
                             type="rack",
                             children=[
                                 OSDTreeNode(
                                     crush_weight=1.0,
+                                    reweight=1.0,
                                     node_id=-2,
                                     name="host01",
                                     type="host",
@@ -875,6 +892,7 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=102,
@@ -885,6 +903,7 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=103,
@@ -895,6 +914,7 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=104,
@@ -905,6 +925,7 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=105,
@@ -915,6 +936,7 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=106,
@@ -925,6 +947,7 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=107,
@@ -935,6 +958,7 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=108,
@@ -945,11 +969,13 @@ def test_get_osd_tree(expected_tree: OSDTree, osd_tree_command_output: str):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                     ],
                                 ),
                                 OSDTreeNode(
                                     crush_weight=1.0,
+                                    reweight=1.0,
                                     node_id=-3,
                                     name="host02",
                                     type="host",
@@ -980,17 +1006,21 @@ def test_is_osd_host_valid_success(osd_tree: OSDTree):
             "osd_tree": OSDTree(
                 root_node=OSDTreeNode(
                     crush_weight=1.0,
+                    reweight=1.0,
                     node_id=-1,
                     name="root",
                     type="root",
                     children=[
                         OSDTreeNode(
                             crush_weight=1.0,
+                            reweight=1.0,
                             node_id=-11,
                             name="E4",
                             type="rack",
                             children=[
-                                OSDTreeNode(crush_weight=1.0, node_id=-3, name="host02", type="host", children=[]),
+                                OSDTreeNode(
+                                    crush_weight=1.0, reweight=1.0, node_id=-3, name="host02", type="host", children=[]
+                                ),
                             ],
                         ),
                     ],
@@ -1002,18 +1032,21 @@ def test_is_osd_host_valid_success(osd_tree: OSDTree):
             "osd_tree": OSDTree(
                 root_node=OSDTreeNode(
                     crush_weight=1.0,
+                    reweight=1.0,
                     node_id=-1,
                     name="root",
                     type="root",
                     children=[
                         OSDTreeNode(
                             crush_weight=1.0,
+                            reweight=1.0,
                             name="E4",
                             node_id=-11,
                             type="rack",
                             children=[
                                 OSDTreeNode(
                                     crush_weight=1.0,
+                                    reweight=1.0,
                                     node_id=-2,
                                     name="host01",
                                     type="host",
@@ -1027,6 +1060,7 @@ def test_is_osd_host_valid_success(osd_tree: OSDTree):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                         OSDTreeOSDNode(
                                             node_id=102,
@@ -1037,10 +1071,13 @@ def test_is_osd_host_valid_success(osd_tree: OSDTree):
                                             device_class=OSDClass.SSD,
                                             status=OSDStatus.UP,
                                             crush_weight=1.5,
+                                            reweight=1.0,
                                         ),
                                     ],
                                 ),
-                                OSDTreeNode(crush_weight=1.0, node_id=-3, name="host02", type="host", children=[]),
+                                OSDTreeNode(
+                                    crush_weight=1.0, reweight=1.0, node_id=-3, name="host02", type="host", children=[]
+                                ),
                             ],
                         ),
                     ],
