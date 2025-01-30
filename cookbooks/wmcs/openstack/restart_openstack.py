@@ -129,6 +129,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
          then hardcodes those services into the standard dict format.
         """
         cloudcontrol_service_list = {
+            "cinder": ["cinder-api"],
             "glance": ["glance-api"],
             "nova": ["nova-api", "nova-api-metadata"],
             "keystone": ["keystone", "keystone-admin"],
