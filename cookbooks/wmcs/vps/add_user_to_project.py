@@ -48,12 +48,13 @@ class AddUserToProject(CookbookBase):
         parser.add_argument(
             "--user",
             help="Username to add to the project",
+            required=True,
         )
         parser.add_argument(
             "--as-member",
             action="store_true",
             default=False,
-            help="If set, the user will be added as project admin (otherwise will just add as user)",
+            help="If set, the user will be added as project admin (otherwise will just add as reader)",
         )
 
         return parser
