@@ -114,7 +114,7 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         )
 
         status = "🗹 PASSED"
-        if test_logs.count(" 0 failures ") != 2:  # both admin and tools tests must all pass
+        if test_logs.count(" 0 failures") != 2:  # both admin and tools tests must all pass
             status = "🗷 FAILED"
 
         if filter_tags:
