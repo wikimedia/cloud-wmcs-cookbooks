@@ -161,12 +161,15 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             )
 
         if self.run_tests:
-            self._run_tests(
+            tests_results = self._run_tests(
                 cluster_name=self.cluster_name,
                 branch=self.git_branch,
                 filter_tags=self.filter_tags,
                 component=self.component,
             )
+
+            if "PASSED" not in tests_results["status"]:
+                raise Exception(f"Failed deploying {self.component} in {self.cluster_name} (see logs for details)")
 
     def _run_tests(
         self,
@@ -174,7 +177,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         branch: str,
         filter_tags: list[str],
         component: str,
-    ):
+    ) -> dict[str, str]:
         tests_cookbook = ToolforgeRunTestsRunner(
             common_opts=self.common_opts,
             cluster_name=cluster_name,
@@ -183,14 +186,16 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             branch=branch,
             filter_tags=filter_tags,
         )
-        test_result = tests_cookbook.run_tests(filter_tags=filter_tags, branch=branch)
+        test_results = tests_cookbook.run_tests(filter_tags=filter_tags, branch=branch)
 
         try:
             self._send_mr_comment(
-                test_result=test_result, branch=branch, cluster_name=cluster_name, component=component
+                test_result=test_results, branch=branch, cluster_name=cluster_name, component=component
             )
         except MrNotFound:
             LOGGER.warning("Unable to find an MR for branch %s, skipping sending a comment.", branch)
+
+        return test_results
 
     def _send_mr_comment(
         self,
