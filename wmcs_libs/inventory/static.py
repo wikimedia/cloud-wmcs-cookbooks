@@ -50,9 +50,10 @@ _INVENTORY: Inventory = {
                     name=OpenstackClusterName.EQIAD1,
                     nodes_by_role={
                         OpenstackNodeRoleName.CONTROL: [
-                            "cloudcontrol1005.eqiad.wmnet",
                             "cloudcontrol1006.eqiad.wmnet",
                             "cloudcontrol1007.eqiad.wmnet",
+                            # T387828 cloudcontrol1005 is out of service at the moment
+                            "cloudcontrol1005.eqiad.wmnet",
                         ],
                         OpenstackNodeRoleName.GATEWAY: [
                             "cloudgw1001.eqiad.wmnet",
