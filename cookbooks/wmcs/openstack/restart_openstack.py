@@ -100,7 +100,12 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         if self.args.all_services:
             services = "all services"
         else:
-            _services = ",".join([*vars(self.args)])
+            services_set_args = []
+            for arg in vars(self.args):
+                if vars(self.args)[arg] and "_" not in arg:
+                    services_set_args.append(arg)
+
+            _services = ",".join(services_set_args)
             services = f"service: {_services}"
 
         return f"on deployment {self.cluster_name} for {services}"
