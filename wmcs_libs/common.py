@@ -16,6 +16,7 @@ from dataclasses import replace as replace_in_dataclass
 from enum import Enum, auto
 from functools import partial
 from itertools import chain
+from pathlib import Path
 from typing import Any, Callable, Generator, Pattern
 from unittest import mock
 
@@ -409,6 +410,22 @@ def with_temporary_file(
         yield file_path
     finally:
         run_one_raw(node=dst_node, command=["rm", "-f", "-v", file_path], cumin_params=cumin_params)
+
+
+@contextmanager
+def with_temporary_dir(
+    dst_node: RemoteHosts, prefix: str = "", cumin_params: CuminParams | None = None
+) -> Generator[Path, None, None]:
+    """Context manager to do something with on a remote system with a temporary directory."""
+    dir_path = Path(f"/tmp/{prefix}{str(uuid.uuid4())}")  # nosec B108
+
+    try:
+        run_one_raw(node=dst_node, command=["mkdir", "-p", str(dir_path)], cumin_params=cumin_params)
+        yield dir_path
+    finally:
+        run_one_raw(
+            node=dst_node, command=["rm", "-rf", "--preserve-root=all", str(dir_path)], cumin_params=cumin_params
+        )
 
 
 def natural_sort_key(element: str) -> list[str | int]:

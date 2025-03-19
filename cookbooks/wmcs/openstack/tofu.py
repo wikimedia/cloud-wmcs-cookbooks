@@ -12,7 +12,7 @@ import argparse
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -28,6 +28,7 @@ from wmcs_libs.common import (
     run_one_raw,
     run_script,
     with_common_opts,
+    with_temporary_dir,
     with_temporary_file,
 )
 from wmcs_libs.inventory.openstack import OpenstackClusterName
@@ -109,7 +110,7 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
     # gitlab notes is broken, so we don't want to collapse _all_ tofu plan, only those with line count
     # above this arbitrary threshold
     GITLAB_MR_NOTE_COLLAPSE_AT_LINES_THRESHOLD = 500
-    TOFU_INFRA_DIR = Path("/srv/tofu-infra")
+    TOFU_INFRA_ORIG_DIR = Path("/srv/tofu-infra")
     TOFU_NO_CHANGES_LINE = "No changes. Your infrastructure matches the configuration."
 
     def __init__(
@@ -153,7 +154,7 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
     def _git_cleanup_and_checkout_main_branch(self, node: Any) -> None:
         main_branch = "main"
         script = f"""
-cd '{self.TOFU_INFRA_DIR}'
+cd '{self.TOFU_INFRA_ORIG_DIR}'
 # flush any local changes first
 git checkout -f
 git clean -fd
@@ -163,19 +164,20 @@ git pull --rebase
 """
         run_script(node=node, script=script, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
-    def _git_checkout_mr(self, node: Any) -> None:
+    def _git_checkout_mr(self, node: Any, op_dir: Path) -> None:
         # see https://gitlab.wikimedia.org/help/user/project/merge_requests/merge_request_troubleshooting
         remote = "origin"
         script = f"""
-cd '{self.TOFU_INFRA_DIR}'
+cp -a {self.TOFU_INFRA_ORIG_DIR}/. {op_dir}/
+cd {op_dir}
 # force ignores errors due to diverging mr branches (case if the MR is updated and the cookbook rerun)
 git fetch --force '{remote}' 'merge-requests/{self.gitlab_mr}/head:mr-{remote}-{self.gitlab_mr}'
 git checkout --force 'mr-{remote}-{self.gitlab_mr}'
 """
         run_script(node=node, script=script, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
-    def _tofu_plan(self, node: Any, plan_file: str) -> None:
-        chdir = f"-chdir={self.TOFU_INFRA_DIR}"
+    def _tofu_plan(self, node: Any, plan_file: str, op_dir: Path) -> None:
+        chdir = f"-chdir={op_dir}"
         commands = [
             f"tofu {chdir} init",
             f"tofu {chdir} validate",
@@ -190,16 +192,18 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
             )
 
     def _tofu_apply(self, node: Any, plan_file: str) -> None:
+        # NOTE: not accepting a different op_dir because in theory we only allow to run
+        # tofu apply for the main branch
         run_one_raw(
-            command=["tofu", f"-chdir={self.TOFU_INFRA_DIR}", "apply", plan_file],
+            command=["tofu", f"-chdir={self.TOFU_INFRA_ORIG_DIR}", "apply", plan_file],
             node=node,
             cumin_params=CUMIN_UNSAFE_WITHOUT_PROGRESS,
         )
 
-    def _tofu_show_plan(self, node: Any, plan_file: str) -> str:
+    def _tofu_show_plan(self, node: Any, plan_file: str, op_dir: Path) -> str:
         try:
             plan = run_one_raw(
-                command=["tofu", f"-chdir={self.TOFU_INFRA_DIR}", "show", "-no-color", plan_file],
+                command=["tofu", f"-chdir={op_dir}", "show", "-no-color", plan_file],
                 node=node,
                 cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
             )
@@ -250,17 +254,17 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
         )
 
     @contextmanager
-    def _with_merge_request(self, node: Any) -> Any:
-        """Checkout the gitlab merge request, then rollback the local git repository to the main branch."""
-        try:
-            if self.gitlab_mr:
-                LOGGER.info("INFO: checking out gitlab MR branch")
-                self._git_checkout_mr(node)
-            yield
-        finally:
-            if self.gitlab_mr:
-                LOGGER.info("INFO: cleaning up git repository tree back to the main branch")
-                self._git_cleanup_and_checkout_main_branch(node)
+    def _with_maybe_merge_request(self, node: Any) -> Generator[Path, None, None]:
+        """Checkout the gitlab merge request in a temporal operation directory."""
+        if not self.gitlab_mr:
+            # noop
+            yield self.TOFU_INFRA_ORIG_DIR
+            return
+
+        with with_temporary_dir(dst_node=node, prefix=f"tofu_infra_mr{self.gitlab_mr}_") as op_dir:
+            LOGGER.info("INFO: checking out gitlab MR branch in %s", op_dir)
+            self._git_checkout_mr(node, op_dir)
+            yield op_dir
 
     def _run(self, cluster_name: str) -> None:
         """Run the routine"""
@@ -275,9 +279,9 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
         self._git_cleanup_and_checkout_main_branch(node)
 
         with with_temporary_file(dst_node=node, contents="", cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT) as plan_file:
-            with self._with_merge_request(node):
-                self._tofu_plan(node, plan_file=plan_file)
-                plan = self._tofu_show_plan(node, plan_file=plan_file)
+            with self._with_maybe_merge_request(node) as op_dir:
+                self._tofu_plan(node, plan_file=plan_file, op_dir=op_dir)
+                plan = self._tofu_show_plan(node, plan_file=plan_file, op_dir=op_dir)
                 self._tofu_plan_to_gitlab_note(cluster_name=cluster_name, plan=plan)
 
             plan_is_noop = self._tofu_plan_is_noop(plan=plan)
