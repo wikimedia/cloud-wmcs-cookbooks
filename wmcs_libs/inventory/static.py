@@ -138,7 +138,7 @@ _INVENTORY: Inventory = {
                             "cloudgw2003-dev.codfw.wmnet",
                         ],
                     },
-                    internal_network_name="lan-flat-cloudinstances2b",
+                    internal_network_name="VLAN/legacy",
                 )
             },
         },
