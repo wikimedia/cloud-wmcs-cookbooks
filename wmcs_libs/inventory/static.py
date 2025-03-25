@@ -60,7 +60,7 @@ _INVENTORY: Inventory = {
                             "cloudgw1002.eqiad.wmnet",
                         ],
                     },
-                    internal_network_name="lan-flat-cloudinstances2b",
+                    internal_network_name="VLAN/legacy",
                 ),
             },
             ClusterType.TOOLFORGE_KUBERNETES: {

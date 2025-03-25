@@ -68,7 +68,7 @@ class ToolforgeAddK8sHaproxyNode(CookbookBase):
             default=None,
             help=(
                 "Network for the new instance (will use the same as the latest existing one by default, ex. "
-                "lan-flat-cloudinstances2b, ex. a69bdfad-d7d2-4cfa-8231-3d6d3e0074c9)"
+                "VLAN/legacy, ex. a69bdfad-d7d2-4cfa-8231-3d6d3e0074c9)"
             ),
         )
 
