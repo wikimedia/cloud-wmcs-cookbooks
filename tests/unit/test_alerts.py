@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from unittest.mock import ANY, MagicMock
+from unittest.mock import ANY
 
 import pytest
 from spicerack.administrative import Reason
 
-import wmcs_libs.alerts
 from wmcs_libs.alerts import silence_host
 from wmcs_libs.common import UtilsForTesting
 
@@ -28,9 +27,7 @@ def spicerack(monkeypatch):
     fake_spicerack = UtilsForTesting.get_fake_spicerack(UtilsForTesting.get_fake_remote())
     # needed for icinga_hosts
     fake_spicerack._dry_run = False
-    fake_spicerack.icinga_master_host = MagicMock()
-    fake_spicerack.icinga_master_host.__len__.return_value = 1
-    monkeypatch.setattr(wmcs_libs.alerts, "wrap_with_sudo_icinga", value=lambda *args: fake_spicerack)
+    fake_spicerack.icinga_master_host.return_value.__len__.return_value = 1
     return fake_spicerack
 
 

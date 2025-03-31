@@ -17,6 +17,7 @@ from enum import Enum, auto
 from functools import partial
 from itertools import chain
 from pathlib import Path
+from types import MethodType
 from typing import Any, Callable, Generator, Pattern
 from unittest import mock
 
@@ -436,30 +437,13 @@ def natural_sort_key(element: str) -> list[str | int]:
 def wrap_with_sudo_icinga(my_spicerack: Spicerack) -> Spicerack:
     """Wrap spicerack icinga to allow sudo.
 
-    We have to patch the master host to allow sudo, all this weirdness is
-    because icinga_master_host is a @property and can't be patched on
-    the original instance
+    We have to patch the master host to allow sudo.
     """
-
-    class SudoIcingaSpicerackWrapper(Spicerack):
-        """Dummy wrapper class to allow sudo icinga."""
-
-        def __init__(self):  # pylint: disable-msg=super-init-not-called
-            """Init."""
-
-        @property
-        def icinga_master_host(self) -> RemoteHosts:
-            """Icinga master host."""
-            new_host = self.remote().query(query_string=self.dns().resolve_cname(ICINGA_DOMAIN), use_sudo=True)
-            return new_host
-
-        def __getattr__(self, what):
-            return getattr(my_spicerack, what)
-
-        def __setattr__(self, what, value):
-            return setattr(my_spicerack, what, value)
-
-    return SudoIcingaSpicerackWrapper()
+    my_spicerack.icinga_master_host = MethodType(  # type: ignore[method-assign]
+        lambda self: self.remote().query(query_string=self.dns().resolve_cname(ICINGA_DOMAIN), use_sudo=True),
+        my_spicerack,
+    )
+    return my_spicerack
 
 
 @dataclass(frozen=True)
