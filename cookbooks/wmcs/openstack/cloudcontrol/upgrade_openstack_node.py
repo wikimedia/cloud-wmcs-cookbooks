@@ -154,7 +154,10 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
                     # wrap this in another shell because mysqldump requires file redirection
                     run_one_raw(
                         node=backupnode,
-                        command=Command('sh -c "/usr/bin/mysqldump -u root %s > %s/%s.sql"' % (db, backuppath, db)),
+                        command=Command(
+                            'sh -c "/usr/bin/mysqldump --single-transaction -u root %s > %s/%s.sql"'
+                            % (db, backuppath, db)
+                        ),
                     )
                 LOGGER.info("Backed up OpenStack databases to %s", backuppath)
 
