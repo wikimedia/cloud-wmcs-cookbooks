@@ -64,7 +64,7 @@ class ToolforgeAddK8sNode(CookbookBase):
         parser.add_argument(
             "--image",
             required=False,
-            default=None,
+            default="debian-12.0-bookworm",
             help=(
                 "Image for the new instance (will use the same as the latest existing one by default, ex. "
                 "debian-10.0-buster, ex. 64351116-a53e-4a62-8866-5f0058d89c2b)"
