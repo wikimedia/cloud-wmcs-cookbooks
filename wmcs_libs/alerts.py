@@ -31,7 +31,7 @@ def silence_host(
     """Silence a hosts alerts both in alertmanager and icinga.
 
     Examples of 'host_name':
-    * cloudcontrol1005
+    * cloudcontrol1011
     * cloudcephmon1001
     """
     reason = spicerack.admin_reason(reason=comment or "No comment", task_id=task_id)

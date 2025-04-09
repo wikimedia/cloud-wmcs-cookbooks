@@ -468,7 +468,7 @@ class OpenstackAPI(CommandRunnerMixin):
         """Init."""
         self.project = project
         self.cluster_name = cluster_name
-        self.control_node_fqdn = get_control_nodes(cluster_name)[0]
+        self.control_node_fqdn = get_control_nodes(cluster_name)[2]
         self.control_node = remote.query(f"D{{{self.control_node_fqdn}}}", use_sudo=True)
         super().__init__(command_runner_node=self.control_node)
 

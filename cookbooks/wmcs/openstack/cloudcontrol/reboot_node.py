@@ -2,7 +2,7 @@ r"""WMCS Openstack - Reboot a cloudcontrol node .
 
 Usage example:
     cookbook wmcs.openstack.cloudcontrol.reboot_node \
-        --fqdn cloudcontrol1005.eqiad.wmnet
+        --fqdn cloudcontrol1011.eqiad.wmnet
 
 """
 

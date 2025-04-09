@@ -237,7 +237,7 @@ def test_get_openstack_project_deployment_ok(
     "node_fqdn",
     [
         "foobar",
-        "cloudcontrol1005.eqiad.wmnet",
+        "cloudcontrol1011.eqiad.wmnet",
         "tools.eqiad1.wikimedia.cloud",
         "foo.bar.baz.tools.eqiad1.wikimedia.cloud",
         "somevm.tools.invalid.wikimedia.cloud",

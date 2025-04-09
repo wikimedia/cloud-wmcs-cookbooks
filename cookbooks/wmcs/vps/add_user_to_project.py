@@ -97,7 +97,7 @@ class AddUserToProjectRunner(WMCSCookbookRunnerBase):
             message = ""
             message += "No spaces allowed in the user name. You likely need to "
             message += "translate the Wiki account name to the Unix account name via "
-            message += "`user@cloudcontrol1005:~$ sudo wmcs-openstack user list | grep -i username`"
+            message += "`user@cloudcontrol1011:~$ sudo wmcs-openstack user list | grep -i username`"
             raise ValueError(message)
 
         self.role_name = "member" if as_member else "reader"
