@@ -14,10 +14,10 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 from typing import Any
 
 import gitlab
-import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmflib.interactive import ask_confirmation, ask_input
@@ -30,6 +30,23 @@ from wmcs_libs.openstack.common import OpenstackAPI, OpenstackQuotaEntry, Openst
 from wmcs_libs.wm_gitlab import GitlabController
 
 LOGGER = logging.getLogger(__name__)
+
+
+PROJECT_MAIN_TF_TEMPLATE = """
+locals {{
+  resources = {{
+    project_config = {{
+      description             = "{description}"
+      track_project_resource  = true,
+      manage_default_secgroup = true,
+    }}
+  }}
+}}
+
+output "resources" {{
+  value = local.resources
+}}
+"""
 
 
 class CreateProject(CookbookBase):
@@ -238,21 +255,57 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
 
     def _create_tofu_mr(self) -> gitlab.v4.objects.merge_requests.ProjectMergeRequest:
         branch_name = f"add_project_{self.common_opts.project}"
-        projects_file = f"projects_{self.openstack_api.cluster_name}.yaml"
-        projects_content = self.gitlab_controller.get_file_at_commit(
-            project="tofu-infra", file_path=projects_file, commit_sha="main"
-        )
-        projects_data = yaml.safe_load(projects_content)
-        projects_data[self.common_opts.project] = self._get_tofu_project_data(task_id=self.common_opts.task_id)
+        mr_title = f"projects: added project {self.common_opts.project}"
 
-        title = f"projects: added project {self.common_opts.project}"
-        self.gitlab_controller.update_file(
+        new_project_file = f"resources/{self.openstack_api.cluster_name}-r/{self.common_opts.project}/main.tf"
+        project_data = PROJECT_MAIN_TF_TEMPLATE.format(
+            description=self.description,
+        )
+        new_project_file_commit_change = {
+            "action": "create",
+            "file_path": new_project_file,
+            "content": project_data,
+        }
+
+        projects_main_tf = f"resources/{self.openstack_api.cluster_name}-r/main.tf"
+        projects_main_tf_content = self.gitlab_controller.get_file_at_commit(
+            project="tofu-infra",
+            file_path=projects_main_tf,
+            commit_sha="main",
+        )
+        projects_main_tf_content += f"""
+module "project_{self.common_opts.project}" {{
+  source = "./{self.common_opts.project}/"
+}}
+"""
+        admin_line_match = re.search(r"\n(\s*)admin(\s+)=.*", projects_main_tf_content)
+        if not admin_line_match:
+            raise Exception("Unable to find the admin line in the main.tf file, aborting.")
+        left_padding = admin_line_match.group(1)
+        middle_padding = admin_line_match.group(2)
+        middle_padding_count = len(middle_padding) + len("admin") - len(self.common_opts.project)
+        projects_main_tf_content = re.sub(
+            r"(\n\s*admin\s+=.*)",
+            (
+                r"\1\n"
+                + f"{left_padding}{self.common_opts.project}"
+                + " " * middle_padding_count
+                + f"= module.project_{self.common_opts.project}.resources,"
+            ),
+            projects_main_tf_content,
+        )
+        projects_main_tf_file_change = {
+            "action": "update",
+            "file_path": projects_main_tf,
+            "content": projects_main_tf_content,
+        }
+
+        self.gitlab_controller.create_commit(
             project="tofu-infra",
             new_branch=branch_name,
-            file_path=projects_file,
-            new_content=yaml.safe_dump(projects_data),
+            actions=[projects_main_tf_file_change, new_project_file_commit_change],
             commit_message=(
-                f"{title}\nAutomatic commit by cookbook wmcs.vps.create_project\n\nBug: "
+                f"{mr_title}\nAutomatic commit by cookbook wmcs.vps.create_project\n\nBug: "
                 f"{self.common_opts.task_id or 'no task'}"
             ),
             author_email="donotreply@cookbook.wmcs.local",
@@ -262,7 +315,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
             project="tofu-infra",
             source_branch=branch_name,
             target_branch="main",
-            title=title,
+            title=mr_title,
         )
         return mr
 

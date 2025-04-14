@@ -177,24 +177,26 @@ class GitlabController:
         project_obj = self.gitlab.projects.get(id=project_id)
         return base64.b64decode(project_obj.files.get(file_path=file_path, ref=commit_sha).content).decode("utf8")
 
-    def update_file(  # pylint: disable=too-many-arguments
+    def create_commit(  # pylint: disable=too-many-arguments
         self,
         project: str,
         new_branch: str,
-        file_path: str,
-        new_content: str,
+        actions: list[dict[str, Any]],
         commit_message: str,
         author_email: str,
         author_name: str,
         base_branch: str = "main",
     ) -> dict[str, Any]:
-        """Creates a new branch with the a new commit with the single file updated."""
+        """Creates a new branch with the a new commit with all the given actions applied.
+
+        To see the shape of actions see:
+        https://docs.gitlab.com/api/commits/#create-a-commit-with-multiple-files-and-actions
+        """
         project_id = self.get_project_id_by_name(project_name=project)
         project_obj = self.gitlab.projects.get(id=project_id)
-        return project_obj.files.update(
-            file_path=file_path,
-            new_data={
-                "content": new_content,
+        return project_obj.commits.create(
+            data={
+                "actions": actions,
                 "commit_message": commit_message,
                 "start_branch": base_branch,
                 "branch": new_branch,
