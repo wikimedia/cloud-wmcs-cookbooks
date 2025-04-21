@@ -500,13 +500,16 @@ class CephClusterController(CommandRunnerMixin):
         "isRegex": True,
     }
 
-    def __init__(self, remote: Remote, cluster_name: CephClusterName, spicerack: Spicerack):
+    def __init__(self, remote: Remote, cluster_name: CephClusterName, spicerack: Spicerack, expected_drives: int = 0):
         """Init."""
         self._remote = remote
         self.cluster_name = cluster_name
         self.controlling_node_fqdn = get_mon_nodes(cluster_name)[0]
         self._controlling_node = self._remote.query(f"D{{{self.controlling_node_fqdn}}}", use_sudo=True)
-        self.expected_osd_drives_per_host = get_osd_drives_count(cluster_name)
+        if expected_drives:
+            self.expected_osd_drives_per_host = expected_drives
+        else:
+            self.expected_osd_drives_per_host = get_osd_drives_count(cluster_name)
         self._spicerack = spicerack
         super().__init__(command_runner_node=self._controlling_node)
 

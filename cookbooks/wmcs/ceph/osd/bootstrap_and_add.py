@@ -95,6 +95,14 @@ class BootstrapAndAdd(CookbookBase):
             help="Number of osds to bring up at a time to avoid congesting the network, use 0 for all at once.",
         )
         parser.add_argument(
+            "--expected-osd-drives",
+            required=False,
+            default=0,
+            type=int,
+            help="Number of osd drives in the targetted host(s). "
+            "Default behavior is to get a cluster-wide number from the catalog.",
+        )
+        parser.add_argument(
             "--no-wait",
             required=False,
             action="store_true",
@@ -124,6 +132,7 @@ class BootstrapAndAdd(CookbookBase):
             batch_size=args.batch_size,
             only_check=args.only_check,
             spicerack=self.spicerack,
+            expected_osd_drives=args.expected_osd_drives,
         )
 
 
@@ -160,6 +169,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         only_check: bool,
         batch_size: int,
         spicerack: Spicerack,
+        expected_osd_drives: int,
     ):
         """Init"""
         self.common_opts = common_opts
@@ -175,7 +185,10 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         self.batch_size = batch_size
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.cluster_controller = CephClusterController(
-            remote=self.spicerack.remote(), cluster_name=cluster_name, spicerack=self.spicerack
+            remote=self.spicerack.remote(),
+            cluster_name=cluster_name,
+            spicerack=self.spicerack,
+            expected_drives=expected_osd_drives,
         )
 
     def run_with_proxy(self) -> None:
