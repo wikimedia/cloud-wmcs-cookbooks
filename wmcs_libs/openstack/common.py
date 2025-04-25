@@ -10,7 +10,7 @@ from collections.abc import Collection
 from dataclasses import dataclass
 from enum import Enum, auto
 from ipaddress import IPv4Address
-from typing import Any, Callable, NamedTuple, Type, Union, cast
+from typing import Any, Callable, Literal, NamedTuple, Type, Union, cast
 
 import yaml
 from cumin.transports import Command
@@ -1206,6 +1206,13 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def get_all_users(self) -> list[dict[str, Any]]:
         return self.run_formatted_as_list("user", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+
+    def get_all_projects(self) -> list[dict[Literal["ID", "Name"], str]]:
+        return self.run_formatted_as_list("project", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+
+    def project_delete(self, project: OpenstackIdentifier) -> None:
+        """Deletes the specified project."""
+        self.run_raw("project", "delete", project)
 
 
 def get_node_cluster_name(node: str) -> OpenstackClusterName:
