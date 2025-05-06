@@ -29,7 +29,7 @@ def get_dummy_inventory(
     cluster_name: ClusterName = OpenstackClusterName.CODFW1DEV,
     cluster_class: Type[Cluster] = OpenstackCluster,
     role_name: NodeRoleName = OpenstackNodeRoleName.CONTROL,
-    cluster_extra_args: dict = {"internal_network_name": "lan-flat-instances-whatever"},
+    cluster_extra_args: dict = {"internal_network_name": "VXLAN/IPv6-dualstack"},
 ) -> dict[SiteName, Site]:
     return {
         site_name: Site(

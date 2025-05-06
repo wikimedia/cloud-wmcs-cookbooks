@@ -59,7 +59,7 @@ _INVENTORY: Inventory = {
                             "cloudgw1002.eqiad.wmnet",
                         ],
                     },
-                    internal_network_name="VLAN/legacy",
+                    internal_network_name="VXLAN/IPv6-dualstack",
                 ),
             },
             ClusterType.TOOLFORGE_KUBERNETES: {
@@ -137,7 +137,7 @@ _INVENTORY: Inventory = {
                             "cloudgw2003-dev.codfw.wmnet",
                         ],
                     },
-                    internal_network_name="VLAN/legacy",
+                    internal_network_name="VXLAN/IPv6-dualstack",
                 )
             },
         },
