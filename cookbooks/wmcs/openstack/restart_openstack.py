@@ -223,6 +223,13 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         if restart_list:
             restart_dict = self.consolidate_restart_list(restart_list)
             self.sallogger.log("Restarting %s openstack services" % len(restart_list))
+            # Restart cloudvirt nodes last, there are a lot of them and
+            #  restarts there have more local effect.
+            cloudvirt_dict = {}
+            for key in list(restart_dict.keys()):
+                if key.startswith("cloudvirt"):
+                    cloudvirt_dict[key] = restart_dict.pop(key)
             self.restart_services(restart_dict)
+            self.restart_services(cloudvirt_dict)
         else:
             print("No restarts requested.")
