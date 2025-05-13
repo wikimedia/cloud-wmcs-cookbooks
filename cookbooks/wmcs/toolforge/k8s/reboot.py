@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from datetime import datetime
 
 from spicerack import Spicerack
 from spicerack.cookbook import ArgparseFormatter, CookbookBase
@@ -164,7 +165,13 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
                 LOGGER.info(
                     "Something happened while rebooting host %s, trying a hard rebooting the instance",
                     node_hostname,
+                    exc_info=True,
                 )
+
+                host = self.spicerack.remote().query(f"D{{{node_hostname}.{self.domain}}}")
+                reboot_time = datetime.utcnow()
                 self.openstack_api.server_force_reboot(node_hostname)
+                host.wait_reboot_since(since=reboot_time)
+
                 k8s_controller.uncordon_node(node_hostname)
                 k8s_controller.wait_for_ready(node_hostname)
