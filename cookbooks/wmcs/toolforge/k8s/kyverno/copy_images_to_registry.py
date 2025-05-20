@@ -12,6 +12,19 @@ from spicerack.cookbook import ArgparseFormatter, CookbookBase
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.k8s.images import ImageController
 
+IMAGES = {
+    "ghcr.io/kyverno/kyverno:{kyverno_version}": "toolforge-kyverno-kyverno:{kyverno_version}",
+    "ghcr.io/kyverno/kyverno-cli:{kyverno_version}": "toolforge-kyverno-kyverno-cli:{kyverno_version}",
+    "ghcr.io/kyverno/kyvernopre:{kyverno_version}": "toolforge-kyverno-kyvernopre:{kyverno_version}",
+    "ghcr.io/kyverno/background-controller:{kyverno_version}": (
+        "toolforge-kyverno-background-controller:{kyverno_version}"
+    ),
+    "ghcr.io/kyverno/cleanup-controller:{kyverno_version}": "toolforge-kyverno-cleanup-controller:{kyverno_version}",
+    "ghcr.io/kyverno/reports-controller:{kyverno_version}": "toolforge-kyverno-reports-controller:{kyverno_version}",
+    "bitnami/kubectl:{kubectl_version}": "bitnami-kubectl:{kubectl_version}",
+    "busybox:{busybox_version}": "busybox:{busybox_version}",
+}
+
 
 class CopyImagesToRepo(CookbookBase):
     """Uploads the external kyverno images to the local toolforge repository for local comsumption."""
@@ -50,6 +63,12 @@ class CopyImagesToRepo(CookbookBase):
             default="1.28.5",
             help="Version of bitname/kubectl image to upgrade to (matches the image tag).",
         )
+        parser.add_argument(
+            "--busybox-version",
+            required=False,
+            default="1.35",
+            help="Version of busybox image to upgrade to (matches the image tag).",
+        )
 
         return parser
 
@@ -60,25 +79,13 @@ class CopyImagesToRepo(CookbookBase):
             uploader_node=args.uploader_node,
             kyverno_version=args.kyverno_version,
             bitnami_kubectl_version=args.bitnami_kubectl_version,
+            busybox_version=args.busybox_version,
             spicerack=self.spicerack,
         )
 
 
 class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
     """Runner for CopyImagesToRepo."""
-
-    KYVERNO_IMAGE_BASE_URL = "ghcr.io/kyverno/"
-    KYVERNO_IMAGES_NAMES = [
-        "kyverno",
-        "kyverno-cli",
-        "kyvernopre",
-        "background-controller",
-        "cleanup-controller",
-        "reports-controller",
-    ]
-
-    KYVERNO_KUBECTL_PULL = "bitnami/kubectl"
-    KYVERNO_KUBECTL_PUSH_NAME = "bitnami-kubectl"
 
     def __init__(
         self,
@@ -87,6 +94,7 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         uploader_node: str,
         kyverno_version: str,
         bitnami_kubectl_version: str,
+        busybox_version: str,
         spicerack: Spicerack,
     ):
         """Init"""
@@ -94,6 +102,7 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         self.uploader_node = uploader_node
         self.kyverno_version = kyverno_version
         self.bitnami_kubectl_version = bitnami_kubectl_version
+        self.busybox_version = busybox_version
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
@@ -102,11 +111,26 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         uploader_node = remote.query(f"D{{{self.uploader_node}}}", use_sudo=True)
         image_ctrl = ImageController(spicerack=self.spicerack, uploader_node=uploader_node)
 
-        for image in self.KYVERNO_IMAGES_NAMES:
-            pull_url = f"{self.KYVERNO_IMAGE_BASE_URL}{image}:{self.kyverno_version}"
-            push_url = f"{self.image_repo_url}/toolforge-kyverno-{image}:{self.kyverno_version}"
-            image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
+        pushed_images = []
+        for pull_url, push_url in IMAGES.items():
+            push_url = (
+                self.image_repo_url
+                + "/"
+                + push_url.format(
+                    kyverno_version=self.kyverno_version,
+                    kubectl_version=self.bitnami_kubectl_version,
+                    busybox_version=self.busybox_version,
+                )
+            )
+            image_ctrl.update_image(
+                pull_url=pull_url.format(
+                    kyverno_version=self.kyverno_version,
+                    kubectl_version=self.bitnami_kubectl_version,
+                    busybox_version=self.busybox_version,
+                ),
+                push_url=push_url,
+            )
+            pushed_images.append(push_url)
 
-        pull_url = f"{self.KYVERNO_KUBECTL_PULL}:{self.bitnami_kubectl_version}"
-        push_url = f"{self.image_repo_url}/{self.KYVERNO_KUBECTL_PUSH_NAME}:{self.bitnami_kubectl_version}"
-        image_ctrl.update_image(pull_url=pull_url, push_url=push_url)
+        print("Updated all the kyverno-specific images:")
+        print("    " + "\n    ".join(pushed_images))
