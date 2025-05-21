@@ -156,7 +156,7 @@
               }
             }
           ],
-          "image": "docker-registry.tools.wmflabs.org/calico/node:v3.21.0",
+          "image": "docker-registry.svc.toolforge.org/calico/node:v3.21.0",
           "imagePullPolicy": "IfNotPresent",
           "lifecycle": {
             "preStop": {
@@ -273,7 +273,7 @@
               }
             }
           ],
-          "image": "docker-registry.tools.wmflabs.org/calico/cni:v3.21.0",
+          "image": "docker-registry.svc.toolforge.org/calico/cni:v3.21.0",
           "imagePullPolicy": "IfNotPresent",
           "name": "upgrade-ipam",
           "resources": {},
@@ -345,7 +345,7 @@
               }
             }
           ],
-          "image": "docker-registry.tools.wmflabs.org/calico/cni:v3.21.0",
+          "image": "docker-registry.svc.toolforge.org/calico/cni:v3.21.0",
           "imagePullPolicy": "IfNotPresent",
           "name": "install-cni",
           "resources": {},
@@ -371,7 +371,7 @@
           ]
         },
         {
-          "image": "docker-registry.tools.wmflabs.org/calico/pod2daemon-flexvol:v3.21.0",
+          "image": "docker-registry.svc.toolforge.org/calico/pod2daemon-flexvol:v3.21.0",
           "imagePullPolicy": "IfNotPresent",
           "name": "flexvol-driver",
           "resources": {},
@@ -603,8 +603,8 @@
       "containerStatuses": [
         {
           "containerID": "docker://b4dd3991d9a0a0c69f8d7f21f5808adba9ddd95b01c1718dbf32388e7754da67",
-          "image": "docker-registry.tools.wmflabs.org/calico/node:v3.21.0",
-          "imageID": "docker-pullable://docker-registry.tools.wmflabs.org/calico/node@sha256:5a6982360e50924c976edbe4438a692e84af8e22cef17cb7d70ae9f7f263a22f",
+          "image": "docker-registry.svc.toolforge.org/calico/node:v3.21.0",
+          "imageID": "docker-pullable://docker-registry.svc.toolforge.org/calico/node@sha256:5a6982360e50924c976edbe4438a692e84af8e22cef17cb7d70ae9f7f263a22f",
           "lastState": {
             "terminated": {
               "containerID": "docker://b23b0ebb9f83bbb7dcc3e90753eada4e399f533be55c224855a999677f39505a",
@@ -629,8 +629,8 @@
       "initContainerStatuses": [
         {
           "containerID": "docker://0a8756040598a2273b86bec63196bf30405c7b73b50ddafc7cc8e332967ffd70",
-          "image": "docker-registry.tools.wmflabs.org/calico/cni:v3.21.0",
-          "imageID": "docker-pullable://docker-registry.tools.wmflabs.org/calico/cni@sha256:074c77c3275169c67d63600c75e94f95183c5e33cef9b00473b13d6db12390e5",
+          "image": "docker-registry.svc.toolforge.org/calico/cni:v3.21.0",
+          "imageID": "docker-pullable://docker-registry.svc.toolforge.org/calico/cni@sha256:074c77c3275169c67d63600c75e94f95183c5e33cef9b00473b13d6db12390e5",
           "lastState": {},
           "name": "upgrade-ipam",
           "ready": true,
@@ -647,8 +647,8 @@
         },
         {
           "containerID": "docker://8b0a59f6ea29961240e22b8f7b738bbeb1f8e797d1417c714c4df4cbd469fbfb",
-          "image": "docker-registry.tools.wmflabs.org/calico/cni:v3.21.0",
-          "imageID": "docker-pullable://docker-registry.tools.wmflabs.org/calico/cni@sha256:074c77c3275169c67d63600c75e94f95183c5e33cef9b00473b13d6db12390e5",
+          "image": "docker-registry.svc.toolforge.org/calico/cni:v3.21.0",
+          "imageID": "docker-pullable://docker-registry.svc.toolforge.org/calico/cni@sha256:074c77c3275169c67d63600c75e94f95183c5e33cef9b00473b13d6db12390e5",
           "lastState": {},
           "name": "install-cni",
           "ready": true,
@@ -665,8 +665,8 @@
         },
         {
           "containerID": "docker://0a5873b0894c3ff7ba42e061dee676f5329d5ed77bc7838fbb2c0d6f497f0471",
-          "image": "docker-registry.tools.wmflabs.org/calico/pod2daemon-flexvol:v3.21.0",
-          "imageID": "docker-pullable://docker-registry.tools.wmflabs.org/calico/pod2daemon-flexvol@sha256:43e238b3b093d0bcab8a7795e537759d56fa7d0bdc3325e1f0fc1a25bed6e68a",
+          "image": "docker-registry.svc.toolforge.org/calico/pod2daemon-flexvol:v3.21.0",
+          "imageID": "docker-pullable://docker-registry.svc.toolforge.org/calico/pod2daemon-flexvol@sha256:43e238b3b093d0bcab8a7795e537759d56fa7d0bdc3325e1f0fc1a25bed6e68a",
           "lastState": {},
           "name": "flexvol-driver",
           "ready": true,

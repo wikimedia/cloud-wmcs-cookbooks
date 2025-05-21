@@ -60,7 +60,7 @@ class UploadImagesToRepo(CookbookBase):
         parser.add_argument(
             "--image-repo-url",
             required=False,
-            default="docker-registry.tools.wmflabs.org",
+            default="docker-registry.svc.toolforge.org",
             help="Repository to upload the images to.",
         )
         parser.add_argument(

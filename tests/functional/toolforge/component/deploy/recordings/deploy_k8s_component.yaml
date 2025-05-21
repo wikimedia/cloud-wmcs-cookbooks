@@ -133,7 +133,7 @@ output: "/root\nPulling toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.
   \ \"\"\n      - name: verbose\n        description: Log the commands that are executed\
   \ during `git-clone`'s operation.\n        type: string\n        default: \"true\"\
   \n      - name: gitInitImage\n        description: The image providing the git-init\
-  \ binary that this Task runs.\n        type: string\n        default: \"docker-registry.tools.wmflabs.org/toolforge-tektoncd-pipeline-cmd-git-init:v0.33.2\"\
+  \ binary that this Task runs.\n        type: string\n        default: \"docker-registry.svc.toolforge.org/toolforge-tektoncd-pipeline-cmd-git-init:v0.33.2\"\
   \n      - name: userHome\n        description: |\n          Absolute path to the\
   \ user's home directory. Set this explicitly if you are running the image as a non-root\
   \ user or have overridden\n          the gitInitImage param with an image containing\
@@ -231,7 +231,7 @@ output: "/root\nPulling toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.
   \n          - >-\n            cp -a /cnb/buildpacks /tmp_builder/\n            &&\
   \ cp /cnb/order.toml /tmp_builder/\n            || exit 1\n        volumeMounts:\n\
   \          - name: tmp-builder-dir\n            mountPath: /tmp_builder\n  \n  \
-  \    - name: prepare\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \    - name: prepare\n        image: \"docker-registry.svc.toolforge.org/toolforge-library-bash:5.1.4\"\
   \n        args:\n          - \"--env-vars\"\n          - \"$(params.ENV_VARS[*])\"\
   \n        script: | \n          #!/usr/bin/env bash\n          set -e\n        \
   \  \n          echo \"Running on node $MY_NODE_NAME\"\n          \n          if\
@@ -258,7 +258,7 @@ output: "/root\nPulling toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.
   \          - name: layers-dir\n            mountPath: /layers\n          - name:\
   \ $(params.PLATFORM_DIR)\n            mountPath: /platform\n          - name: tmp-builder-dir\n\
   \            mountPath: /tmp_builder\n  \n      # this whole step was added\n  \
-  \    - name: inject-buildpacks\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \    - name: inject-buildpacks\n        image: \"docker-registry.svc.toolforge.org/toolforge-library-bash:5.1.4\"\
   \n        args: []\n        env:\n          - name: WORKSPACE_OUTPUT_PATH\n    \
   \        value: $(workspaces.source.path)\n        script: | \n          #!/usr/bin/env\
   \ bash\n          set -x\n          set -o nounset\n          set -o errexit\n \
@@ -435,7 +435,7 @@ output: "/root\nPulling toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.
   \          - name: $(params.PLATFORM_DIR)\n            mountPath: /platform\n  \
   \        - name: empty-dir\n            mountPath: /tekton/home\n          - name:\
   \ tmp-builder-dir\n            mountPath: /tmp_builder\n  \n      # this whole step\
-  \ was added\n      - name: fix-nested-procfile-launcher\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \ was added\n      - name: fix-nested-procfile-launcher\n        image: \"docker-registry.svc.toolforge.org/toolforge-library-bash:5.1.4\"\
   \n        args: []\n        script: | \n          #!/usr/bin/env bash\n        \
   \  \n          set -e\n          \n          LAYERS_DIR=\"/layers\"\n          PROCFILE_LAYER=\"\
   $LAYERS_DIR/heroku_procfile\"\n          FIX_LAYER=\"$PROCFILE_LAYER/nested_launcher_fix\"\
@@ -459,7 +459,7 @@ output: "/root\nPulling toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.
   \       cache = false\n          EOL\n          \n        volumeMounts:\n      \
   \    - name: layers-dir\n            mountPath: /layers\n  \n      # this whole\
   \ step was added\n\e[0;32m+     - name: fix-imagemagick-config\e[0m\n\e[0;32m+ \
-  \      image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \      image: \"docker-registry.svc.toolforge.org/toolforge-library-bash:5.1.4\"\
   \e[0m\n\e[0;32m+       args: []\e[0m\n\e[0;32m+       script: | \e[0m\n\e[0;32m+\
   \         #!/usr/bin/env bash\e[0m\n\e[0;32m+         # See https://phabricator.wikimedia.org/T370610\e\
   [0m\n\e[0;32m+         # and https://help.heroku.com/RFDJQSG3/how-can-i-override-imagemagick-settings-in-a-policy-xml-file\e\
@@ -502,7 +502,7 @@ output: "/root\nPulling toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.
   \         EOL\e[0m\n\e[0;32m+         \e[0m\n\e[0;32m+       volumeMounts:\e[0m\n\
   \e[0;32m+         - name: layers-dir\e[0m\n\e[0;32m+           mountPath: /layers\e\
   [0m\n\e[0;32m+ \e[0m\n\e[0;32m+     # this whole step was added\e[0m\n      - name:\
-  \ fix-permissions\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \ fix-permissions\n        image: \"docker-registry.svc.toolforge.org/toolforge-library-bash:5.1.4\"\
   \n        args: []\n        script: | \n          #!/usr/bin/env bash\n        \
   \  set -e\n          \n          # this is needed for the user that will run in\
   \ the container to write on the app source code\n          # usually for hardcoded\
@@ -540,7 +540,7 @@ output: "/root\nPulling toolsbeta-harbor.wmcloud.org/toolforge/builds-builder:0.
   \n          - \"-stack=/layers/stack.toml\"\n          - \"$(params.APP_IMAGE)\"\
   \n        volumeMounts:\n          - name: layers-dir\n            mountPath: /layers\n\
   \          - name: $(params.PLATFORM_DIR)\n            mountPath: /platform\n  \n\
-  \      - name: results\n        image: \"docker-registry.tools.wmflabs.org/toolforge-library-bash:5.1.4\"\
+  \      - name: results\n        image: \"docker-registry.svc.toolforge.org/toolforge-library-bash:5.1.4\"\
   \n        script: | \n          #!/usr/bin/env bash\n          set -e\n        \
   \  grep \"digest\" /layers/report.toml | cut -d'\"' -f2 | cut -d'\"' -f2 | tr -d\
   \ '\\n' > \"$(results.APP_IMAGE_DIGEST.path)\"\n          # shellcheck disable=SC2005\
