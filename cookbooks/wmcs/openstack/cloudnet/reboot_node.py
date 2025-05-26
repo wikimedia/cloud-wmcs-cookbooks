@@ -87,9 +87,6 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         )
         self.neutron_controller = NeutronController(openstack_api=self.openstack_api)
 
-        LOGGER.info("Checking that the current network setup is something we can handle...")
-        self._check_network_setup_as_expected()
-
         try:
             self.neutron_controller.check_if_network_is_alive()
         except NetworkUnhealthy as error:
@@ -103,21 +100,6 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
     @property
     def runtime_description(self) -> str:
         return f"for host {self.fqdn_to_reboot}"
-
-    def _check_network_setup_as_expected(self) -> None:
-        l3_agents = self.openstack_api.get_neutron_agents(agent_type=NeutronAgentType.L3_AGENT)
-        # currently this is the same, but adding the check in case anything changes
-        cloudnets = self.neutron_controller.get_cloudnets()
-        if not cloudnets:
-            raise Exception("No cloudnets found :-S")
-
-        if len(cloudnets) != len(l3_agents):
-            agent_hosts = [agent.host for agent in l3_agents]
-            raise Exception(f"Got different cloudnets ({cloudnets}) than l3 agents ({agent_hosts})")
-
-        for agent in l3_agents:
-            if agent.host not in cloudnets:
-                raise Exception(f"Agent {agent.host} not in cloudnets ({cloudnets})")
 
     def _do_reboot(self, node: RemoteHosts) -> None:
         """Perform the actual reboot."""
