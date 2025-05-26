@@ -80,9 +80,7 @@ class ShowRunner(WMCSCookbookRunnerBase):
         l3_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.L3_AGENT]
         dhcp_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.DHCP_AGENT]
         metadata_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.METADATA_AGENT]
-        linux_bridge_agents = [
-            str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.LINUX_BRIDGE_AGENT
-        ]
+        openvswitch_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.OVS_AGENT]
         cloudnets = self.neutron_controller.get_cloudnets()
         routers = self.openstack_api.get_routers()
         routers_str = ""
@@ -95,5 +93,5 @@ class ShowRunner(WMCSCookbookRunnerBase):
         LOGGER.info("Got L3 Agents:\n    %s", "\n    ".join(l3_agents))
         LOGGER.info("Got dhcp Agents:\n    %s", "\n    ".join(dhcp_agents))
         LOGGER.info("Got metadata Agents:\n    %s", "\n    ".join(metadata_agents))
-        LOGGER.info("Got linux bridge Agents:\n    %s", "\n    ".join(linux_bridge_agents))
+        LOGGER.info("Got OVS Agents:\n    %s", "\n    ".join(openvswitch_agents))
         LOGGER.info("Got cloudnets (should be the same as L3 agents):\n    %s", "\n    ".join(cloudnets))
