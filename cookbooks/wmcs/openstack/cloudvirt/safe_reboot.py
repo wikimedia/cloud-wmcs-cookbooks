@@ -14,6 +14,7 @@ import logging
 from datetime import datetime
 
 from spicerack import RemoteHosts, Spicerack
+from wmflib.interactive import confirm_on_failure
 
 from cookbooks.wmcs.openstack.cloudvirt.drain import Drain
 from cookbooks.wmcs.openstack.cloudvirt.unset_maintenance import UnsetMaintenance
@@ -50,13 +51,9 @@ class SafeRebootRunner(CloudvirtBatchRunnerBase):
         super().__init__(common_opts, args, spicerack)
         self.control_node_fqdn = get_control_nodes(cluster_name=self.cluster)[0]
 
-    def run_on_hosts(self, hosts: RemoteHosts) -> None:
-        if len(hosts) != 1:
-            raise ValueError("safe_reboot does not support on operating on multiple nodes at once")
-        fqdn = str(hosts)
-
+    def _drain(self, fqdn: str) -> None:
         drain_cookbook = Drain(spicerack=self.spicerack)
-        drain_cookbook.get_runner(
+        runner = drain_cookbook.get_runner(
             args=drain_cookbook.argument_parser().parse_args(
                 args=[
                     "--fqdn",
@@ -64,7 +61,16 @@ class SafeRebootRunner(CloudvirtBatchRunnerBase):
                 ]
                 + self.common_opts.to_cli_args(),
             )
-        ).run()
+        )
+
+        confirm_on_failure(runner.run)
+
+    def run_on_hosts(self, hosts: RemoteHosts) -> None:
+        if len(hosts) != 1:
+            raise ValueError("safe_reboot does not support on operating on multiple nodes at once")
+        fqdn = str(hosts)
+
+        self._drain(fqdn)
 
         remote_host = self.spicerack.remote().query(f"D{{{fqdn}}}", use_sudo=True)
         reboot_time = datetime.utcnow()
