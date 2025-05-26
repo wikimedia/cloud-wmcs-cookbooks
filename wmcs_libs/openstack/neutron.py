@@ -107,10 +107,10 @@ class NeutronController:
         """
         cloudnets = self.get_cloudnets()
         cloudnet_agents = [agent for agent in self.openstack_api.get_neutron_agents() if agent.host in cloudnets]
-        for agent in cloudnet_agents:
-            if not agent.admin_state_up or not agent.alive:
-                agents_str = "\n".join(str(agent) for agent in cloudnet_agents)
-                raise NetworkUnhealthy(f"Some agents are not healthy:\n{agents_str}")
+        cloudnet_agents_down = [str(agent) for agent in cloudnet_agents if not agent.admin_state_up or not agent.alive]
+        if cloudnet_agents_down:
+            agents_str = "\n".join(cloudnet_agents_down)
+            raise NetworkUnhealthy(f"Some agents are not healthy:\n{agents_str}")
 
         all_routers = self.openstack_api.get_routers()
         for router in all_routers:
