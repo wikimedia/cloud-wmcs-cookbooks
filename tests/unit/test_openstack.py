@@ -193,32 +193,6 @@ def test_summing_up_two_quota_entries(
                 "neutron_output": "[]",
                 "expected_agents": [],
             },
-            "Linux bridge agent": {
-                "neutron_output": """
-                    [
-                        {
-                            "ID": "29547916-33cd-45d8-b33c-4947921ba728",
-                            "Agent Type": "Linux bridge agent",
-                            "Host": "cloudnet1005",
-                            "Availability Zone": null,
-                            "Alive": true,
-                            "State": true,
-                            "Binary": "neutron-linuxbridge-agent"
-                        }
-                    ]
-                """,
-                "expected_agents": [
-                    NeutronPartialAgent(
-                        agent_id="29547916-33cd-45d8-b33c-4947921ba728",
-                        agent_type=NeutronAgentType.LINUX_BRIDGE_AGENT,
-                        host="cloudnet1005",
-                        availability_zone=None,
-                        alive=True,
-                        admin_state_up=True,
-                        binary="neutron-linuxbridge-agent",
-                    ),
-                ],
-            },
             "OVS agent": {
                 "neutron_output": """
                     [

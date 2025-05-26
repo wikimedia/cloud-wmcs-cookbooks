@@ -268,7 +268,6 @@ class NeutronAgentType(Enum):
 
     L3_AGENT = "L3 agent"
     OVS_AGENT = "Open vSwitch agent"
-    LINUX_BRIDGE_AGENT = "Linux bridge agent"
     DHCP_AGENT = "DHCP agent"
     METADATA_AGENT = "Metadata agent"
 
@@ -279,8 +278,6 @@ class NeutronAgentType(Enum):
             return "l3"
         if self == NeutronAgentType.OVS_AGENT:
             return "open-vswitch"
-        if self == NeutronAgentType.LINUX_BRIDGE_AGENT:
-            return "linux-bridge"
         if self == NeutronAgentType.DHCP_AGENT:
             return "dhcp"
         if self == NeutronAgentType.METADATA_AGENT:
