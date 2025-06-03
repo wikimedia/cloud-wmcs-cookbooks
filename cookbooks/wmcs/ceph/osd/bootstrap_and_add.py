@@ -103,6 +103,15 @@ class BootstrapAndAdd(CookbookBase):
             "Default behavior is to get a cluster-wide number from the catalog.",
         )
         parser.add_argument(
+            "--os-hw-raid",
+            required=False,
+            action="store_true",
+            help=(
+                "Set if the OS drives on the system are a single volume or a hardware raid. This is important "
+                "for systems with a boss card."
+            ),
+        )
+        parser.add_argument(
             "--no-wait",
             required=False,
             action="store_true",
@@ -133,6 +142,7 @@ class BootstrapAndAdd(CookbookBase):
             only_check=args.only_check,
             spicerack=self.spicerack,
             expected_osd_drives=args.expected_osd_drives,
+            os_hw_raid=args.os_hw_raid,
         )
 
 
@@ -170,6 +180,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         batch_size: int,
         spicerack: Spicerack,
         expected_osd_drives: int,
+        os_hw_raid: bool,
     ):
         """Init"""
         self.common_opts = common_opts
@@ -189,6 +200,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
             cluster_name=cluster_name,
             spicerack=self.spicerack,
             expected_drives=expected_osd_drives,
+            os_hw_raid=os_hw_raid,
         )
 
     def run_with_proxy(self) -> None:

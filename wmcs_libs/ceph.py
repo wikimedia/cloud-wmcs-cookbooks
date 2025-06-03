@@ -500,7 +500,14 @@ class CephClusterController(CommandRunnerMixin):
         "isRegex": True,
     }
 
-    def __init__(self, remote: Remote, cluster_name: CephClusterName, spicerack: Spicerack, expected_drives: int = 0):
+    def __init__(
+        self,
+        remote: Remote,
+        cluster_name: CephClusterName,
+        spicerack: Spicerack,
+        os_hw_raid: bool = False,
+        expected_drives: int = 0,
+    ):
         """Init."""
         self._remote = remote
         self.cluster_name = cluster_name
@@ -510,6 +517,7 @@ class CephClusterController(CommandRunnerMixin):
             self.expected_osd_drives_per_host = expected_drives
         else:
             self.expected_osd_drives_per_host = get_osd_drives_count(cluster_name)
+        self.os_hw_raid = os_hw_raid
         self._spicerack = spicerack
         super().__init__(command_runner_node=self._controlling_node)
 
@@ -1364,7 +1372,10 @@ class CephClusterController(CommandRunnerMixin):
 
         LOGGER.info("Checking that we have the right amount of drives in the host...")
         host_devices = osd_controller.do_lsblk()
-        total_expected_devices = OSD_EXPECTED_OS_DRIVES + self.expected_osd_drives_per_host
+        if self.os_hw_raid:
+            total_expected_devices = 1 + self.expected_osd_drives_per_host
+        else:
+            total_expected_devices = OSD_EXPECTED_OS_DRIVES + self.expected_osd_drives_per_host
         if len(host_devices) != total_expected_devices:
             LOGGER.info("    NOOK")
             failures.append(
@@ -1403,23 +1414,40 @@ class CephClusterController(CommandRunnerMixin):
         #       }
         #    ]
         # },
-        devices_with_soft_raid_on_them = [
-            device
-            for device in host_devices
-            if device.get("children", [])
-            and any(
-                child.get("children", []) and child["children"] and child["children"][0].get("name", "") == "md0"
-                for child in device["children"]
-            )
-        ]
-        if len(devices_with_soft_raid_on_them) != OSD_EXPECTED_OS_DRIVES:
-            LOGGER.info("    NOOK")
-            failures.append(
-                "It seems we don't have the expected raids setup on the OS devices, I was expecting "
-                f"{OSD_EXPECTED_OS_DRIVES} setup in software raid, but got {devices_with_soft_raid_on_them}"
-            )
+        if self.os_hw_raid:
+            os_devices = [
+                device
+                for device in host_devices
+                if device.get("children", [])
+                and any(child.get("mountpoint", "") == "/" for child in device["children"])
+            ]
+            if len(os_devices) != 1:
+                LOGGER.info("    NOOK")
+                failures.append(
+                    "It seems we don't have the expected os volume. With "
+                    "os-hw-raid we expect one os volume, "
+                    f"but got {os_devices}"
+                )
+            else:
+                LOGGER.info("    OK")
         else:
-            LOGGER.info("    OK")
+            devices_with_soft_raid_on_them = [
+                device
+                for device in host_devices
+                if device.get("children", [])
+                and any(
+                    child.get("children", []) and child["children"] and child["children"][0].get("name", "") == "md0"
+                    for child in device["children"]
+                )
+            ]
+            if len(devices_with_soft_raid_on_them) != OSD_EXPECTED_OS_DRIVES:
+                LOGGER.info("    NOOK")
+                failures.append(
+                    "It seems we don't have the expected raids setup on the OS devices, I was expecting "
+                    f"{OSD_EXPECTED_OS_DRIVES} setup in software raid, but got {devices_with_soft_raid_on_them}"
+                )
+            else:
+                LOGGER.info("    OK")
 
         return failures
 
