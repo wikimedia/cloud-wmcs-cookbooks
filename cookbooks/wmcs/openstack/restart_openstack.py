@@ -49,6 +49,7 @@ class OpenstackRestart(CookbookBase):
         )
         parser.add_argument("--trove", action="store_true", help="Restart all openstack trove services")
         parser.add_argument("--magnum", action="store_true", help="Restart all openstack magnum services")
+        parser.add_argument("--octavia", action="store_true", help="Restart all openstack octavia services")
         parser.add_argument("--heat", action="store_true", help="Restart all openstack magnum services")
         parser.add_argument("--swift", action="store_true", help="Restart all openstack swift services")
         parser.add_argument("--designate", action="store_true", help="Restart all openstack swift services")
@@ -152,6 +153,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
             "trove": ["trove-api", "trove-conductor", "trove-taskmanager"],
             "heat": ["heat-api", "heat-api-cfn", "heat-engine"],
             "magnum": ["magnum-api", "magnum-conductor"],
+            "octavia": ["octavia-api", "octavia-worker", "octavia-housekeeping", "octavia-health-manager"],
             "neutron": ["neutron-api", "neutron-rpc-server"],
         }
 
@@ -210,6 +212,8 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
             restart_list.extend(self.get_misc_service_list("glance"))
         if vars(self.args)["magnum"] or self.args.all_services:
             restart_list.extend(self.get_misc_service_list("magnum"))
+        if vars(self.args)["octavia"] or self.args.all_services:
+            restart_list.extend(self.get_misc_service_list("octavia"))
         if vars(self.args)["heat"] or self.args.all_services:
             restart_list.extend(self.get_misc_service_list("heat"))
 
