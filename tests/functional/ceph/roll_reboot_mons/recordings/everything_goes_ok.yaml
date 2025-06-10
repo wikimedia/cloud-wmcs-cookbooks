@@ -22,7 +22,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -90,7 +90,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -142,7 +142,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -194,7 +194,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -244,7 +244,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -294,7 +294,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -344,7 +344,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -410,7 +410,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -438,7 +438,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -464,7 +464,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -490,7 +490,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -516,7 +516,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -542,7 +542,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -570,7 +570,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -598,7 +598,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -624,7 +624,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -650,7 +650,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -676,7 +676,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
@@ -704,7 +704,7 @@ output: '
   (stable)","ceph_version_short":"15.2.16","cpu":"Intel(R) Xeon(R) Silver 4214
   CPU @ 2.20GHz","distro":"debian","distro_description":"Debian GNU/Linux 11
   (bullseye)","distro_version":"11","frontend_config#0":"civetweb
-  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2004-dev","kernel_description":"#1
+  port=18080","frontend_type#0":"civetweb","hostname":"cloudcontrol2010-dev","kernel_description":"#1
   SMP Debian 5.10.158-2
   (2022-12-13)","kernel_version":"5.10.0-20-amd64","mem_swap_kb":"999420","mem_total_kb":"131631368","num_handles":"1","os":"Linux","pid":"1026","zone_id":"ea51385c-8fae-436c-baee-aaa777dabb96","zone_name":"default","zonegroup_id":"5f2a2fad-3549-48f8-9af2-c862fb1f7034","zonegroup_name":"default"},"task_status":{}}}}}},"progress_events":{}}'
 params:
