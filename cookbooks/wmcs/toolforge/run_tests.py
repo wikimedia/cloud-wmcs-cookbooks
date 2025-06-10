@@ -50,6 +50,11 @@ class ToolforgeRunTests(CookbookBase):
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument("--branch", default="main", help="branch to run tests on")
         parser.add_argument("--filter-tags", action="append", default=[], help="filter tests with the given tags")
+        parser.add_argument(
+            "--component",
+            default=None,
+            help="component to run the tests for, will run all the tests if no component is passed",
+        )
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
@@ -58,6 +63,7 @@ class ToolforgeRunTests(CookbookBase):
             spicerack=self.spicerack,
             filter_tags=args.filter_tags,
             branch=args.branch,
+            component=args.component,
         )
 
 
@@ -73,20 +79,22 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         filter_tags: list[str],
         spicerack: Spicerack,
         branch: str = "main",
-    ):
+        component: str | None = None,
+    ):  # pylint: disable=too-many-arguments
         """Init"""
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         self.filter_tags = filter_tags
         self.branch = branch
+        self.component = component
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
-        test_result = self.run_tests(filter_tags=self.filter_tags, branch=self.branch)
+        test_result = self.run_tests(filter_tags=self.filter_tags, branch=self.branch, component=self.component)
         if "FAILED" in test_result["status"]:
             raise Exception(f"FAILED:\n{test_result['logs']}")
 
-    def run_tests(self, filter_tags: list[str], branch: str) -> dict[str, str]:
+    def run_tests(self, filter_tags: list[str], branch: str, component: str | None) -> dict[str, str]:
         site = self.cluster_name.get_openstack_cluster_name().get_site()
         bastions_fqdns = (
             get_static_inventory()[site]
@@ -95,18 +103,28 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         )
         chosen_bastion = bastions_fqdns[0]
         bastion_node = self.spicerack.remote().query(f"D{{{chosen_bastion}}}", use_sudo=True)
+        command = [
+            "env",
+            "TERM=xterm-256color",
+            "toolforge-deploy/utils/run_functional_tests.sh",
+            "--refetch-tests",
+            "--branch",
+            branch,
+        ]
+        if component:
+            command.extend(
+                [
+                    "--component",
+                    component,
+                ]
+            )
+        # -- to separate args for the script from args for bats
+        command.append("--")
+        if filter_tags:
+            command.extend([f"--filter-tags {tag}" for tag in filter_tags])
         test_logs = run_one_raw(
             # TERM needed for bats(tput actually) to run properly
-            command=[
-                "env",
-                "TERM=xterm-256color",
-                "toolforge-deploy/utils/run_functional_tests.sh",
-                "-r",
-                "-b",
-                branch,
-                "--",
-            ]
-            + [f"--filter-tags {tag}" for tag in filter_tags],
+            command=command,
             user=TESTS_USER,
             node=bastion_node,
             capture_errors=True,
@@ -117,10 +135,14 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         if test_logs.count(" 0 failures") != 2:  # both admin and tools tests must all pass
             status = "🗷 FAILED"
 
-        if filter_tags:
-            status += f" (ran tests {filter_tags})"
-        else:
+        if not filter_tags and not component:
             status += " (ran all tests)"
+        elif component and filter_tags:
+            status += f" (ran tests for component '{component}' with filters {filter_tags} )"
+        elif component:
+            status += f" (ran tests for component '{component}')"
+        else:
+            status += f" (ran tests for all components with filters {filter_tags})"
 
         return {
             "status": status,

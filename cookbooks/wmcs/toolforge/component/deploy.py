@@ -87,6 +87,11 @@ class ToolforgeComponentDeploy(CookbookBase):
             help="If passed, will skip running the tests.",
         )
         parser.add_argument(
+            "--run-all-tests",
+            action="store_true",
+            help="If passed, will run all the tests, not only the ones related to the given component.",
+        )
+        parser.add_argument(
             "--no-wait",
             action="store_true",
             help="(k8s components only) If passed, it will not wait for the helm deployment to finish up.",
@@ -102,6 +107,7 @@ class ToolforgeComponentDeploy(CookbookBase):
             run_tests=not args.skip_tests,
             wait=not args.no_wait,
             filter_tags=args.filter_tags,
+            run_all_tests=args.run_all_tests,
             spicerack=self.spicerack,
         )
 
@@ -125,6 +131,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         run_tests: bool,
         wait: bool,
         filter_tags: list[str],
+        run_all_tests: bool,
         spicerack: Spicerack,
     ):
         """Init"""
@@ -133,6 +140,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self.component = component
         self.git_branch = git_branch or f"bump_{component}"
         self.run_tests = run_tests
+        self.run_all_tests = run_all_tests
         self.wait = wait
         self.filter_tags = filter_tags
         if filter_tags and not run_tests:
@@ -166,6 +174,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
                 branch=self.git_branch,
                 filter_tags=self.filter_tags,
                 component=self.component,
+                run_all_tests=self.run_all_tests,
             )
 
             if "PASSED" not in tests_results["status"]:
@@ -177,6 +186,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         branch: str,
         filter_tags: list[str],
         component: str,
+        run_all_tests: bool,
     ) -> dict[str, str]:
         tests_cookbook = ToolforgeRunTestsRunner(
             common_opts=self.common_opts,
@@ -186,7 +196,9 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             branch=branch,
             filter_tags=filter_tags,
         )
-        test_results = tests_cookbook.run_tests(filter_tags=filter_tags, branch=branch)
+        test_results = tests_cookbook.run_tests(
+            filter_tags=filter_tags, branch=branch, component=None if run_all_tests else component
+        )
 
         try:
             self._send_mr_comment(
