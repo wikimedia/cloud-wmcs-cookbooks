@@ -106,11 +106,11 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
 
         if self.loki_version:
             image_ctrl.update_image(
-                pull_url=f"docker.io/grafana/loki/{self.loki_version}",
+                pull_url=f"docker.io/grafana/loki:{self.loki_version}",
                 push_url=f"{self.image_repo_url}/grafana/loki:{self.loki_version}",
             )
         if self.alloy_version:
             image_ctrl.update_image(
-                pull_url=f"docker.io/grafana/alloy/v{self.alloy_version}",
+                pull_url=f"docker.io/grafana/alloy:v{self.alloy_version}",
                 push_url=f"{self.image_repo_url}/grafana/alloy:v{self.alloy_version}",
             )
