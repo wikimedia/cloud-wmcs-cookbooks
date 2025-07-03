@@ -172,7 +172,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
                 command=[
                     "DEBIAN_FRONTEND=noninteractive",
                     "apt-get",
-                    "dist-upgrade",
+                    "upgrade",
                     "-y",
                     "--allow-downgrades",
                     "-o",
