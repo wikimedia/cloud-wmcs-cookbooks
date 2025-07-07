@@ -28,5 +28,11 @@ class Aptly(CommandRunnerMixin):
     def publish(self, repository: str):
         """Publishes updates to a repository."""
         self.run_raw(
-            "aptly", "publish", "update", "--skip-signing", repository, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT
+            "aptly",
+            "-architectures=arm64,amd64,all",
+            "publish",
+            "update",
+            "--skip-signing",
+            repository,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
         )

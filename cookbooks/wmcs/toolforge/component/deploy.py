@@ -52,6 +52,7 @@ COMPONENT_TO_PACKAGE_NAME = {
     "components-cli": "toolforge-components-cli",
     "envvars-cli": "toolforge-envvars-cli",
     "jobs-cli": "toolforge-jobs-framework-cli",
+    "misctools-cli": "toolforge-misctools-cli",
     "toolforge-cli": "toolforge-cli",
     "toolforge-weld": "python3-toolforge-weld",
     "tools-webservice": "toolforge-webservice",
@@ -264,6 +265,31 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
 
         return logs
 
+    def _download_packages(self, component: str, artifact_urls: list[str], service_node: RemoteHosts) -> list[Path]:
+        package_paths: list[Path] = []
+        package = COMPONENT_TO_PACKAGE_NAME[component]
+        for artifact_url in artifact_urls:
+            script = f"""
+    set -o errexit
+    set -o nounset
+    set -o pipefail
+
+    mkdir -p "{self.random_dir}"
+    cd "{self.random_dir}"
+    wget "{artifact_url}" -O artifacts
+    unzip artifacts
+    """
+            run_script(script=script, node=service_node, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
+
+        paths = run_one_raw(
+            command=["ls", f"{self.random_dir}/debs/{package}*.deb"],
+            node=service_node,
+            cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+        ).splitlines()
+        for path in paths:
+            package_paths.append(Path(path))
+        return package_paths
+
     def _upload_package_to_repos(
         self,
         cluster_name: ToolforgeKubernetesClusterName,
@@ -278,7 +304,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         )[0]
         service_node = self.spicerack.remote().query(f"D{{{service_node_fqdn}}}", use_sudo=True)
 
-        artifacts_url = self.gitlab_controller.get_artifacts_url(component=component, branch=branch or "main")
+        artifact_urls = self.gitlab_controller.get_artifact_urls(component=component, branch=branch or "main")
 
         project = cluster_name.value
         LOGGER.info(
@@ -286,37 +312,26 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             service_node_fqdn,
             self.random_dir,
         )
-        package = COMPONENT_TO_PACKAGE_NAME[component]
-        script = f"""
-set -o errexit
-set -o nounset
-set -o pipefail
-
-mkdir -p "{self.random_dir}"
-cd "{self.random_dir}"
-wget "{artifacts_url}"
-unzip artifacts
-"""
-        run_script(script=script, node=service_node, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
-
-        package_path = Path(
-            run_one_raw(
-                command=["ls", f"{self.random_dir}/debs/{package}*.deb"],
-                node=service_node,
-                cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
-            )
+        package_paths = self._download_packages(
+            component=component, artifact_urls=artifact_urls, service_node=service_node
         )
         aptly = Aptly(command_runner_node=service_node)
         for distro in SUPPORTED_DISTROS:
+            # TODO: remove once we don't have buster bastions
+            if component == "misctools-cli" and distro == "buster":
+                continue
+
             repo = f"{distro}-{project}"
             LOGGER.info("INFO: Publishing artifacts on repo %s", repo)
-            aptly.add(package_path=package_path, repository=repo)
+            for package_path in package_paths:
+                aptly.add(package_path=package_path, repository=repo)
             aptly.publish(repository=repo)
 
         self._cleanup_temp_dir(node=service_node)
 
-        # We rely on the format <package>_<version>_all.deb
-        package_version = package_path.name.split(f"{package}_", 1)[-1].rsplit("_all.deb", 1)[0]
+        # We rely on the format <package>_<version>_<arch>.deb
+        package = COMPONENT_TO_PACKAGE_NAME[component]
+        package_version = package_paths[0].name.split(f"{package}_", 1)[-1].rsplit("_", 1)[0]
         return package_version
 
     def _install_package_on_bastions(
@@ -329,6 +344,11 @@ unzip artifacts
             .clusters_by_type[cluster_name.get_type()][cluster_name]
             .nodes_by_role[ToolforgeKubernetesNodeRoleName.BASTION]
         )
+        # We can't install misctools that's built for a newer debian in the old bastions,
+        # so remove if that's the case
+        # TODO: remove once we don't have buster bastions
+        if component == "misctools-cli" and "tools-sgebastion-10.tools.eqiad1.wikimedia.cloud" in bastions_fqdns:
+            bastions_fqdns.pop(bastions_fqdns.index("tools-sgebastion-10.tools.eqiad1.wikimedia.cloud"))
         bastions = self.spicerack.remote().query(f"D{{{','.join(bastions_fqdns)}}}", use_sudo=True)
 
         package = COMPONENT_TO_PACKAGE_NAME[component]

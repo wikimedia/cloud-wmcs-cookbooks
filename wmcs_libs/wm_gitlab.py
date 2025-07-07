@@ -45,12 +45,16 @@ def _do_get_list(path: str, **kwargs) -> list[dict[str, Any]]:
     return cast(list[dict[str, Any]], _do_get_dict(path=path, **kwargs))
 
 
-def get_package_job(project: dict[str, Any], pipeline: dict[str, Any]) -> dict[str, Any]:
+def get_package_jobs(project: dict[str, Any], pipeline: dict[str, Any]) -> list[dict[str, Any]]:
+    jobs: list[dict[str, Any]] = []
     for job in _do_get_list(f"/projects/{project['id']}/pipelines/{pipeline['id']}/jobs"):
-        if job["name"] == PACKAGE_JOB_NAME:
-            return job
+        if job["name"] == PACKAGE_JOB_NAME or job["name"].startswith(PACKAGE_JOB_NAME):
+            jobs.append(job)
 
-    raise Exception(f"Unable to find a package job({PACKAGE_JOB_NAME}) in pipeline {pipeline['web_url']}")
+    if not jobs:
+        raise Exception(f"Unable to find any package job({PACKAGE_JOB_NAME}) in pipeline {pipeline['web_url']}")
+
+    return jobs
 
 
 def get_mr(project: dict[str, Any], mr_number: int) -> dict[str, Any]:
@@ -138,7 +142,7 @@ class GitlabController:
         maybe_jobs = [
             job
             for job in project.jobs.list(get_all=False, query_params={"scope[]": ["success", "pending"]})
-            if job.name == PACKAGE_JOB_NAME and job.ref == branch
+            if job.name.startswith(PACKAGE_JOB_NAME) and job.ref == branch
         ]
         if not maybe_jobs:
             raise Exception(f"Unable to find package build job for component {component}, branch {branch}")
@@ -150,7 +154,7 @@ class GitlabController:
             maybe_jobs = [
                 job
                 for job in project.jobs.list(get_all=False, query_params={"scope[]": ["success", "pending"]})
-                if job.name == PACKAGE_JOB_NAME and job.ref == branch
+                if job.name.startswith(PACKAGE_JOB_NAME) and job.ref == branch
             ]
             if not maybe_jobs:
                 raise Exception(f"Unable to find project for component {component}")
@@ -158,19 +162,24 @@ class GitlabController:
 
         return job.id
 
-    def get_artifacts_url(self, component: str, branch: str) -> str:
+    def get_artifact_urls(self, component: str, branch: str) -> list[str]:
         project = get_project(component=component)
         try:
             mr_number = get_branch_mr(project=project, branch=branch)
             LOGGER.info("Found mr %d for branch %s", mr_number, branch)
             pipeline = get_last_pipeline(project=project, mr_number=mr_number)
-            package_job_id = get_package_job(project=project, pipeline=pipeline)["id"]
+            package_jobs_ids = [
+                package_job["id"] for package_job in get_package_jobs(project=project, pipeline=pipeline)
+            ]
         except MrNotFound:
             LOGGER.info("No mr found for branch %s, using latest branch package job", branch)
             # we try to get it from the branch directly, instead of an open MR
-            package_job_id = self.get_artifact_job_id_from_branch(branch=branch, component=component)
+            package_jobs_ids = [self.get_artifact_job_id_from_branch(branch=branch, component=component)]
 
-        return f"{GITLAB_API_BASE_URL}/projects/{project['id']}/jobs/{package_job_id}/artifacts"
+        return [
+            f"{GITLAB_API_BASE_URL}/projects/{project['id']}/jobs/{package_job_id}/artifacts"
+            for package_job_id in package_jobs_ids
+        ]
 
     def get_file_at_commit(self, project: str, file_path: str, commit_sha: str) -> str:
         project_id = self.get_project_id_by_name(project_name=project)
