@@ -1414,7 +1414,11 @@ class CephClusterController(CommandRunnerMixin):
             cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
             capture_errors=True,
         )
+        # Check return output for Octopus version:
         if "are ok to stop without reducing availability or risking data" in result:
+            return []
+        # Check return output for Pacific and later:
+        if '"ok_to_stop":true' in result:
             return []
 
         return [result]
