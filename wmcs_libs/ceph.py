@@ -408,6 +408,34 @@ class CephOSDNodeController:
 
         return _is_disk() and _does_not_have_partitions() and _its_not_mounted()
 
+    def _dir_exists(self, dirpath):
+        try:
+            run_one_raw(
+                command=["test", "-d", dirpath],
+                node=self._node,
+                cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+            )
+        except RemoteExecutionError:
+            return False
+
+        return True
+
+    def _is_device_ready_for_activation(self, device_info: dict[str, Any], osd_id: str) -> bool:
+        def _is_disk() -> bool:
+            return device_info.get("type") == "disk"
+
+        def _has_one_partition() -> bool:
+            return len(device_info.get("children", [])) == 1
+
+        def _its_not_mounted() -> bool:
+            return not device_info.get("mountpoint")
+
+        def _no_osd_dir() -> bool:
+            osd_dir = f"/var/lib/ceph/osd/ceph-{osd_id}"
+            return not self._dir_exists(osd_dir)
+
+        return _is_disk() and _has_one_partition() and _its_not_mounted() and _no_osd_dir()
+
     def do_lsblk(self, device: str | None = None) -> list[dict[str, Any]]:
         """Simple lsblk on the host to get the devices."""
         command = ["lsblk", "--json", "--bytes"]
@@ -429,12 +457,33 @@ class CephOSDNodeController:
 
         return structured_output["blockdevices"]
 
+    def get_osd_partitions(self) -> dict:
+        """Get data about existing ceph partitions"""
+        lvm_info = run_one_formatted(command=["ceph-volume", "lvm", "list", "--format", "json"], node=self._node)
+        if not isinstance(lvm_info, dict):
+            raise TypeError(f"Was expecting a dict, got {lvm_info}")
+        return lvm_info
+
     def get_available_devices(self) -> list[str]:
         """Get the current available devices in the node."""
         return [
             f"/dev/{device_info['name']}"
             for device_info in self.do_lsblk()
             if self._is_device_available(device_info=device_info)
+        ]
+
+    def get_inactive_devices(self) -> list[str]:
+        """Get the current available devices in the node."""
+        ceph_lvm_info = self.get_osd_partitions()
+        lvm_dict = {lvm[0]["devices"][0]: lvm[0]["tags"]["ceph.osd_id"] for lvm in list(ceph_lvm_info.values())}
+
+        return [
+            f"/dev/{device_info['name']}"
+            for device_info in self.do_lsblk()
+            if f'/dev/{device_info["name"]}' in lvm_dict
+            and self._is_device_ready_for_activation(
+                device_info=device_info, osd_id=lvm_dict[f'/dev/{device_info["name"]}']
+            )
         ]
 
     def zap_device(self, device_path: str) -> None:
@@ -448,6 +497,10 @@ class CephOSDNodeController:
         """Setup and start a new osd on the given device."""
         run_one_raw(command=["ceph-volume", "lvm", "create", "--bluestore", "--data", device_path], node=self._node)
 
+    def activate_osd(self, osd_id, fsid) -> None:
+        """Start an existing osd on the given device."""
+        run_one_raw(command=["ceph-volume", "lvm", "activate", osd_id, fsid], node=self._node)
+
     def add_all_available_devices(self, interactive: bool = True) -> None:
         """Discover and add all the available devices of the node as new OSDs."""
         available_devices = self.get_available_devices()
@@ -459,6 +512,37 @@ class CephOSDNodeController:
         for device_path in available_devices:
             self.zap_device(device_path=device_path)
             self.initialize_and_start_osd(device_path=device_path)
+
+    def activate_inactive_devices(self, interactive: bool = True) -> None:
+        """Re-enable osd devices that ceph mons know about but which are inactive on the osd node"""
+
+        inactive_devices = self.get_inactive_devices()
+        if interactive and inactive_devices:
+            ask_confirmation(f"I'm going to activate OSDs {', '.join(inactive_devices)} on {self.node_fqdn}.")
+
+        ceph_lvm_info = self.get_osd_partitions()
+
+        for osd_id, partitions in ceph_lvm_info.items():
+            if len(partitions) != 1:
+                LOGGER.warning(
+                    "Ceph osd %s has %d  partitions associated. We don't know what to do with that.",
+                    osd_id,
+                    len(partitions),
+                )
+                continue
+            partition = partitions[0]
+            if partition["devices"][0] in inactive_devices:
+                if len(list(partition["devices"])) != 1:
+                    LOGGER.warning(
+                        "Ceph osd partition %s has %d volumes. We don't know what to do with that.",
+                        osd_id,
+                        len(partition["devices"]),
+                    )
+                    continue
+
+                fsid = partition["tags"]["ceph.osd_fsid"]
+                LOGGER.info("activating osd %s on device %s, fsid %s", osd_id, partition["devices"][0], fsid)
+                self.activate_osd(osd_id, partition["tags"]["ceph.osd_fsid"])
 
     def check_jumbo_frames(self) -> bool:
         """Check if this node network is ready to be setup as a new osd.
