@@ -830,6 +830,15 @@ class OpenstackAPI(CommandRunnerMixin):
         if availability_zone:
             availability_zone_opt.extend(["--availability-zone", availability_zone])
 
+        # HACK: Do not create any more instances in the legacy network (T398625)
+        if network in ("VLAN/legacy", "7425e328-560c-4f00-8e99-706f3fb90bb4"):
+            LOGGER.warning(
+                "New server %s: overriding requested network %s to VXLAN/dualstack",
+                name,
+                network,
+            )
+            network = "VXLAN/dualstack"
+
         out = self.run_formatted_as_dict(
             "server",
             "create",
