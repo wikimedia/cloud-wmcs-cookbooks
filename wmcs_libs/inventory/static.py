@@ -119,7 +119,7 @@ _INVENTORY: Inventory = {
                             "cloudcephmon2006-dev.codfw.wmnet",
                         ]
                     },
-                    osd_drives_count=2,
+                    osd_drives_count=8,
                 )
             },
             ClusterType.OPENSTACK: {
