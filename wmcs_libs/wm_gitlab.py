@@ -15,7 +15,7 @@ PACKAGE_JOB_NAME = "package:deb"
 # Gotten from the gitlab group page
 TOOLFORGE_GROUP_ID = 203
 CLI_TO_PACKAGE_NAME = {
-    "jobs-cli": "toolforge-jobs-framework-cli",
+    "jobs-cli": "toolforge-jobs-cli",
     "tools-webservice": "toolforge-webservice",
     "envvars-cli": "toolforge-envvars-cli",
     "builds-cli": "toolforge-builds-cli",
