@@ -102,6 +102,11 @@ class CreateProject(CookbookBase):
             action="store_true",
             help="If set, it will not send a merge request to tofu." " Useful if you already merged the MR manually.",
         )
+        parser.add_argument(
+            "--skip-tofu-apply",
+            action="store_true",
+            help="If set, it will not run 'tofu apply'." " Useful if you already applied the tofu changes manually.",
+        )
 
         for quota_name in OpenstackQuotaName:
             parser.add_argument(
@@ -139,6 +144,7 @@ class CreateProject(CookbookBase):
             trove_only=args.trove_only,
             users=args.users,
             skip_mr=args.skip_mr,
+            skip_tofu_apply=args.skip_tofu_apply,
             quotas=quotas,
             spicerack=self.spicerack,
         )
@@ -155,6 +161,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         cluster_name: OpenstackClusterName,
         users: list[str],
         skip_mr: bool,
+        skip_tofu_apply: bool,
         quotas: list[OpenstackQuotaEntry],
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
@@ -169,6 +176,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         self.users = users
         self.quotas = quotas
         self.skip_mr = skip_mr
+        self.skip_tofu_apply = skip_tofu_apply
 
         self.common_opts = common_opts
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -380,12 +388,13 @@ module "project_{self.common_opts.project}" {{
 
             self._wait_for_merged_loop(change_mr=change_mr)
 
-        OpenstackTofuRunner(
-            common_opts=self.common_opts,
-            plan=True,
-            apply=True,
-            spicerack=self.spicerack,
-        ).run()
+        if not self.skip_tofu_apply:
+            OpenstackTofuRunner(
+                common_opts=self.common_opts,
+                plan=True,
+                apply=True,
+                spicerack=self.spicerack,
+            ).run()
 
         # NOTE! change to the newly created project
         self.openstack_api.project = self.common_opts.project
