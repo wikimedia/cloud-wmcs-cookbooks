@@ -16,7 +16,7 @@ PACKAGE_JOB_NAME = "package:deb"
 TOOLFORGE_GROUP_ID = 203
 CLI_TO_PACKAGE_NAME = {
     "jobs-cli": "toolforge-jobs-cli",
-    "tools-webservice": "toolforge-webservice",
+    "webservice-cli": "toolforge-webservice",
     "envvars-cli": "toolforge-envvars-cli",
     "builds-cli": "toolforge-builds-cli",
     "toolforge-cli": "toolforge-cli",

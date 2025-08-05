@@ -55,7 +55,7 @@ COMPONENT_TO_PACKAGE_NAME = {
     "misctools-cli": "toolforge-misctools-cli",
     "toolforge-cli": "toolforge-cli",
     "toolforge-weld": "python3-toolforge-weld",
-    "tools-webservice": "toolforge-webservice",
+    "webservice-cli": "toolforge-webservice",
 }
 
 
