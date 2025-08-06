@@ -318,7 +318,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         aptly = Aptly(command_runner_node=service_node)
         for distro in SUPPORTED_DISTROS:
             # TODO: remove once we don't have buster bastions
-            if component == "misctools-cli" and distro == "buster":
+            if component in ["misctools-cli", "webservice-cli"] and distro == "buster":
                 continue
 
             repo = f"{distro}-{project}"
