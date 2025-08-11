@@ -209,6 +209,52 @@ params:
     skip_first_line: false
 repeat_num: 1
 ---
+output: 'Loading packages...
+
+  [+] toolforge-builds-cli_0.0.18_all added'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - aptly
+    - repo
+    - add
+    - trixie-toolsbeta
+    - /tmp/cookbook-toolforge-k8s-component-deploy-fdcrnrnjgx/debs/toolforge-builds-cli_0.0.18_all.deb
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
+output: 'Loading packages...
+
+  Generating metadata files and linking package files...
+
+  Finalizing metadata files...
+
+  Cleaning up prefix "." components main...
+
+
+  Publish for local repo ./trixie-toolsbeta [all, amd64] publishes {main: [trixie-toolsbeta]:
+  Toolforge beta packages for Debian 13 (Trixie)} has been successfully updated.'
+params:
+  args: []
+  kwargs:
+    capture_errors: false
+    command:
+    - aptly
+    - publish
+    - update
+    - --skip-signing
+    - trixie-toolsbeta
+    cumin_params: non-serializable
+    last_line_only: false
+    node: non-serializable
+    skip_first_line: false
+repeat_num: 1
+---
 output: '
 
   WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
