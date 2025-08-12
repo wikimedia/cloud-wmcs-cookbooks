@@ -111,3 +111,4 @@ class ToolforgeKubernetesCluster(Cluster):
     security_group_name: str
     nodes_by_role: dict[ToolforgeKubernetesNodeRoleName, list[str]]
     api_vip_fqdn: str
+    prometheus_url: str

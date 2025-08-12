@@ -133,7 +133,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
             return "for all nodes"
         return f"for {', '.join(self.hostname_list)}"
 
-    def run(self) -> None:
+    def run_with_proxy(self) -> None:
         """Main entry point"""
         control_nodes = get_control_nodes(self.cluster_name)
         control_node_fqdn = control_nodes[0]
