@@ -103,6 +103,14 @@ class BootstrapAndAdd(CookbookBase):
             "Default behavior is to get a cluster-wide number from the catalog.",
         )
         parser.add_argument(
+            "--expected-ceph-version",
+            required=False,
+            default="",
+            type=str,
+            help="Expected ceph package version. "
+            "Default behavior is to get a cluster-wide setting from the catalog.",
+        )
+        parser.add_argument(
             "--os-hw-raid",
             required=False,
             action="store_true",
@@ -142,6 +150,7 @@ class BootstrapAndAdd(CookbookBase):
             only_check=args.only_check,
             spicerack=self.spicerack,
             expected_osd_drives=args.expected_osd_drives,
+            expected_ceph_version=args.expected_ceph_version,
             os_hw_raid=args.os_hw_raid,
         )
 
@@ -180,6 +189,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         batch_size: int,
         spicerack: Spicerack,
         expected_osd_drives: int,
+        expected_ceph_version: str,
         os_hw_raid: bool,
     ):
         """Init"""
@@ -200,6 +210,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
             cluster_name=cluster_name,
             spicerack=self.spicerack,
             expected_drives=expected_osd_drives,
+            expected_version=expected_ceph_version,
             os_hw_raid=os_hw_raid,
         )
 

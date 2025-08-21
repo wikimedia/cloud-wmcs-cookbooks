@@ -41,3 +41,4 @@ class CephCluster(Cluster):
     name: CephClusterName
     nodes_by_role: dict[CephNodeRoleName, list[str]]
     osd_drives_count: int
+    expected_ceph_version: str

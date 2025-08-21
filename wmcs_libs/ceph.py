@@ -31,6 +31,7 @@ from wmcs_libs.common import (
 from wmcs_libs.inventory.ceph import CephClusterName, CephNodeRoleName
 from wmcs_libs.inventory.libs import (
     generic_get_node_cluster_name,
+    get_expected_ceph_version,
     get_node_inventory_info,
     get_nodes_by_role,
     get_osd_drives_count,
@@ -561,6 +562,18 @@ class CephOSDNodeController:
 
         return True
 
+    def get_ceph_version(self) -> str:
+        """Return the version of the installed ceph-osd package"""
+        try:
+            return run_one_raw(
+                command=["dpkg -l | awk '$2==\"ceph-osd\" { print $3 }' "],
+                node=self._node,
+                cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+            )
+        except RemoteExecutionError as err:
+            LOGGER.warning("Failed ceph-osd version check %s", str(err))
+            return ""
+
     def stop_osd(self, osd_id: int) -> str:
         """Stops an osd daemon."""
         return run_one_raw(
@@ -591,7 +604,8 @@ class CephClusterController(CommandRunnerMixin):
         spicerack: Spicerack,
         os_hw_raid: bool = False,
         expected_drives: int = 0,
-    ):
+        expected_version: str = "",
+    ):  # pylint: disable=too-many-arguments
         """Init."""
         self._remote = remote
         self.cluster_name = cluster_name
@@ -601,6 +615,10 @@ class CephClusterController(CommandRunnerMixin):
             self.expected_osd_drives_per_host = expected_drives
         else:
             self.expected_osd_drives_per_host = get_osd_drives_count(cluster_name)
+        if expected_version:
+            self.expected_ceph_version = expected_version
+        else:
+            self.expected_ceph_version = get_expected_ceph_version(cluster_name)
         self.os_hw_raid = os_hw_raid
         self._spicerack = spicerack
         super().__init__(command_runner_node=self._controlling_node)
@@ -1448,6 +1466,16 @@ class CephClusterController(CommandRunnerMixin):
         Returns a list of any failures that happened.
         """
         failures: list[str] = []
+        LOGGER.info(
+            "Checking installed package version...",
+        )
+        node_ceph_version = osd_controller.get_ceph_version()
+        if not node_ceph_version.startswith(self.expected_ceph_version):
+            failures.append(
+                "Expecting ceph version %s.x, found installed packages for %s"
+                % (self.expected_ceph_version, node_ceph_version)
+            )
+            LOGGER.info("    NOOK")
 
         LOGGER.info(
             "Checking that jumbo frames are allowed to all other nodes in the cluster...",

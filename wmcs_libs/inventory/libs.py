@@ -262,6 +262,17 @@ def get_osd_drives_count(cluster_name: CephClusterName, inventory: Inventory | N
     return cluster.osd_drives_count
 
 
+def get_expected_ceph_version(cluster_name: CephClusterName, inventory: Inventory | None = None) -> str:
+    """Get the expected ceph package version for a given Ceph cluster."""
+    if inventory is None:
+        inventory = get_static_inventory()
+
+    site = cluster_name.get_site()
+    cluster = cast(CephCluster, inventory[site].clusters_by_type[ClusterType.CEPH][cluster_name])
+
+    return cluster.expected_ceph_version
+
+
 def get_openstack_internal_network_name(cluster_name: OpenstackClusterName, inventory: Inventory | None = None) -> str:
     """Get the openstack internal network name."""
     if inventory is None:

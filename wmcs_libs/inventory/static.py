@@ -43,6 +43,7 @@ _INVENTORY: Inventory = {
                         ]
                     },
                     osd_drives_count=8,
+                    expected_ceph_version="16",
                 )
             },
             ClusterType.OPENSTACK: {
@@ -122,6 +123,7 @@ _INVENTORY: Inventory = {
                         ]
                     },
                     osd_drives_count=8,
+                    expected_ceph_version="17",
                 )
             },
             ClusterType.OPENSTACK: {

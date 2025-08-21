@@ -62,6 +62,7 @@ class Reactivate(bootstrap_and_add.BootstrapAndAdd):
             only_check=args.only_check,
             spicerack=self.spicerack,
             expected_osd_drives=args.expected_osd_drives,
+            expected_ceph_version=args.expected_ceph_version,
             os_hw_raid=args.os_hw_raid,
         )
 
