@@ -76,7 +76,7 @@ class UndrainNode(CookbookBase):
         parser.add_argument(
             "--batch-size",
             required=False,
-            default=0,
+            default=2,
             type=int,
             help="Amount of osd daemons to undrain at a time (0 for no batches).",
         )
