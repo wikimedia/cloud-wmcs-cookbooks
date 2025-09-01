@@ -351,6 +351,43 @@ class KubernetesController:
             f"{json.dumps(cur_conditions, indent=4)}"
         )
 
+    def get_deployment(self, deployment: str, namespace: str) -> dict[str, Any]:
+        return run_one_as_dict(
+            command=["kubectl", "-n", namespace, "get", "deployment", "-o", "json", deployment],
+            node=self._controlling_node,
+            try_format=OutputFormat.JSON,
+            cumin_params=CuminParams(is_safe=True, print_output=False, print_progress_bars=False),
+        )
+
+    def wait_for_deployment_replicas(
+        self,
+        deployment: str,
+        namespace: str,
+        num_replicas: int,
+        check_interval_seconds: int = 10,
+        timeout_seconds: int = 600,
+    ) -> None:
+        """Wait for a given k8s node to be in READY status."""
+        start_time = time.time()
+        cur_time = start_time
+
+        while cur_time - start_time < timeout_seconds:
+            deployment_data = self.get_deployment(deployment=deployment, namespace=namespace)
+            if deployment_data["status"]["replicas"] == num_replicas:
+                return
+
+            time.sleep(check_interval_seconds)
+            cur_time = time.time()
+
+        # timed out!
+        deployment_data = self.get_deployment(deployment=deployment, namespace=namespace)
+        cur_conditions = deployment_data["conditions"]
+        raise KubernetesTimeoutForNotReady(
+            f"Waited {timeout_seconds} for deployment {deployment} (namespace:{namespace}) to "
+            "have {num_replicas} replicas, but it never did. Current conditions:\n"
+            f"{json.dumps(cur_conditions, indent=4)}"
+        )
+
     def reboot_node(
         self, node_hostname: str, domain: str
     ) -> Generator[KubernetesRebootNodePhase, KubernetesRebootNodePhase, KubernetesRebootNodePhase]:
@@ -409,6 +446,12 @@ class KubernetesController:
         fqdn = f"{skip_hostname}.{cluster_name.get_project()}.{domain}"
         LOGGER.debug("Finding next control node that is not %s", fqdn)
         return next(control_node for control_node in get_control_nodes(cluster_name) if control_node != fqdn)
+
+    def scale_deployment(self, deployment: str, new_replicas: int, namespace: str) -> None:
+        run_one_raw(
+            command=["kubectl", "-n", namespace, "scale", "deployment", deployment, f"--replicas={new_replicas}"],
+            node=self._controlling_node,
+        )
 
 
 class KubeletController:
