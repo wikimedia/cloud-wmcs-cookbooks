@@ -24,7 +24,6 @@ from wmcs_libs.inventory.libs import NodeInventoryInfo, get_node_inventory_info
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
-    get_control_nodes,
     with_toolforge_kubernetes_cluster_opts,
 )
 from wmcs_libs.k8s.kubeadm import KubeadmController
@@ -101,7 +100,9 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         self.dst_version = dst_version
 
         self.remote = self.spicerack.remote()
-        self.control_node_fqdn = self._pick_a_control_node()
+        self.control_node_fqdn = KubernetesController.pick_a_control_node(
+            cluster_name=self.cluster_name, skip_hostname=self.hostname
+        )
         LOGGER.info("Using control node %s", self.control_node_fqdn)
         self.kubectl = KubernetesController(remote=self.remote, controlling_node_fqdn=self.control_node_fqdn)
         self.original_node_info = self.kubectl.get_node_info(self.hostname)
@@ -112,12 +113,6 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
     def runtime_description(self) -> str:
         """Return a nicely formatted string that represents the cookbook action."""
         return f"for node {self.hostname} from {self.src_version} to {self.dst_version}"
-
-    def _pick_a_control_node(self) -> str:
-        domain = f"{self.cluster_name.get_openstack_cluster_name()}.wikimedia.cloud"
-        fqdn = f"{self.hostname}.{self.cluster_name.get_project()}.{domain}"
-        LOGGER.debug("Finding next control node that is not %s", fqdn)
-        return next(control_node for control_node in get_control_nodes(self.cluster_name) if control_node != fqdn)
 
     def _format_kubeadm_config_map(self) -> str:
         dst_parts = self.dst_version.split(".")

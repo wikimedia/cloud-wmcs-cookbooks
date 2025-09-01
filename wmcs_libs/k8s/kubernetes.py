@@ -14,6 +14,8 @@ from typing import Any, Generator, Literal, overload
 from spicerack.remote import Remote, RemoteExecutionError
 
 from wmcs_libs.common import CuminParams, OutputFormat, run_one_as_dict, run_one_raw
+from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
+from wmcs_libs.k8s.clusters import get_control_nodes
 
 LOGGER = logging.getLogger(__name__)
 
@@ -400,6 +402,13 @@ class KubernetesController:
             return False
 
         return pod_dict.get("status", {}).get("phase", "") == "Running"
+
+    @staticmethod
+    def pick_a_control_node(cluster_name: ToolforgeKubernetesClusterName, skip_hostname: str = "") -> str:
+        domain = f"{cluster_name.get_openstack_cluster_name()}.wikimedia.cloud"
+        fqdn = f"{skip_hostname}.{cluster_name.get_project()}.{domain}"
+        LOGGER.debug("Finding next control node that is not %s", fqdn)
+        return next(control_node for control_node in get_control_nodes(cluster_name) if control_node != fqdn)
 
 
 class KubeletController:
