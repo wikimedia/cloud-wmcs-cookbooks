@@ -53,9 +53,9 @@ class Upgrade(CookbookBase):
         )
         parser.add_argument(
             "--src-version",
-            required=True,
+            required=False,
             type=validate_version,
-            help="Old version to upgrade from.",
+            help="Old version to upgrade from, will autodetect if not passed.",
         )
         parser.add_argument(
             "--dst-version",
@@ -90,7 +90,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         cluster_name: ToolforgeKubernetesClusterName,
         spicerack: Spicerack,
         hostname: str,
-        src_version: str,
+        src_version: str | None,
         dst_version: str,
     ):
         """Init"""
@@ -98,8 +98,15 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.hostname = hostname
-        self.src_version = src_version
         self.dst_version = dst_version
+
+        self.remote = self.spicerack.remote()
+        self.control_node_fqdn = self._pick_a_control_node()
+        LOGGER.info("Using control node %s", self.control_node_fqdn)
+        self.kubectl = KubernetesController(remote=self.remote, controlling_node_fqdn=self.control_node_fqdn)
+        self.original_node_info = self.kubectl.get_node_info(self.hostname)
+
+        self.src_version = src_version if src_version is not None else self.original_node_info.kubelet_version
 
     @property
     def runtime_description(self) -> str:
@@ -144,37 +151,40 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         if node_info.kubelet_version != self.dst_version:
             raise RuntimeError(f"Found unexpected version {node_info.kubelet_version} (instead of {self.dst_version})")
 
-    def run(self) -> None:
+    def run_with_proxy(self) -> None:
         """Main entry point"""
-        remote = self.spicerack.remote()
+        if self.src_version and self.original_node_info.kubelet_version != self.src_version:
+            LOGGER.error(
+                "Node %s has unexpected version %s (instead of %s), skipping",
+                self.hostname,
+                self.original_node_info.kubelet_version,
+                self.src_version,
+            )
+            return
+
+        if self.src_version == self.dst_version:
+            LOGGER.warning(
+                "Node %s is already in the destination version %s, skipping",
+                self.hostname,
+                self.dst_version,
+            )
+            return
 
         domain = f"{self.cluster_name.get_openstack_cluster_name()}.wikimedia.cloud"
         fqdn = f"{self.hostname}.{self.cluster_name.get_project()}.{domain}"
 
         inventory_info = get_node_inventory_info(fqdn)
 
-        hosts = remote.query(f"D{{{fqdn}}}", use_sudo=True)
+        hosts = self.remote.query(f"D{{{fqdn}}}", use_sudo=True)
 
-        control_node_fqdn = self._pick_a_control_node()
-        LOGGER.info("Using control node %s", control_node_fqdn)
+        LOGGER.info("Using control node %s", self.control_node_fqdn)
 
-        kubectl = KubernetesController(remote=remote, controlling_node_fqdn=control_node_fqdn)
-        kubeadm = KubeadmController(remote=remote, target_node_fqdn=fqdn)
+        kubeadm = KubeadmController(remote=self.remote, target_node_fqdn=fqdn)
         puppet = self.spicerack.puppet(hosts)
         apt_get = self.spicerack.apt_get(hosts)
 
-        original_node_info = kubectl.get_node_info(self.hostname)
-        if original_node_info.kubelet_version != self.src_version:
-            LOGGER.error(
-                "Node %s has unexpected version %s (instead of %s), skipping",
-                self.hostname,
-                original_node_info.kubelet_version,
-                self.src_version,
-            )
-            return
-
         LOGGER.info("Draining node %s", self.hostname)
-        kubectl.drain_node(node_hostname=self.hostname)
+        self.kubectl.drain_node(node_hostname=self.hostname)
 
         LOGGER.info("Running Puppet on %s to pick up updated Apt components", self.hostname)
 
@@ -191,14 +201,14 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         apt_get.install("kubeadm")
 
         LOGGER.info("Waiting for drain of %s to complete", self.hostname)
-        kubectl.wait_for_drain(node_hostname=self.hostname)
+        self.kubectl.wait_for_drain(node_hostname=self.hostname)
 
         # TODO: this would be a perfect opportunity to apply any pending kernel updates
 
         LOGGER.info("Upgrading the node data")
 
         # For the first control node this is a bit more complicated.
-        if self._is_first_node(kubectl=kubectl, inventory_info=inventory_info):
+        if self._is_first_node(kubectl=self.kubectl, inventory_info=inventory_info):
             kubeadm.upgrade_first(self.dst_version)
         else:
             kubeadm.upgrade()
@@ -219,17 +229,17 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         )
 
         LOGGER.info("Waiting for node to update api server")
-        self._ensure_new_version(kubectl=kubectl)
+        self._ensure_new_version(kubectl=self.kubectl)
 
         LOGGER.info("Uncordoning node")
-        kubectl.uncordon_node(node_hostname=self.hostname)
+        self.kubectl.uncordon_node(node_hostname=self.hostname)
 
         # TODO: for control nodes, tail service logs and ensure everything works
         if inventory_info.role_name == ToolforgeKubernetesNodeRoleName.CONTROL:
             # most likely, we need to restart static pods. It is known that controller-manager and/or scheduler
             # can show errors if they are started before the api-server by the kubelet. This is solved by another
             # manual restart in the right order, which this function should do
-            kubelet = KubeletController(remote=remote, kubelet_node_fqdn=fqdn, k8s_control=kubectl)
+            kubelet = KubeletController(remote=self.remote, kubelet_node_fqdn=fqdn, k8s_control=self.kubectl)
             LOGGER.info("Restarting static pods in kube-system namespace")
             kubelet.restart_all_static_pods(namespace="kube-system")
 
