@@ -3,7 +3,6 @@ r"""WMCS Toolforge Kubernetes - prepares a cluster for upgrading
 Usage example:
     cookbook wmcs.toolforge.k8s.prepare_upgrade \
         --cluster-name toolsbeta \
-        --src-version 1.22.17 \
         --dst-version 1.23.15
 
 """
@@ -46,16 +45,10 @@ class ToolforgeK8sPrepareUpgrade(CookbookBase):
         )
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
-            "--src-version",
-            required=True,
-            type=validate_version,
-            help="Old version to upgrade from.",
-        )
-        parser.add_argument(
             "--dst-version",
             required=True,
             type=validate_version,
-            help="New version to migrate to.",
+            help="New version to migrate to (ex. 1.30.14).",
         )
         return parser
 
@@ -67,7 +60,6 @@ class ToolforgeK8sPrepareUpgrade(CookbookBase):
             ToolforgeK8sPrepareUpgradeRunner,
         )(
             spicerack=self.spicerack,
-            src_version=args.src_version,
             dst_version=args.dst_version,
         )
 
@@ -79,7 +71,6 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
         self,
         common_opts: CommonOpts,
         cluster_name: ToolforgeKubernetesClusterName,
-        src_version: str,
         dst_version: str,
         spicerack: Spicerack,
     ):
@@ -87,13 +78,12 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.cluster_name = cluster_name
-        self.src_version = src_version
         self.dst_version = dst_version
 
     @property
     def runtime_description(self) -> str:
         """Return a nicely formatted string that represents the cookbook action."""
-        return f"for cluster {self.cluster_name} upgrade from {self.src_version} to {self.dst_version}"
+        return f"for cluster {self.cluster_name} upgrade to {self.dst_version}"
 
     def _format_apt_component(self) -> str:
         dst_parts = self.dst_version.split(".")
