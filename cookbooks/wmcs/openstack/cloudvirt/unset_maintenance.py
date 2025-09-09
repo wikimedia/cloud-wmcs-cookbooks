@@ -11,7 +11,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.openstack.common import AGGREGATES_FILE_PATH, OpenstackAPI, OpenstackNotFound, get_node_cluster_name
@@ -20,17 +20,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class UnsetMaintenance(CookbookBase):
-    """WMCS Openstack cookbook to unset a cloudvirt node maintenance."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--fqdn",
@@ -50,7 +44,7 @@ class UnsetMaintenance(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -63,7 +57,6 @@ class UnsetMaintenance(CookbookBase):
 
 
 class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
-    """Runner for UnsetMaintenance."""
 
     def __init__(
         self,
@@ -72,7 +65,7 @@ class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
         aggregates: str | None = None,
     ):
-        """Init."""
+
         self.fqdn = fqdn
         self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=get_node_cluster_name(node=self.fqdn))
         self.aggregates = aggregates
@@ -80,7 +73,7 @@ class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
-        """Main entry point."""
+
         hostname = self.fqdn.split(".", 1)[0]
         try:
             self.openstack_api.aggregate_remove_host(aggregate_name="maintenance", host_name=hostname)

@@ -50,7 +50,7 @@ class KubeadmController:
     """Controller for a Kubeadmin managed kubernetes cluster."""
 
     def __init__(self, remote: Remote, target_node_fqdn: str):
-        """Init."""
+
         self._remote = remote
         self._target_node_fqdn = target_node_fqdn
         self._target_node = self._remote.query(f"D{{{self._target_node_fqdn}}}", use_sudo=True)

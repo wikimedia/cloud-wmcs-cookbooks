@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolsDBGetClusterStatus(CookbookBase):
-    """Toolforge cookbook to get the current toolsdb cluster status"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-        )
+
+        parser = super().argument_parser()
         parser.add_argument(
             "--cluster-name",
             required=False,
@@ -47,7 +41,7 @@ class ToolsDBGetClusterStatus(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         # This is a read-only cookbook, we don't want to log to SAL
         args.no_dologmsg = True
         return with_common_opts(self.spicerack, args, ToolsDBGetClusterStatusRunner)(
@@ -57,7 +51,6 @@ class ToolsDBGetClusterStatus(CookbookBase):
 
 
 class ToolsDBGetClusterStatusRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolsDBGetClusterStatus"""
 
     def __init__(
         self,
@@ -65,12 +58,12 @@ class ToolsDBGetClusterStatusRunner(WMCSCookbookRunnerBase):
         cluster_name: ToolforgeToolsDBClusterName,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.project = common_opts.project
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.toolsdb_controller = ToolsDBController(remote=self.spicerack.remote(), cluster_name=cluster_name)
 
     def run(self) -> None:
-        """Main entry point"""
+
         cluster_status = self.toolsdb_controller.get_cluster_status()
         print(json.dumps(asdict(cluster_status), indent=4))

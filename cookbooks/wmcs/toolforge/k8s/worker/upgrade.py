@@ -1,4 +1,4 @@
-r"""WMCS Toolforge - Upgrade a Kubernetes worker node
+"""WMCS Toolforge - Upgrade a Kubernetes worker node
 
 Usage example:
     cookbook wmcs.toolforge.k8s.worker.upgrade \
@@ -15,17 +15,14 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.decorators import retry
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw
 from wmcs_libs.inventory.libs import NodeInventoryInfo, get_node_inventory_info
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
-from wmcs_libs.k8s.clusters import (
-    add_toolforge_kubernetes_cluster_opts,
-    with_toolforge_kubernetes_cluster_opts,
-)
+from wmcs_libs.k8s.clusters import add_toolforge_kubernetes_cluster_opts, with_toolforge_kubernetes_cluster_opts
 from wmcs_libs.k8s.kubeadm import KubeadmController
 from wmcs_libs.k8s.kubernetes import KubeletController, KubernetesController, validate_version
 
@@ -33,17 +30,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Upgrade(CookbookBase):
-    """WMCS Toolforge cookbook to upgrade a k8s worker node"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--hostname",
@@ -66,7 +57,7 @@ class Upgrade(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -80,7 +71,6 @@ class Upgrade(CookbookBase):
 
 
 class UpgradeRunner(WMCSCookbookRunnerBase):
-    """Runner for Upgrade"""
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -92,7 +82,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         src_version: str | None,
         dst_version: str,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -147,7 +137,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
             raise RuntimeError(f"Found unexpected version {node_info.kubelet_version} (instead of {self.dst_version})")
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         if self.src_version and self.original_node_info.kubelet_version != self.src_version:
             LOGGER.error(
                 "Node %s has unexpected version %s (instead of %s), skipping",

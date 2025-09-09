@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from spicerack import Spicerack
 from spicerack.remote import RemoteHosts
 

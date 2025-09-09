@@ -25,7 +25,7 @@ from datetime import timedelta
 from typing import cast
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.ceph import CephClusterController, CephException, CephOSDFlag, CephOSDNodeController, OSDTreeOSDNode
@@ -43,17 +43,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DepoolAndDestroy(CookbookBase):
-    """WMCS Ceph cookbook to destroy an OSD daemon with a new one."""
-
-    title = __doc__  # type: ignore
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -112,7 +106,7 @@ class DepoolAndDestroy(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         if not args.all_osds and not args.osd_id:
             raise Exception("No --osd-id passed, and no --all-osds passed, please pass one of the two.")
 
@@ -155,7 +149,6 @@ def check_that_osds_belong_to_host(osd_ids: list[int], hostname: str, ceph_contr
 
 
 class DestroyRunner(WMCSCookbookRunnerBase):
-    """Runner for Destroy"""
 
     def __init__(
         self,
@@ -170,7 +163,7 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         be_mean_about_it: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.yes_i_know = yes_i_know
         self.common_opts = common_opts
         self.osd_hostname = osd_hostname
@@ -189,7 +182,7 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         self.osd_controller = CephOSDNodeController(remote=self.spicerack.remote(), node_fqdn=self.osd_fqdn)
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         if self.all_osds:
             self.ids = self.cluster_controller.get_host_osds(osd_host=self.osd_hostname)
 

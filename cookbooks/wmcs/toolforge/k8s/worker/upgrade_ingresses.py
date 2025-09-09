@@ -9,22 +9,19 @@ Usage example:
 
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 
 from cookbooks.wmcs.toolforge.k8s.worker.upgrade import UpgradeRunner
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
-from wmcs_libs.inventory.toolsk8s import (
-    ToolforgeKubernetesClusterName,
-)
-from wmcs_libs.k8s.clusters import (
-    add_toolforge_kubernetes_cluster_opts,
-    with_toolforge_kubernetes_cluster_opts,
-)
+from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
+from wmcs_libs.k8s.clusters import add_toolforge_kubernetes_cluster_opts, with_toolforge_kubernetes_cluster_opts
 from wmcs_libs.k8s.kubernetes import KubernetesController, validate_version
 
 LOGGER = logging.getLogger(__name__)
@@ -36,15 +33,8 @@ INGRESS_NAMESPACE = "ingress-nginx-gen2"
 class ToolforgeK8sUpgradeIngresses(CookbookBase):
     """Upgrade k8s ingresses"""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+        parser = super().argument_parser()
         parser.add_argument(
             "--yes-i-know-what-im-doing",
             required=False,
@@ -73,7 +63,6 @@ class ToolforgeK8sUpgradeIngresses(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -88,7 +77,6 @@ class ToolforgeK8sUpgradeIngresses(CookbookBase):
 
 
 class ToolforgeK8sUpgradeIngressesRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeK8sUpgradeIngresses."""
 
     def __init__(
         self,
@@ -100,7 +88,6 @@ class ToolforgeK8sUpgradeIngressesRunner(WMCSCookbookRunnerBase):
         dst_version: str,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.cluster_name = cluster_name
@@ -127,7 +114,6 @@ class ToolforgeK8sUpgradeIngressesRunner(WMCSCookbookRunnerBase):
         return f"for {', '.join(self.hostname_list)}"
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
         if not self.hostname_list:
             print("No ingress nodes to upgrade found, maybe failed to get from the cluster.")
             return

@@ -16,7 +16,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import (
     CommonOpts,
@@ -35,15 +35,9 @@ LOGGER = logging.getLogger(__name__)
 class ToolforgeK8sKubeadmCertRenew(CookbookBase):
     """Renew kubeadm certs."""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser, project_default="toolsbeta")
         parser.add_argument(
             "--control-hostname-list",
@@ -55,7 +49,7 @@ class ToolforgeK8sKubeadmCertRenew(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -67,7 +61,6 @@ class ToolforgeK8sKubeadmCertRenew(CookbookBase):
 
 
 class ToolforgeK8sKubeadmCertRenewRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeK8sKubeadmCertRenew."""
 
     def __init__(
         self,
@@ -75,7 +68,7 @@ class ToolforgeK8sKubeadmCertRenewRunner(WMCSCookbookRunnerBase):
         control_hostname_list: list[str],
         spicerack: Spicerack,
     ):
-        """Init"""
+
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.control_hostname_list = control_hostname_list
@@ -86,7 +79,7 @@ class ToolforgeK8sKubeadmCertRenewRunner(WMCSCookbookRunnerBase):
         return f"for {', '.join(self.control_hostname_list)}"
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote()
         for node_hostname in self.control_hostname_list:
             node_fqdn = f"{node_hostname}.{self.common_opts.project}.eqiad1.wikimedia.cloud"

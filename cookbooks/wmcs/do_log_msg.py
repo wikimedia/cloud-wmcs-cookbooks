@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 
@@ -20,17 +20,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Dologmsg(CookbookBase):
-    """WMCS cookbook to log a SAL message."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--msg",
@@ -41,7 +35,7 @@ class Dologmsg(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -53,7 +47,6 @@ class Dologmsg(CookbookBase):
 
 
 class DologmsgRunner(WMCSCookbookRunnerBase):
-    """Runner for Dologmsg."""
 
     def __init__(
         self,
@@ -61,10 +54,10 @@ class DologmsgRunner(WMCSCookbookRunnerBase):
         msg: str,
         spicerack: Spicerack,
     ):
-        """Init."""
+
         self.msg = msg
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
-        """Main entry point."""
+
         self.spicerack.sal_logger.info("%s", self.msg)

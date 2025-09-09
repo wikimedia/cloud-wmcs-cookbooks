@@ -43,15 +43,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class NFSAddServer(CookbookBase):
-    """WMCS Toolforge cookbook to add a new nfs server"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__, description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser, project_default="cloudinfra-nfs")
         parser.add_argument(
             "--create-storage-volume-size",
@@ -67,7 +63,7 @@ class NFSAddServer(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         runner = with_common_opts(self.spicerack, args, NFSAddServerRunner)
         runner = with_instance_creation_options(args, runner)
         return runner(
@@ -79,7 +75,6 @@ class NFSAddServer(CookbookBase):
 
 
 class NFSAddServerRunner(WMCSCookbookRunnerBase):
-    """Runner for NFSAddServer"""
 
     def __init__(
         self,
@@ -90,7 +85,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
         instance_creation_opts: InstanceCreationOpts,
         common_opts: CommonOpts,
     ):
-        """Init"""
+
         self.create_storage_volume_size = create_storage_volume_size
         self.volume = volume
         self.project = common_opts.project
@@ -104,7 +99,6 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run(self) -> None:  # pylint: disable=too-many-locals
-        """Main entry point"""
 
         start_args = [
             "--project",

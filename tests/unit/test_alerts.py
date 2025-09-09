@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from unittest.mock import ANY
 
 import pytest

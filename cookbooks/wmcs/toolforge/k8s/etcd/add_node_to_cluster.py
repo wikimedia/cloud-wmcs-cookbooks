@@ -18,7 +18,7 @@ import time
 
 import yaml
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.remote import Remote, RemoteHosts
 
 from cookbooks.wmcs.toolforge.k8s.etcd.add_node_to_hiera import AddNodeToHiera
@@ -43,17 +43,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class AddNodeToCluster(CookbookBase):
-    """WMCS Toolforge cookbook to add an existing etcd node to the cluster (and related configs)."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--new-member-fqdn",
@@ -73,7 +67,7 @@ class AddNodeToCluster(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -178,7 +172,6 @@ def _fix_kubeadm(
 
 
 class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
-    """Runner for AddNodeToCluster"""
 
     def __init__(
         self,
@@ -188,7 +181,7 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         new_member_fqdn: str,
         skip_puppet_bootstrap: bool,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -196,7 +189,7 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         self.skip_puppet_bootstrap = skip_puppet_bootstrap
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote()
 
         if not self.skip_puppet_bootstrap:

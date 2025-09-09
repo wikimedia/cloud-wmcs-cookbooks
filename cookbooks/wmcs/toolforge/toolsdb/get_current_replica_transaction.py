@@ -22,17 +22,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolsDBGetCurrentReplicaTransaction(CookbookBase):
-    """Toolforge cookbook to get the current toolsdb cluster status"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-        )
+
+        parser = super().argument_parser()
         parser.add_argument(
             "--cluster-name",
             required=False,
@@ -52,7 +46,7 @@ class ToolsDBGetCurrentReplicaTransaction(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         # This is a read-only cookbook, we don't want to log to SAL
         args.no_dologmsg = True
         return with_common_opts(self.spicerack, args, ToolsDBGetCurrentReplicaTransactionRunner)(
@@ -63,7 +57,6 @@ class ToolsDBGetCurrentReplicaTransaction(CookbookBase):
 
 
 class ToolsDBGetCurrentReplicaTransactionRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolsDBGetCurrentReplicaTransaction"""
 
     def __init__(
         self,
@@ -72,14 +65,14 @@ class ToolsDBGetCurrentReplicaTransactionRunner(WMCSCookbookRunnerBase):
         show_raw_binlog: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.project = common_opts.project
         self.show_raw_binlog = show_raw_binlog
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.toolsdb_controller = ToolsDBController(remote=self.spicerack.remote(), cluster_name=cluster_name)
 
     def run(self) -> None:
-        """Main entry point"""
+
         for replica_name, replica_node in self.toolsdb_controller.get_replica_nodes().items():
             replica_state = replica_node.get_node_status()
             if replica_state.mariadb_status != "Running":

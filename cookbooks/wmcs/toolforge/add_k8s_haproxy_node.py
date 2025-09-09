@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix, CreateServerResponse
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
@@ -32,17 +32,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolforgeAddK8sHaproxyNode(CookbookBase):
-    """WMCS Toolforge cookbook to add a new K8s HAProxy node"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--flavor",
@@ -75,7 +69,7 @@ class ToolforgeAddK8sHaproxyNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -89,7 +83,6 @@ class ToolforgeAddK8sHaproxyNode(CookbookBase):
 
 
 class ToolforgeAddK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeAddK8sHaproxyNode"""
 
     def __init__(
         self,
@@ -100,7 +93,7 @@ class ToolforgeAddK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
         image: str | None = None,
         network: str | None = None,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
 
@@ -140,7 +133,7 @@ class ToolforgeAddK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
         return current_nodes
 
     def run(self) -> None:
-        """Main entry point"""
+
         haproxy_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.HAPROXY)
         server_group = get_cluster_node_server_group_name(self.cluster_name, ToolforgeKubernetesNodeRoleName.HAPROXY)
 

@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, parser_type_str_hostname
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
@@ -33,15 +33,9 @@ KUBELET_CONFIG_FILE = "/var/lib/kubelet/config.yaml"
 class ToolforgeK8sRestartStaticPods(CookbookBase):
     """Restart toolforge k8s static pods."""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--hostname",
@@ -52,7 +46,7 @@ class ToolforgeK8sRestartStaticPods(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -64,7 +58,6 @@ class ToolforgeK8sRestartStaticPods(CookbookBase):
 
 
 class ToolforgeK8sRestartStaticPodsRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeK8sRestartStaticPods."""
 
     def __init__(
         self,
@@ -73,7 +66,7 @@ class ToolforgeK8sRestartStaticPodsRunner(WMCSCookbookRunnerBase):
         hostname: str,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.cluster_name = cluster_name
@@ -85,7 +78,7 @@ class ToolforgeK8sRestartStaticPodsRunner(WMCSCookbookRunnerBase):
         return f"for {self.hostname}"
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote()
         k8s_control = KubernetesController(remote=remote, controlling_node_fqdn=get_control_nodes(self.cluster_name)[0])
         node_fqdn = f"{self.hostname}.{self.common_opts.project}.eqiad1.wikimedia.cloud"

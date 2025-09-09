@@ -34,7 +34,7 @@ class EncPrefix(CommandRunnerMixin):
     """Represents a single prefix."""
 
     def __init__(self, command_runner_node: RemoteHosts, project_id: str, prefix_name: str):
-        """Init."""
+
         super().__init__(command_runner_node)
         self.project_id = project_id
         self.prefix_name = prefix_name
@@ -116,7 +116,7 @@ class Enc:
         remote: Remote,
         cluster_name: OpenstackClusterName = OpenstackClusterName.EQIAD1,
     ):
-        """Init."""
+
         control_node_fqdn = get_control_nodes(cluster_name)[0]
         self.control_node = remote.query(f"D{{{control_node_fqdn}}}", use_sudo=True)
 

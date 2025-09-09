@@ -17,7 +17,7 @@ from datetime import timedelta
 from typing import Any
 
 from spicerack import Spicerack, SpicerackError
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
@@ -27,17 +27,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MigrateServerToOvs(CookbookBase):
-    """WMCS OpenStack cookbook to migrate a server to OVS."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -55,7 +49,7 @@ class MigrateServerToOvs(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, MigrateServerToOvsRunner)(
             cluster_name=args.cluster_name,
             server=args.server,
@@ -64,10 +58,9 @@ class MigrateServerToOvs(CookbookBase):
 
 
 class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
-    """Runner for MigrateServerToOvs"""
 
     def __init__(self, common_opts: CommonOpts, cluster_name: OpenstackClusterName, server: str, spicerack: Spicerack):
-        """Init"""
+
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
             cluster_name=cluster_name,
@@ -167,7 +160,7 @@ class MigrateServerToOvsRunner(WMCSCookbookRunnerBase):
             )
 
     def run(self) -> None:
-        """Main entry point"""
+
         server = self.openstack_api.server_show(self.server_name)
         new_flavor = self._get_new_flavor(server)
         original_status = server["status"]

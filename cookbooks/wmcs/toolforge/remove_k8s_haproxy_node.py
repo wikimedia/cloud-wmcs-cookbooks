@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import CUMIN_UNSAFE_WITH_OUTPUT, CommonOpts, WMCSCookbookRunnerBase, run_one_raw
@@ -31,17 +31,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolforgeRemoveK8sHaproxyNode(CookbookBase):
-    """WMCS Toolforge cookbook to remove a K8s HAProxy node"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--hostname-to-remove",
@@ -52,7 +46,7 @@ class ToolforgeRemoveK8sHaproxyNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -64,7 +58,6 @@ class ToolforgeRemoveK8sHaproxyNode(CookbookBase):
 
 
 class ToolforgeRemoveK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeRemoveK8sHaproxyNode"""
 
     def __init__(
         self,
@@ -73,7 +66,7 @@ class ToolforgeRemoveK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
         hostname_to_remove: str,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
 
@@ -107,7 +100,7 @@ class ToolforgeRemoveK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
         enc_prefix.set_hiera_values(current_hiera)
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote().query(f"D{{{self.fqdn_to_remove}}}", use_sudo=True)
 
         LOGGER.info("Disabling Puppet so that Keepalived does not re-start")

@@ -40,7 +40,7 @@ class WMCSCookbookRecorder:
     """Class to handle recordings and after replay them for testing."""
 
     def __init__(self) -> None:
-        """Init function."""
+
         self.recording = bool(os.environ.get("COOKBOOK_RECORDING_ENABLED"))
         self.replaying = bool(os.environ.get("COOKBOOK_REPLAYING_ENABLED"))
         self.next_entry = 0

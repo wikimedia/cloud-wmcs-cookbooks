@@ -1,9 +1,11 @@
 r"""WMCS Ceph - Drain all the osd nodes from a rack
 
+This is done in a very gentle way, draining small batches of osds and waiting for rebalance after each batch
+before continuing with the next.
+
 Usage example:
     cookbook wmcs.ceph.drain_rack \
         --rack D5
-
 """
 
 from __future__ import annotations
@@ -12,7 +14,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.ceph.osd.drain_node import DrainNodeRunner
 from wmcs_libs.ceph import CephClusterController
@@ -23,21 +25,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DrainRack(CookbookBase):
-    """WMCS Ceph cookbook to drain all the nodes from a rack.
-
-    This is done in a very gentle way, draining small batches of osds and waiting for rebalance after each batch
-    before continuing with the next.
-    """
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--rack",
@@ -94,7 +86,7 @@ class DrainRack(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -111,7 +103,6 @@ class DrainRack(CookbookBase):
 
 
 class DrainRackRunner(WMCSCookbookRunnerBase):
-    """Runner for DrainRack"""
 
     def __init__(
         self,
@@ -124,7 +115,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
         set_maintenance: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.rack_to_drain = rack_to_drain
         self.set_maintenance = set_maintenance
@@ -140,7 +131,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         LOGGER.info("Draining all the nodes for rack %s", self.rack_to_drain)
 
         racks = self.controller.get_osd_tree().get_nodes_by_type(wanted_type="rack")

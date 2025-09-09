@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
@@ -27,17 +27,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Drain(CookbookBase):
-    """WMCS Toolforge cookbook to drain a k8s worker node"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--hostname-to-drain",
@@ -48,7 +42,7 @@ class Drain(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -60,7 +54,6 @@ class Drain(CookbookBase):
 
 
 class DrainRunner(WMCSCookbookRunnerBase):
-    """Runner for Drain"""
 
     def __init__(
         self,
@@ -69,7 +62,7 @@ class DrainRunner(WMCSCookbookRunnerBase):
         hostname_to_drain: str,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.cluster_name = cluster_name
         self.hostname_to_drain = hostname_to_drain
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -88,7 +81,7 @@ class DrainRunner(WMCSCookbookRunnerBase):
         )
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote()
         kubectl = KubernetesController(remote=remote, controlling_node_fqdn=self._pick_a_control_node())
         kubectl.drain_node(node_hostname=self.hostname_to_drain)

@@ -16,7 +16,7 @@ from typing import Any
 
 import yaml
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, CuminParams, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict, run_one_raw
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
@@ -31,17 +31,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RemoveNodeFromHiera(CookbookBase):
-    """WMCS Toolforge cookbook to remove a etcd node from hiera."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument("--fqdn-to-remove", required=True, help="FQDN of the node to remove")
 
@@ -60,7 +54,6 @@ class RemoveNodeFromHiera(CookbookBase):
 
 
 class RemoveNodeFromHieraRunner(WMCSCookbookRunnerBase):
-    """Runner for RemoveNodeFromHiera"""
 
     def __init__(
         self,
@@ -69,14 +62,14 @@ class RemoveNodeFromHieraRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
         fqdn_to_remove: str,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.fqdn_to_remove = fqdn_to_remove
 
     def run(self) -> None:
-        """Main entry point"""
+
         self.remove_node_from_hiera()
 
     def remove_node_from_hiera(self) -> dict[str, Any]:

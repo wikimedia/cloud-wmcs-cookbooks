@@ -15,7 +15,7 @@ import logging
 
 from cumin.transports import Command
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.puppet import PuppetHosts
 from spicerack.remote import RemoteHosts
 
@@ -40,17 +40,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolforgeAddK8sNode(CookbookBase):
-    """WMCS Toolforge cookbook to add a new node to the Kubernetes cluster"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--flavor",
@@ -90,7 +84,7 @@ class ToolforgeAddK8sNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -105,7 +99,6 @@ class ToolforgeAddK8sNode(CookbookBase):
 
 
 class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeAddK8sNode"""
 
     def __init__(
         self,
@@ -117,7 +110,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
         network: str | None,
         role: ToolforgeKubernetesNodeRoleName,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -178,7 +171,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
             kubernetes_controller.add_node_taints(node_hostname=node, taints=self.role.taints)
 
     def run(self) -> None:
-        """Main entry point"""
+
         node_prefix = get_cluster_node_prefix(self.cluster_name, self.role)
         security_group = get_cluster_security_group_name(self.cluster_name)
         server_group = get_cluster_node_server_group_name(self.cluster_name, self.role)

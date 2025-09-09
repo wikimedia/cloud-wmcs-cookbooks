@@ -26,12 +26,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SafeReboot(CloudvirtBatchBase):
-    """WMCS Openstack cookbook to safe reboot a cloudvirt node."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -43,7 +41,6 @@ class SafeReboot(CloudvirtBatchBase):
 
 
 class SafeRebootRunner(CloudvirtBatchRunnerBase):
-    """Runner for SafeReboot"""
 
     downtime_reason = "host reboot"
 

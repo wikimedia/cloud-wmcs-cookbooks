@@ -15,7 +15,7 @@ import logging
 from ipaddress import IPv4Address
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
@@ -25,17 +25,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MigrateFloatingIp(CookbookBase):
-    """WMCS Cloud VPS cookbook to migrate a floating IP."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -59,7 +53,7 @@ class MigrateFloatingIp(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, MigrateFloatingIpRunner)(
             cluster_name=args.cluster_name,
             floating_ip=args.floating_ip,
@@ -69,7 +63,6 @@ class MigrateFloatingIp(CookbookBase):
 
 
 class MigrateFloatingIpRunner(WMCSCookbookRunnerBase):
-    """Runner for MigrateFloatingIp"""
 
     def __init__(
         self,
@@ -79,7 +72,7 @@ class MigrateFloatingIpRunner(WMCSCookbookRunnerBase):
         destination: str,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
             cluster_name=cluster_name,
@@ -97,7 +90,7 @@ class MigrateFloatingIpRunner(WMCSCookbookRunnerBase):
         return f"for address {self.floating_ip} to server '{self.destination}'"
 
     def run(self) -> None:
-        """Main entry point"""
+
         ip = self.openstack_api.floating_ip_show(self.floating_ip)
         if not ip:
             raise RuntimeError(f"Floating IP address {ip} not found")

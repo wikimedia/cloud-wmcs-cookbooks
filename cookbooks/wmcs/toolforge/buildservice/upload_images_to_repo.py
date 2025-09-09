@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.k8s.images import ImageController
@@ -23,15 +23,9 @@ from wmcs_libs.k8s.images import ImageController
 class UploadImagesToRepo(CookbookBase):
     """Uploads the external buildservice images to the local toolforge repository for local comsumption."""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser, project_default="toolsbeta")
         parser.add_argument(
             "--tekton-version",
@@ -73,7 +67,7 @@ class UploadImagesToRepo(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, UploadImagesToRepoRunner)(
             tekton_version=args.tekton_version,
             lifecycle_version=args.lifecycle_version,
@@ -86,7 +80,6 @@ class UploadImagesToRepo(CookbookBase):
 
 
 class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
-    """Runner for UploadImagesToRepo."""
 
     TEKTON_COMMON_PATH = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd"
     TEKTON_IMAGES = [
@@ -112,7 +105,7 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         upload_distroless,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.tekton_version = tekton_version
         self.lifecycle_version = lifecycle_version
         self.bash_version = bash_version
@@ -122,7 +115,7 @@ class UploadImagesToRepoRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote()
         uploader_node = remote.query(f"D{{{self.uploader_node}}}", use_sudo=True)
         image_ctrl = ImageController(spicerack=self.spicerack, uploader_node=uploader_node)

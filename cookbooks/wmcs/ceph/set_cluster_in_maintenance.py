@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.ceph import CephClusterController
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SetClusterInMaintenance(CookbookBase):
-    """WMCS Ceph cookbook to set a cluster in maintenance."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -57,7 +51,7 @@ class SetClusterInMaintenance(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(spicerack=self.spicerack, args=args, runner=SetClusterInMaintenanceRunner)(
             cluster_name=args.cluster_name,
             force=args.force,
@@ -67,7 +61,6 @@ class SetClusterInMaintenance(CookbookBase):
 
 
 class SetClusterInMaintenanceRunner(WMCSCookbookRunnerBase):
-    """Runner for SetClusterInMaintenance"""
 
     def __init__(
         self,
@@ -77,7 +70,7 @@ class SetClusterInMaintenanceRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         reason: str,
     ):
-        """Init"""
+
         self.cluster_name = cluster_name
         self.force = force
         self.reason = reason
@@ -88,7 +81,7 @@ class SetClusterInMaintenanceRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         silences = self.controller.set_maintenance(force=self.force, reason=self.reason)
         self.sallogger.log(
             f"Set the ceph cluster for {self.cluster_name} in maintenance, alert silence ids: {','.join(silences)}"

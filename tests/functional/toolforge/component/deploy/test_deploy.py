@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from __future__ import annotations
 
 
 def test_deploy_package(run_cookbook_with_recording, monkeypatch):

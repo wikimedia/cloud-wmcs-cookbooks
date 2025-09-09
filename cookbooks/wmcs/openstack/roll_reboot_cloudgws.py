@@ -11,7 +11,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.openstack.cloudgw.reboot_node import RebootNode
 from cookbooks.wmcs.openstack.network.tests import NetworkTests
@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RollRebootCloudgws(CookbookBase):
-    """WMCS Openstack cookbook to rolling reboot all cloudgws."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -52,7 +46,7 @@ class RollRebootCloudgws(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -73,7 +67,6 @@ def check_network_ok(cluster_name: OpenstackClusterName, spicerack: Spicerack) -
 
 
 class RollRebootCloudgwsRunner(WMCSCookbookRunnerBase):
-    """Runner for RollRebootCloudgws"""
 
     def __init__(
         self,
@@ -82,7 +75,7 @@ class RollRebootCloudgwsRunner(WMCSCookbookRunnerBase):
         cluster_name: OpenstackClusterName,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.force = force
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -95,7 +88,7 @@ class RollRebootCloudgwsRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Network up and running!")
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         self.sallogger.log(
             message=(
                 f"Rebooting all the cloudgw nodes from the {self.cluster_name} cluster_name: "

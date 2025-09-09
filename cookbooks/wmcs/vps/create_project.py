@@ -19,7 +19,7 @@ from typing import Any
 
 import gitlab
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation, ask_input
 
 from cookbooks.wmcs.openstack.tofu import OpenstackTofuRunner
@@ -50,17 +50,11 @@ output "resources" {{
 
 
 class CreateProject(CookbookBase):
-    """WMCS VPS cookbook to add a user to a project."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self) -> argparse.ArgumentParser:
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -118,7 +112,7 @@ class CreateProject(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         quotas = [
             OpenstackQuotaEntry.from_human_spec(
                 name=quota_name,
@@ -151,7 +145,6 @@ class CreateProject(CookbookBase):
 
 
 class CreateProjectRunner(WMCSCookbookRunnerBase):
-    """Runner for CreateProject."""
 
     def __init__(
         self,
@@ -165,7 +158,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         quotas: list[OpenstackQuotaEntry],
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
@@ -261,7 +254,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
 
         return project_data
 
-    def _create_tofu_mr(self) -> gitlab.v4.objects.merge_requests.ProjectMergeRequest:
+    def _create_tofu_mr(self) -> "gitlab.v4.objects.merge_requests.ProjectMergeRequest":
         branch_name = f"add_project_{self.common_opts.project}"
         mr_title = f"projects: added project {self.common_opts.project}"
 
@@ -335,7 +328,7 @@ module "project_{self.common_opts.project}" {{
 
         return True
 
-    def _wait_for_merged_loop(self, change_mr: gitlab.v4.objects.merge_requests.ProjectMergeRequest) -> None:
+    def _wait_for_merged_loop(self, change_mr: "gitlab.v4.objects.merge_requests.ProjectMergeRequest") -> None:
         is_merged = False
         while not is_merged:
             response = ask_input(
@@ -370,7 +363,6 @@ module "project_{self.common_opts.project}" {{
                 is_merged = self._is_mr_merged(mr_iid=change_mr.mr_iid)
 
     def run(self) -> None:
-        """Main entry point"""
 
         self._do_preflight_checks()
 

@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Show(CookbookBase):
-    """WMCS Openstack cookbook to show the current status of the neutron setup."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -47,7 +41,7 @@ class Show(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         # This is a read-only cookbook, we don't want to log to SAL
         args.no_dologmsg = True
         return with_common_opts(self.spicerack, args, ShowRunner)(
@@ -57,7 +51,6 @@ class Show(CookbookBase):
 
 
 class ShowRunner(WMCSCookbookRunnerBase):
-    """Runner for Show"""
 
     def __init__(
         self,
@@ -65,7 +58,7 @@ class ShowRunner(WMCSCookbookRunnerBase):
         cluster_name: OpenstackClusterName,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.openstack_api = OpenstackAPI(
             remote=self.spicerack.remote(),
@@ -75,7 +68,7 @@ class ShowRunner(WMCSCookbookRunnerBase):
         self.neutron_controller = NeutronController(openstack_api=self.openstack_api)
 
     def run(self) -> None:
-        """Main entry point"""
+
         all_agents = self.openstack_api.get_neutron_agents()
         l3_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.L3_AGENT]
         dhcp_agents = [str(agent) for agent in all_agents if agent.agent_type == NeutronAgentType.DHCP_AGENT]

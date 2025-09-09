@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
@@ -35,17 +35,11 @@ IMAGE = "debian-12.0-bookworm"
 
 
 class EnsureCanaryVM(CookbookBase):
-    """WMCS Openstack cookbook to ensure canary VM exists."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser, project_default="cloudvirt-canary")
         parser.add_argument(
             "--deployment",
@@ -71,7 +65,7 @@ class EnsureCanaryVM(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -231,7 +225,6 @@ def calculate_changelist(
 
 
 class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
-    """Runner for EnsureCanaryVM"""
 
     def __init__(
         self,
@@ -241,7 +234,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
         recreate: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.deployment = deployment
         self.hostname_list = hostname_list
@@ -335,7 +328,7 @@ class EnsureCanaryVMRunner(WMCSCookbookRunnerBase):
                 self.openstack_api.server_delete(name_to_remove=vm_name)
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         self.existing_canary_vms = self.openstack_api.server_list(long=True, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 
         changelist = calculate_changelist(self.hostname_list, self.existing_canary_vms, self.recreate)

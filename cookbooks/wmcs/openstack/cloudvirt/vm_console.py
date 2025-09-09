@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
@@ -24,17 +24,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class VMConsole(CookbookBase):
-    """WMCS Openstack cookbook to connect to a VM console."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -52,7 +46,7 @@ class VMConsole(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, VMConsoleRunner)(
             cluster_name=args.cluster_name,
             vm_name=args.vm_name,
@@ -70,7 +64,6 @@ def _run_ssh(full_hostname: str, args: list[str]) -> int:
 
 
 class VMConsoleRunner(WMCSCookbookRunnerBase):
-    """Runner for VMConsole"""
 
     def __init__(
         self,
@@ -79,14 +72,14 @@ class VMConsoleRunner(WMCSCookbookRunnerBase):
         vm_name: str,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.project = common_opts.project
         self.vm_name = vm_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=cluster_name, project=self.project)
 
     def run(self) -> None:
-        """Main entry point"""
+
         vm_info = self.openstack_api.server_show(self.vm_name)
         hypervisor_fqdn = vm_info["OS-EXT-SRV-ATTR:hypervisor_hostname"]
         libvirt_vmid = vm_info["OS-EXT-SRV-ATTR:instance_name"]

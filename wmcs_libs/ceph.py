@@ -199,7 +199,7 @@ class OSDTreeNode:
     crush_weight: float
     reweight: float
     type: OSDTreeNodeType
-    children: list[OSDTreeNode]
+    children: list["OSDTreeNode"]
 
 
 @dataclass(frozen=True)
@@ -391,7 +391,7 @@ class CephOSDNodeController:
     """Controller for a CEPH OSD node."""
 
     def __init__(self, remote: Remote, node_fqdn: str):
-        """Init."""
+
         self._remote = remote
         self.node_fqdn = node_fqdn
         self._node = self._remote.query(f"D{{{self.node_fqdn}}}", use_sudo=True)
@@ -606,7 +606,7 @@ class CephClusterController(CommandRunnerMixin):
         expected_drives: int = 0,
         expected_version: str = "",
     ):  # pylint: disable=too-many-arguments
-        """Init."""
+
         self._remote = remote
         self.cluster_name = cluster_name
         self.controlling_node_fqdn = get_mon_nodes(cluster_name)[0]

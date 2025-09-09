@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.ceph import CephClusterController, CephClusterUnhealthy
 from wmcs_libs.common import (
@@ -31,17 +31,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RollRestartOsdDaemons(CookbookBase):
-    """WMCS Ceph cookbook to rolling restart all osd daemons."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -76,7 +70,7 @@ class RollRestartOsdDaemons(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -91,7 +85,6 @@ class RollRestartOsdDaemons(CookbookBase):
 
 
 class RollRestartOsdDaemonsRunner(WMCSCookbookRunnerBase):
-    """Runner for RollRestartOsdDaemons"""
 
     def __init__(
         self,
@@ -102,7 +95,7 @@ class RollRestartOsdDaemonsRunner(WMCSCookbookRunnerBase):
         interactive: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.force = force
         self.ignore_current_health_issues = ignore_current_health_issues
@@ -114,7 +107,7 @@ class RollRestartOsdDaemonsRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         osd_nodes = list(self.controller.get_nodes()["osd"].keys())
 
         self.sallogger.log(message=f"Restarting the osd daemons from nodes {','.join(osd_nodes)}")

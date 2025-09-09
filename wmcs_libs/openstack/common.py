@@ -464,7 +464,7 @@ class OpenstackAPI(CommandRunnerMixin):
         cluster_name: OpenstackClusterName = OpenstackClusterName.EQIAD1,
         project: OpenstackName = "",
     ):
-        """Init."""
+
         self.project = project
         self.cluster_name = cluster_name
         self.control_node_fqdn = get_control_nodes(cluster_name)[2]

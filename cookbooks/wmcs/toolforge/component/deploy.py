@@ -23,7 +23,7 @@ import string
 from pathlib import Path
 
 from spicerack import RemoteHosts, Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.toolforge.run_tests import ToolforgeRunTestsRunner
 from wmcs_libs.aptly import SUPPORTED_DISTROS, Aptly
@@ -62,15 +62,9 @@ COMPONENT_TO_PACKAGE_NAME = {
 class ToolforgeComponentDeploy(CookbookBase):
     """Deploy a kubernetes custom component in Toolforge."""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument("--component", required=True, help="component to deploy from the toolforge-deploy repo")
         parser.add_argument(
@@ -101,7 +95,7 @@ class ToolforgeComponentDeploy(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeComponentDeployRunner)(
             component=args.component,
             git_branch=args.git_branch,
@@ -119,7 +113,6 @@ def _random_word(length):
 
 
 class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeComponentDeploy."""
 
     git_hash: str | None = None
 
@@ -135,7 +128,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         run_all_tests: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         self.component = component
@@ -159,7 +152,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         return f"for component {self.component}{git_hash}"
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         if self.component in COMPONENT_TO_PACKAGE_NAME:
             self._deploy_package(component=self.component, cluster_name=self.cluster_name, branch=self.git_branch)
         else:

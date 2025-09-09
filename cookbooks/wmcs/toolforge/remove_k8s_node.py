@@ -18,6 +18,4 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolforgeRemoveK8sNode(ToolforgeDepoolAndRemoveNode):
-    """WMCS Toolforge cookbook to remove and delete an existing k8s node"""
-
-    title = __doc__
+    __doc__ = __doc__

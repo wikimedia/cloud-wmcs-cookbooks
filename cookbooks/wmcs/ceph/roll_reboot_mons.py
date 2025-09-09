@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.ceph.reboot_node import RebootNode
 from wmcs_libs.ceph import CephClusterController
@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RollRebootMons(CookbookBase):
-    """WMCS Ceph cookbook to rolling reboot all mons."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -52,7 +46,7 @@ class RollRebootMons(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, RollRebootMonsRunner)(
             cluster_name=args.cluster_name,
             force=args.force,
@@ -61,7 +55,6 @@ class RollRebootMons(CookbookBase):
 
 
 class RollRebootMonsRunner(WMCSCookbookRunnerBase):
-    """Runner for RollRebootMons"""
 
     def __init__(
         self,
@@ -70,7 +63,7 @@ class RollRebootMonsRunner(WMCSCookbookRunnerBase):
         force: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.force = force
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -80,7 +73,7 @@ class RollRebootMonsRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         mon_nodes = list(self.controller.get_nodes()["mon"].keys())
 
         self.sallogger.log(message=f"Rebooting the nodes {','.join(mon_nodes)}")

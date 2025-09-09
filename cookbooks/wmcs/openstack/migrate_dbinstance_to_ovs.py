@@ -17,7 +17,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.openstack.migrate_server_to_ovs import MigrateServerToOvsRunner
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
@@ -27,17 +27,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MigrateDatabaseInstanceToOvs(CookbookBase):
-    """WMCS OpenStack cookbook to migrate a project to OVS."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -56,7 +50,7 @@ class MigrateDatabaseInstanceToOvs(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, MigrateDatabaseInstanceToOvsRunner)(
             cluster_name=args.cluster_name,
             db_instance=args.db_instance,
@@ -65,18 +59,16 @@ class MigrateDatabaseInstanceToOvs(CookbookBase):
 
 
 class MigrateDatabaseInstanceToOvsRunner(MigrateServerToOvsRunner):
-    """Runner for MigrateDatabaseInstanceToOvs"""
 
     def __init__(
         self, common_opts: CommonOpts, cluster_name: OpenstackClusterName, db_instance: str, spicerack: Spicerack
     ):
-        """Init"""
+
         self.db_instance: str = db_instance
 
         super().__init__(spicerack=spicerack, common_opts=common_opts, cluster_name=cluster_name, server="tbd")
 
     def run(self) -> None:
-        """Main entry point"""
 
         # Figure out what VM corresponds to db_server
         db_instance = self.openstack_api.db_instance_show(self.db_instance)

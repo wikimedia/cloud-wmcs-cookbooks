@@ -6,7 +6,7 @@ import argparse
 from abc import ABCMeta
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.batch import WMCSCookbookBatchRunnerBase
 from wmcs_libs.common import CommonOpts, add_common_opts
@@ -18,11 +18,7 @@ class CloudcontrolBatchBase(CookbookBase, metaclass=ABCMeta):
     """Base cookbook class for batch operations on clouducontrol nodes."""
 
     def argument_parser(self) -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+        parser = super().argument_parser()
         add_common_opts(parser)
 
         parser.add_argument(
@@ -48,7 +44,7 @@ class CloudcontrolBatchRunnerBase(WMCSCookbookBatchRunnerBase, metaclass=ABCMeta
         args: argparse.Namespace,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         super().__init__(common_opts, spicerack)
         if args.fqdn:
             self.cluster = get_node_cluster_name(args.fqdn)
@@ -64,11 +60,7 @@ class CloudvirtBatchBase(CookbookBase, metaclass=ABCMeta):
     """Base cookbook class for batch operations on cloudvirt nodes."""
 
     def argument_parser(self) -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+        parser = super().argument_parser()
         add_common_opts(parser)
 
         parser.add_argument(
@@ -100,7 +92,7 @@ class CloudvirtBatchRunnerBase(WMCSCookbookBatchRunnerBase, metaclass=ABCMeta):
         args: argparse.Namespace,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         super().__init__(common_opts, spicerack)
         if args.fqdn:
             self.query = f"D{{{args.fqdn}}}"

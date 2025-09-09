@@ -135,7 +135,7 @@ class KubernetesController:
     """Controller for a kubernetes cluster."""
 
     def __init__(self, remote: Remote, controlling_node_fqdn: str):
-        """Init."""
+
         self._remote = remote
         self.controlling_node_fqdn = controlling_node_fqdn
         self._controlling_node = self._remote.query(f"D{{{self.controlling_node_fqdn}}}", use_sudo=True)
@@ -464,7 +464,7 @@ class KubeletController:
         k8s_control: KubernetesController,
         kubelet_config_path: str = "/var/lib/kubelet/config.yaml",
     ):
-        """Init."""
+
         self._remote = remote
         self.kubelet_node_fqdn = kubelet_node_fqdn
         self.kubelet_node_short_hostname = kubelet_node_fqdn.split(".", 1)[0]

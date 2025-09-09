@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from cookbooks.wmcs.openstack.cloudvirt.lib.ensure_canary import FLAVOR, IMAGE, calculate_changelist
 
 HYPERVISORS = [

@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Generator
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.common import (
@@ -42,15 +42,9 @@ LOGGER = logging.getLogger(__name__)
 class OpenstackTofu(CookbookBase):
     """Run opentofu for Cloud VPS openstack"""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -89,7 +83,7 @@ class OpenstackTofu(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, OpenstackTofuRunner)(
             plan=args.plan,
             apply=args.apply,
@@ -101,7 +95,6 @@ class OpenstackTofu(CookbookBase):
 
 
 class OpenstackTofuRunner(WMCSCookbookRunnerBase):
-    """Runner for OpenstackTofu"""
 
     GITLAB_BASE_URL = "https://gitlab.wikimedia.org"
     GITLAB_REPO_NAME = "tofu-infra"
@@ -123,7 +116,7 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         gitlab_mr: int | None = None,
         cluster_name: OpenstackClusterName | None = None,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.plan = plan
@@ -292,7 +285,6 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
                 self._tofu_apply(node, plan_file=plan_file)
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
 
         clusters = get_openstack_clusters()
         for cluster_name in clusters:

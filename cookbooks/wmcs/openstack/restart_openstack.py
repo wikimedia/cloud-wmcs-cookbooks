@@ -7,7 +7,7 @@ import logging
 from typing import List
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase, CookbookRunnerBase
+from spicerack.cookbook import CookbookBase, CookbookRunnerBase
 
 from wmcs_libs.common import (
     CommonOpts,
@@ -24,13 +24,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class OpenstackRestart(CookbookBase):
-    """WMCS Openstack cookbook to restart services."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(prog=__name__, description=__doc__, formatter_class=ArgparseFormatter)
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -65,7 +63,7 @@ class OpenstackRestart(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> CookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(spicerack=self.spicerack, args=args, runner=OpenstackRestartRunner)(
             spicerack=self.spicerack,
             cluster_name=args.cluster_name,
@@ -75,7 +73,6 @@ class OpenstackRestart(CookbookBase):
 
 
 class OpenstackRestartRunner(WMCSCookbookRunnerBase):
-    """Runner for OpenstackRestart"""
 
     def __init__(
         self,
@@ -85,7 +82,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         filter_nodes: List[OpenstackNodeRoleName],
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.cluster_name = cluster_name
@@ -189,7 +186,7 @@ class OpenstackRestartRunner(WMCSCookbookRunnerBase):
                 LOGGER.warning("Failed to restart services on %s", host, exc_info=True)
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         restart_list = []
         if vars(self.args)["nova"] or self.args.all_services:
             restart_list.extend(self.get_nova_service_list())

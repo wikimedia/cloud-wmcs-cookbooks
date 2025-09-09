@@ -17,6 +17,4 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolforgeRemoveK8sEtcdNode(ToolforgeDepoolAndRemoveNode):
-    """WMCS Toolforge cookbook to remove and delete an existing K8s etcd node"""
-
-    title = __doc__
+    __doc__ = __doc__

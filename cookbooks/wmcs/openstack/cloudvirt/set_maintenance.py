@@ -11,7 +11,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackNotFound, get_node_cluster_name
@@ -20,17 +20,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SetMaintenance(CookbookBase):
-    """WMCS Openstack cookbook to set a cloudvirt node in maintenance."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--fqdn",
@@ -41,7 +35,7 @@ class SetMaintenance(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -53,7 +47,6 @@ class SetMaintenance(CookbookBase):
 
 
 class SetMaintenanceRunner(WMCSCookbookRunnerBase):
-    """Runner for SetMaintenance."""
 
     def __init__(
         self,
@@ -61,7 +54,7 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
         fqdn: str,
         spicerack: Spicerack,
     ):
-        """Init."""
+
         self.fqdn = fqdn
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
@@ -71,7 +64,7 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
-        """Main entry point."""
+
         hostname = self.fqdn.split(".", 1)[0]
 
         current_aggregates = self.openstack_api.server_get_aggregates(name=hostname)

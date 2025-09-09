@@ -1,5 +1,8 @@
 r"""WMCS Ceph - Undrain all the osd nodes from a rack
 
+This is done in a very gentle way, undraining small batches of osds and waiting for rebalance after each
+batch before continuing with the next.
+
 Usage example:
     cookbook wmcs.ceph.undrain_rack \
         --rack D5
@@ -12,7 +15,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.ceph.osd.undrain_node import UndrainNodeRunner
 from wmcs_libs.ceph import CephClusterController
@@ -23,21 +26,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class UndrainRack(CookbookBase):
-    """WMCS Ceph cookbook to undrain all the nodes from a rack.
-
-    This is done in a very gentle way, undraining small batches of osds and waiting for rebalance after each
-    batch before continuing with the next.
-    """
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--rack",
@@ -94,7 +87,7 @@ class UndrainRack(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -111,7 +104,6 @@ class UndrainRack(CookbookBase):
 
 
 class UndrainRackRunner(WMCSCookbookRunnerBase):
-    """Runner for UndrainRack"""
 
     def __init__(
         self,
@@ -124,7 +116,7 @@ class UndrainRackRunner(WMCSCookbookRunnerBase):
         set_maintenance: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.rack_to_undrain = rack_to_undrain
         self.set_maintenance = set_maintenance
@@ -140,7 +132,7 @@ class UndrainRackRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         LOGGER.info("Undraining all the nodes for rack %s", self.rack_to_undrain)
 
         racks = self.controller.get_osd_tree().get_nodes_by_type(wanted_type="rack")

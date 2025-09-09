@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 
 from wmcs_libs.ceph import CephClusterController, CephClusterUnhealthy
@@ -31,17 +31,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RollRestartMonDaemons(CookbookBase):
-    """WMCS Ceph cookbook to rolling restart all Mon daemons."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -76,7 +70,7 @@ class RollRestartMonDaemons(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -91,7 +85,6 @@ class RollRestartMonDaemons(CookbookBase):
 
 
 class RollRestartMonDaemonsRunner(WMCSCookbookRunnerBase):
-    """Runner for RollRestartMonDaemons"""
 
     def __init__(
         self,
@@ -102,7 +95,7 @@ class RollRestartMonDaemonsRunner(WMCSCookbookRunnerBase):
         interactive: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.force = force
         self.ignore_current_health_issues = ignore_current_health_issues
@@ -114,7 +107,7 @@ class RollRestartMonDaemonsRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         mon_nodes = list(self.controller.get_nodes()["mon"].keys())
 
         self.sallogger.log(message=f"Restarting the mon daemons from nodes {','.join(mon_nodes)}")

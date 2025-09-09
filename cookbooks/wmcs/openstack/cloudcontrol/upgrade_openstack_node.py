@@ -3,6 +3,13 @@ r"""WMCS openstack - upgrade a cloudcontrol or cloudservices node and reboot
 Usage example: wmcs.openstack.cloudvirt.upgrade_openstack_node \
     --fqdn-to-upgrade cloudvirt1013.eqiad.wmnet
 
+Works on a cloudcontrol, cloudservices, or cloudbackup node. The host
+will be rebooted post-upgrade.
+
+The current version of openstack is presumed to have already been set
+via puppet along with provision of needed classes and files; if the
+specified node is already running the puppetized version of OpenStack
+this cookbook should do very little beyond rebooting.
 """
 
 from __future__ import annotations
@@ -13,7 +20,7 @@ from datetime import datetime, timedelta
 
 from cumin.transports import Command
 from spicerack import RemoteHosts, Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.openstack.network.tests import NetworkTests
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, run_one_raw, with_common_opts
@@ -31,26 +38,11 @@ def check_network_ok(cluster_name: OpenstackClusterName, spicerack: Spicerack) -
 
 
 class LiveUpgrade(CookbookBase):
-    """WMCS Openstack cookbook to upgrade openstack
-
-    Works on a cloudcontrol, cloudservices, or cloudbackup node. The host
-    will be rebooted post-upgrade.
-
-    The current version of openstack is presumed to have already been set
-    via puppet along with provision of needed classes and files; if the
-    specified node is already running the puppetized version of OpenStack
-    this cookbook should do very little beyond rebooting.
-    """
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--fqdn-to-upgrade",
@@ -68,7 +60,7 @@ class LiveUpgrade(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -77,7 +69,6 @@ class LiveUpgrade(CookbookBase):
 
 
 class UpgradeRunner(WMCSCookbookRunnerBase):
-    """Runner for LiveUpgrade."""
 
     def __init__(
         self,
@@ -86,7 +77,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
         upgrade_dbs: bool,
     ):
-        """Init."""
+
         self.fqdn_to_upgrade = fqdn_to_upgrade
         self.spicerack = spicerack
         self.upgrade_dbs = upgrade_dbs
@@ -216,7 +207,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         )
 
     def run(self) -> None:
-        """Main entry point."""
+
         node_to_upgrade = self.spicerack.remote().query(f"D{{{self.fqdn_to_upgrade}}}", use_sudo=True)
         alertmanager_hosts = self.spicerack.alertmanager_hosts(node_to_upgrade.hosts)
 

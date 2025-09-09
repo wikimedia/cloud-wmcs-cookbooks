@@ -21,12 +21,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RebootNode(CloudcontrolBatchBase):
-    """WMCS Openstack cookbook to reboot a single cloudcontrols, handling failover."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -38,12 +36,11 @@ class RebootNode(CloudcontrolBatchBase):
 
 
 class RebootNodeRunner(CloudcontrolBatchRunnerBase):
-    """Runner for RebootNode"""
 
     downtime_reason = "host reboot"
 
     def run_on_hosts(self, hosts: RemoteHosts) -> None:
-        """Main entry point"""
+
         reboot_time = datetime.utcnow()
         hosts.reboot()
         hosts.wait_reboot_since(since=reboot_time)

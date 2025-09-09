@@ -23,7 +23,7 @@ from functools import partial
 from typing import Callable
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.remote import RemoteExecutionError
 from wmflib.decorators import retry
 
@@ -186,17 +186,11 @@ def with_instance_creation_options(args: argparse.Namespace, runner: Callable) -
 
 
 class CreateInstanceWithPrefix(CookbookBase):
-    """WMCS cookbook to create and start a new instance following a prefix."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self) -> argparse.ArgumentParser:
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         add_instance_creation_options(parser)
         parser.add_argument(
@@ -218,7 +212,7 @@ class CreateInstanceWithPrefix(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> "CreateInstanceWithPrefixRunner":
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -237,7 +231,6 @@ class CreateInstanceWithPrefix(CookbookBase):
 
 
 class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
-    """Runner for CreateInstanceWithPrefix"""
 
     def __init__(
         self,
@@ -250,7 +243,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         sign_puppet_certs: bool = False,
         ssh_retries: int = 15,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.common_opts.project
@@ -275,7 +268,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         return f"with prefix '{self.prefix}'"
 
     def run(self) -> None:
-        """Main entry point"""
+
         self.create_instance()
 
     def _get_security_group_id(self, name: str) -> str:

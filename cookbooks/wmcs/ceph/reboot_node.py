@@ -13,7 +13,7 @@ import datetime
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.alerts import remove_silence, silence_host
 from wmcs_libs.ceph import CephClusterController, get_node_cluster_name
@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RebootNode(CookbookBase):
-    """WMCS Ceph cookbook to a node of the cluster."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--fqdn-to-reboot",
@@ -57,7 +51,7 @@ class RebootNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -71,7 +65,6 @@ class RebootNode(CookbookBase):
 
 
 class RebootNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for RebootNode"""
 
     def __init__(
         self,
@@ -81,7 +74,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         skip_maintenance: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.fqdn_to_reboot = fqdn_to_reboot
         self.skip_maintenance = skip_maintenance
@@ -95,7 +88,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         self.sallogger.log(message=f"Rebooting node {self.fqdn_to_reboot}")
 
         if not self.force:

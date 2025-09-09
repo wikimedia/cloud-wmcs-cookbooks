@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from wmcs_libs.inventory.cluster import ClusterType
 from wmcs_libs.inventory.openstack import OpenstackCluster
 from wmcs_libs.inventory.static import get_static_inventory

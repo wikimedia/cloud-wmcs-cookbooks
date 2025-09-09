@@ -6,6 +6,8 @@ Usage example: wmcs.vps.instance.force_reboot \
 
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 

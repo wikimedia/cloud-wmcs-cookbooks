@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.ceph.upgrade_ceph_node import UpgradeCephNode
 from wmcs_libs.ceph import CephClusterController
@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class UpgradeOsds(CookbookBase):
-    """WMCS Ceph cookbook to set a cluster in maintenance."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -62,7 +56,7 @@ class UpgradeOsds(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, UpgradeOsdsRunner)(
             cluster_name=args.cluster_name,
             osd_nodes=args.osd_nodes,
@@ -72,7 +66,6 @@ class UpgradeOsds(CookbookBase):
 
 
 class UpgradeOsdsRunner(WMCSCookbookRunnerBase):
-    """Runner for UpgradeOsds"""
 
     def __init__(
         self,
@@ -82,7 +75,7 @@ class UpgradeOsdsRunner(WMCSCookbookRunnerBase):
         spicerack: Spicerack,
         osd_nodes: list[str] | None,
     ):
-        """Init"""
+
         self.force = force
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
@@ -92,7 +85,7 @@ class UpgradeOsdsRunner(WMCSCookbookRunnerBase):
         self.osd_nodes = osd_nodes or []
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         silences = self.controller.set_maintenance(reason="Upgrading osds")
 
         upgrade_ceph_node_cookbook = UpgradeCephNode(spicerack=self.spicerack)

@@ -18,7 +18,7 @@ import logging
 from datetime import datetime
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, parser_type_list_hostnames
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
@@ -36,15 +36,9 @@ LOGGER = logging.getLogger(__name__)
 class ToolforgeK8sReboot(CookbookBase):
     """Reboot k8s nodes."""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--hostname-list",
@@ -74,7 +68,7 @@ class ToolforgeK8sReboot(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -89,7 +83,6 @@ class ToolforgeK8sReboot(CookbookBase):
 
 
 class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeK8sReboot."""
 
     def __init__(
         self,
@@ -101,7 +94,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
         do_all_nfs_workers: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.cluster_name = cluster_name
@@ -134,7 +127,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
         return f"for {', '.join(self.hostname_list)}"
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         control_nodes = get_control_nodes(self.cluster_name)
         control_node_fqdn = control_nodes[0]
         k8s_controller = KubernetesController(self.spicerack.remote(), control_node_fqdn)

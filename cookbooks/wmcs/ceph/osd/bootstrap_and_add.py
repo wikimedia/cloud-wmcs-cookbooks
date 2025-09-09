@@ -16,7 +16,7 @@ import time
 from typing import Callable, cast
 
 from spicerack import RemoteHosts, Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.puppet import PuppetHosts
 
 from cookbooks.wmcs.ceph.reboot_node import RebootNode
@@ -35,17 +35,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BootstrapAndAdd(CookbookBase):
-    """WMCS Ceph cookbook to bootstrap and add a new OSD."""
-
-    title = __doc__  # type: ignore
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -138,7 +132,7 @@ class BootstrapAndAdd(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, BootstrapAndAddRunner)(
             cluster_name=args.cluster_name,
             osd_hostnames=args.osd_hostname,
@@ -174,7 +168,6 @@ def _wait_for_osds_to_show_up(cluster_controller: CephClusterController, ceph_ho
 
 
 class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
-    """Runner for BootstrapAndAdd"""
 
     def __init__(
         self,
@@ -192,7 +185,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         expected_ceph_version: str,
         os_hw_raid: bool,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.osd_fqdns = [
             hostname.split(".", 1)[0] + f".{cluster_name.get_site().get_domain()}" for hostname in osd_hostnames
@@ -215,7 +208,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         self.sallogger.log(
             message=f"Adding all available disks from nodes {self.osd_fqdns} to the cluster",
         )

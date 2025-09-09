@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.ceph import CephClusterController
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class UndrainNode(CookbookBase):
-    """WMCS Ceph cookbook to undrain a ceph OSD node."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -94,7 +88,7 @@ class UndrainNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -112,7 +106,6 @@ class UndrainNode(CookbookBase):
 
 
 class UndrainNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for UndrainNode"""
 
     def __init__(
         self,
@@ -126,7 +119,7 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
         batch_size: int,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.osd_fqdns = [
             hostname.split(".", 1)[0] + f".{cluster_name.get_site().get_domain()}" for hostname in osd_hostnames
@@ -143,7 +136,7 @@ class UndrainNodeRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         LOGGER.info("Undraining nodes %s", self.osd_fqdns)
 
         if not self.force:

@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.toolforge.k8s.etcd.add_node_to_cluster import AddNodeToCluster
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
@@ -31,17 +31,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolforgeAddK8sEtcdNode(CookbookBase):
-    """WMCS Toolforge cookbook to add a new K8s etcd node"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--skip-puppet-bootstrap",
@@ -73,7 +67,7 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -87,7 +81,6 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
 
 
 class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeAddK8sEtcdNode"""
 
     def __init__(
         self,
@@ -98,7 +91,7 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
         image: str | None = None,
         flavor: str | None = None,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -107,7 +100,7 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
         self.flavor = flavor
 
     def run(self) -> None:
-        """Main entry point"""
+
         etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
 
         security_group = get_cluster_security_group_name(self.cluster_name)

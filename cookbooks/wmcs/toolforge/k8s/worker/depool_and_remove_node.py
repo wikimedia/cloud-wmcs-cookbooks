@@ -16,7 +16,7 @@ import logging
 from typing import Any
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 
 from cookbooks.wmcs.toolforge.k8s.worker.drain import Drain
@@ -37,17 +37,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolforgeDepoolAndRemoveNode(CookbookBase):
-    """WMCS Toolforge cookbook to remove and delete an existing k8s worker node"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--hostname-to-remove",
@@ -72,7 +66,7 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -86,7 +80,6 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
 
 
 class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeDepoolAndRemoveNode"""
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -98,7 +91,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         role: ToolforgeKubernetesNodeRoleName,
         force: bool,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -174,7 +167,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         # Or is relying on HAProxy health checks fine enough?
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote()
 
         name_prefix = get_cluster_node_prefix(self.cluster_name, self.role)

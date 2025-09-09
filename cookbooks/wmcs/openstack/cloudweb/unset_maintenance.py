@@ -11,7 +11,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.alerts import remove_silence
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
@@ -21,17 +21,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SetMaintenance(CookbookBase):
-    """WMCS Openstack cookbook to set a cloudweb node in maintenance."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--deployment",
@@ -45,7 +39,7 @@ class SetMaintenance(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -57,7 +51,6 @@ class SetMaintenance(CookbookBase):
 
 
 class SetMaintenanceRunner(WMCSCookbookRunnerBase):
-    """Runner for SetMaintenance."""
 
     def __init__(
         self,
@@ -65,14 +58,14 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
         deployment: OpenstackClusterName,
         spicerack: Spicerack,
     ):
-        """Init."""
+
         self.deployment = deployment
         self.spicerack = spicerack
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
-        """Main entry point."""
+
         query = "P{R:Class = role::wmcs::openstack::%s::cloudweb}" % self.deployment
         remote_hosts = self.spicerack.remote().query(query, use_sudo=True)
 

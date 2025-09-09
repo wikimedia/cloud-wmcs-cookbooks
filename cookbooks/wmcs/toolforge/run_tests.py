@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import RemoteHosts, Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.remote import RemoteExecutionError
 
 from wmcs_libs.common import (
@@ -36,17 +36,11 @@ TESTS_USER = "dcaro"
 
 
 class ToolforgeRunTests(CookbookBase):
-    """Deploy a kubernetes custom component in Toolforge."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument("--branch", default="main", help="branch to run tests on")
         parser.add_argument("--filter-tags", action="append", default=[], help="filter tests with the given tags")
@@ -58,7 +52,7 @@ class ToolforgeRunTests(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(self.spicerack, args, ToolforgeRunTestsRunner)(
             spicerack=self.spicerack,
             filter_tags=args.filter_tags,
@@ -68,7 +62,6 @@ class ToolforgeRunTests(CookbookBase):
 
 
 class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeRunTests."""
 
     git_hash: str | None = None
 
@@ -81,7 +74,7 @@ class ToolforgeRunTestsRunner(WMCSCookbookRunnerBase):
         branch: str = "main",
         component: str | None = None,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         self.filter_tags = filter_tags

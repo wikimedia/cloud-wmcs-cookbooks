@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.ceph.upgrade_ceph_node import UpgradeCephNode
 from wmcs_libs.ceph import CephClusterController
@@ -23,17 +23,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class UpgradeMons(CookbookBase):
-    """WMCS Ceph cookbook to set a cluster in maintenance."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -52,7 +46,7 @@ class UpgradeMons(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, UpgradeMonsRunner)(
             cluster_name=args.cluster_name,
             force=args.force,
@@ -61,7 +55,6 @@ class UpgradeMons(CookbookBase):
 
 
 class UpgradeMonsRunner(WMCSCookbookRunnerBase):
-    """Runner for UpgradeMons"""
 
     def __init__(
         self,
@@ -70,7 +63,7 @@ class UpgradeMonsRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.force = force
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
@@ -79,7 +72,7 @@ class UpgradeMonsRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         silences = self.controller.set_maintenance(reason="Upgrading mon nodes.")
 
         upgrade_ceph_node_cookbook = UpgradeCephNode(spicerack=self.spicerack)

@@ -3,7 +3,6 @@
 # pylint: disable=too-many-arguments
 from __future__ import annotations
 
-__title__ = __doc__
 import argparse
 import base64
 import ipaddress
@@ -577,7 +576,7 @@ class CmdChecklist:
     """CmdChecklist to abstract running cmd-checklist-runner on a remote host."""
 
     def __init__(self, name: str, remote_hosts: RemoteHosts, config_file: str):
-        """Init."""
+
         self.name = name
         self.remote_hosts = remote_hosts
         self.config_file = config_file
@@ -772,7 +771,7 @@ class WMCSCookbookRunnerBase(CookbookRunnerBase):
     recorder: WMCSCookbookRecorder | None = None
 
     def __init__(self, spicerack: Spicerack, common_opts: CommonOpts):
-        """Init"""
+
         self.spicerack = spicerack
         self._setup_logging(common_opts)
         self.nested = bool(WMCSCookbookRunnerBase.recorder)

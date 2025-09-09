@@ -14,17 +14,11 @@ import logging
 from datetime import timedelta
 
 from spicerack import Spicerack, SpicerackError
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.puppet import PuppetHosts, PuppetServer
 from spicerack.remote import RemoteExecutionError
 
-from wmcs_libs.common import (
-    CommonOpts,
-    CuminParams,
-    WMCSCookbookRunnerBase,
-    add_common_opts,
-    with_common_opts,
-)
+from wmcs_libs.common import CommonOpts, CuminParams, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI
 from wmcs_libs.openstack.enc import Enc
@@ -33,17 +27,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RemoveInstance(CookbookBase):
-    """WMCS VPS cookbook to stop an instance."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self) -> argparse.ArgumentParser:
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -62,7 +50,7 @@ class RemoveInstance(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -75,7 +63,6 @@ class RemoveInstance(CookbookBase):
 
 
 class RemoveInstanceRunner(WMCSCookbookRunnerBase):
-    """Runner for RemoveInstance."""
 
     def __init__(
         self,
@@ -84,7 +71,7 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         name_to_remove: str,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
@@ -137,7 +124,7 @@ class RemoveInstanceRunner(WMCSCookbookRunnerBase):
         LOGGER.info("Set Alertmanager silence %s", silence_id)
 
     def run(self) -> int:
-        """Main entry point"""
+
         if not self.openstack_api.server_exists(self.name_to_remove, cumin_params=CuminParams(print_output=False)):
             LOGGER.warning(
                 "Unable to find server %s in project %s. Please review the project and server name.",

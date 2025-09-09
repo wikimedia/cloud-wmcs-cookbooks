@@ -13,7 +13,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 from wmflib.requests import http_session
 
@@ -34,15 +34,9 @@ LOGGER = logging.getLogger(__name__)
 class ToolforgeK8sPrepareUpgrade(CookbookBase):
     """Prepare a Kubernetes cluster for upgrades."""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--dst-version",
@@ -53,7 +47,7 @@ class ToolforgeK8sPrepareUpgrade(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -65,7 +59,6 @@ class ToolforgeK8sPrepareUpgrade(CookbookBase):
 
 
 class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeK8sPrepareUpgrade."""
 
     def __init__(
         self,
@@ -74,7 +67,7 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
         dst_version: str,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.common_opts = common_opts
         self.cluster_name = cluster_name
@@ -104,7 +97,7 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
             raise Exception(f"{component} has no .deb files. Check reprepro and URL {url_to_check}")
 
     def run(self) -> None:
-        """Main entry point"""
+
         control_node_fqdn = get_control_nodes(self.cluster_name)[0]
         k8s_controller = KubernetesController(self.spicerack.remote(), control_node_fqdn)
         LOGGER.info("Using control node %s", control_node_fqdn)

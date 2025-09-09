@@ -216,7 +216,7 @@ class GitlabController:
 
     def create_mr(
         self, project: str, source_branch: str, title: str, target_branch: str = "main"
-    ) -> upstream_gitlab_lib.v4.objects.ProjectMergeRequest:
+    ) -> "upstream_gitlab_lib.v4.objects.ProjectMergeRequest":
         project_id = self.get_project_id_by_name(project_name=project)
         project_obj = self.gitlab.projects.get(id=project_id)
         new_mr = project_obj.mergerequests.create(
@@ -234,7 +234,7 @@ class GitlabController:
         self,
         project: str,
         mr_iid: str,
-    ) -> upstream_gitlab_lib.v4.objects.ProjectMergeRequest:
+    ) -> "upstream_gitlab_lib.v4.objects.ProjectMergeRequest":
         project_id = self.get_project_id_by_name(project_name=project)
         project_obj = self.gitlab.projects.get(id=project_id)
         mr = project_obj.mergerequests.get(id=mr_iid)

@@ -12,7 +12,7 @@ import logging
 
 from cumin.transports import Command
 from spicerack import RemoteHosts, Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.puppet import PuppetHosts, PuppetServer
 from spicerack.remote import RemoteExecutionError
 
@@ -73,17 +73,11 @@ def _refresh_cert(
 
 
 class RefreshPuppetCerts(CookbookBase):
-    """WMCS VPS cookbook to bootstrap puppet on a node that uses a project puppetmaster."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser, project_default=None)
         parser.add_argument(
             "--fqdn",
@@ -104,7 +98,7 @@ class RefreshPuppetCerts(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         args.project, _ = get_openstack_project_deployment(args.fqdn)
         return with_common_opts(self.spicerack, args, RefreshPuppetCertsRunner)(
             fqdn=args.fqdn,
@@ -115,7 +109,6 @@ class RefreshPuppetCerts(CookbookBase):
 
 
 class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
-    """Runner for RefreshPuppetCerts"""
 
     def __init__(
         self,
@@ -125,7 +118,7 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
         ignore_failures: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.fqdn = fqdn
         self.pre_run_puppet = pre_run_puppet
         self.ignore_failures = ignore_failures
@@ -137,8 +130,7 @@ class RefreshPuppetCertsRunner(WMCSCookbookRunnerBase):
         return f"on {self.fqdn}"
 
     def run(self) -> None:
-        """Main entry point.
-
+        """
         Basic process:
             Refresh certs on current puppetserver (in case the fqdn already existed)
             Try to run puppet (pulls new puppetserver if needed, might fail)

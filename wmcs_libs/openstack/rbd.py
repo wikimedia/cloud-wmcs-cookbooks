@@ -19,7 +19,7 @@ class RBDRunner(CommandRunnerMixin):
         pool_name: str,
         cluster_name: OpenstackClusterName = OpenstackClusterName.EQIAD1,
     ):
-        """Init."""
+
         self.cluster_name = cluster_name
         self.pool_name = pool_name
         self.control_node_fqdn = get_control_nodes(cluster_name)[0]

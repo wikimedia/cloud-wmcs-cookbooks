@@ -1,4 +1,4 @@
-r"""WMCS Ceph - Generic cookbook to upgrade a ceph node.
+"""WMCS Ceph - Generic cookbook to upgrade a ceph node.
 
 Usage example:
     cookbook wmcs.ceph.upgrade_ceph_node \
@@ -14,7 +14,7 @@ import logging
 from datetime import timedelta
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.alerts import remove_silence, silence_host
 from wmcs_libs.ceph import CephClusterController, CephOSDFlag, get_node_cluster_name
@@ -24,17 +24,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class UpgradeCephNode(CookbookBase):
-    """WMCS Ceph cookbook to upgrade a node."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--to-upgrade-fqdn",
@@ -57,7 +51,7 @@ class UpgradeCephNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, UpgradeCephNodeRunner)(
             to_upgrade_fqdn=args.to_upgrade_fqdn,
             skip_maintenance=args.skip_maintenance,
@@ -67,7 +61,6 @@ class UpgradeCephNode(CookbookBase):
 
 
 class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for UpgradeCephNode"""
 
     def __init__(
         self,
@@ -77,7 +70,7 @@ class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
         force: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.to_upgrade_fqdn = to_upgrade_fqdn
         self.force = force
         self.skip_maintenance = skip_maintenance
@@ -89,7 +82,7 @@ class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         LOGGER.info("Upgrading ceph node %s", self.to_upgrade_fqdn)
         # make sure we make cluster info commands on another node
         self.controller.change_controlling_node()

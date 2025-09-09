@@ -27,26 +27,16 @@ import logging
 from spicerack import RemoteHosts
 
 from cookbooks.wmcs.ceph.osd import bootstrap_and_add
-from wmcs_libs.ceph import (
-    CephOSDFlag,
-    CephOSDNodeController,
-)
+from wmcs_libs.ceph import CephOSDFlag, CephOSDNodeController
 from wmcs_libs.common import WMCSCookbookRunnerBase, with_common_opts
 
 LOGGER = logging.getLogger(__name__)
 
 
 class Reactivate(bootstrap_and_add.BootstrapAndAdd):
-    """WMCS Ceph cookbook to activate an existing OSD after a reimage.
-
-    This assumes that the OSD(s) passed in contain ceph partitions
-    which where preserved after a re-image but which need to be activated.
-    """
-
-    title = __doc__  # type: ignore
+    __doc__ = __doc__
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
 
         # Pass in force = True because the cluster is almost
         #  certainly set to noout when this cookbook is run and
@@ -68,14 +58,12 @@ class Reactivate(bootstrap_and_add.BootstrapAndAdd):
 
 
 class ReactivateRunner(bootstrap_and_add.BootstrapAndAddRunner):
-    """Runner for Reactivate
-
-    a variant of BootstrapAndAdd that expects osd partitions to already
-    be formatted and at least partially populated.
+    """
+    A variant of BootstrapAndAdd that expects osd partitions to already be formatted and at least partially populated.
     """
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         self.sallogger.log(
             message=f"Activating all available osd disks from nodes {self.osd_fqdns} to the cluster",
         )

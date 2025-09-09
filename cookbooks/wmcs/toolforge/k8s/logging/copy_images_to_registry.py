@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.k8s.images import ImageController
@@ -19,15 +19,9 @@ from wmcs_libs.k8s.kubernetes import validate_version
 class CopyImagesToRepo(CookbookBase):
     """Uploads the external Loki and Alloy images to the local Toolforge repository for local consumption."""
 
-    title = __doc__
-
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser, project_default="tools")
         parser.add_argument(
             "--image-repo-url",
@@ -56,7 +50,7 @@ class CopyImagesToRepo(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, CopyImagesToRepoRunner)(
             image_repo_url=args.image_repo_url,
             uploader_node=args.uploader_node,
@@ -67,7 +61,6 @@ class CopyImagesToRepo(CookbookBase):
 
 
 class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
-    """Runner for CopyImagesToRepo."""
 
     def __init__(
         self,
@@ -78,7 +71,7 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         alloy_version: str | None,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.image_repo_url = image_repo_url
         self.uploader_node = uploader_node
         self.loki_version = loki_version
@@ -98,7 +91,7 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         return f"for {', '.join(components)}"
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote()
         uploader_node = remote.query(f"D{{{self.uploader_node}}}", use_sudo=True)
 

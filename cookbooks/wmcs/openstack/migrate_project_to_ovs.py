@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.openstack.migrate_server_to_ovs import MigrateServerToOvs
 from wmcs_libs.common import (
@@ -29,17 +29,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MigrateProjectToOvs(CookbookBase):
-    """WMCS OpenStack cookbook to migrate a project to OVS."""
-
-    __title__ = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -52,7 +46,7 @@ class MigrateProjectToOvs(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, MigrateProjectToOvsRunner)(
             cluster_name=args.cluster_name,
             spicerack=self.spicerack,
@@ -60,10 +54,9 @@ class MigrateProjectToOvs(CookbookBase):
 
 
 class MigrateProjectToOvsRunner(WMCSCookbookRunnerBase):
-    """Runner for MigrateProjectToOvs"""
 
     def __init__(self, common_opts: CommonOpts, cluster_name: OpenstackClusterName, spicerack: Spicerack):
-        """Init"""
+
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
             cluster_name=cluster_name,
@@ -75,7 +68,6 @@ class MigrateProjectToOvsRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> int:
-        """Main entry point"""
 
         migrate_server_cookbook = MigrateServerToOvs(spicerack=self.spicerack)
         fail = False

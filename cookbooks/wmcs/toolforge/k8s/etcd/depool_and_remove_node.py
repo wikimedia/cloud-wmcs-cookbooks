@@ -16,7 +16,7 @@ import time
 
 import yaml
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.remote import Remote, RemoteHosts
 
 from cookbooks.wmcs.toolforge.k8s.etcd.remove_node_from_hiera import RemoveNodeFromHiera
@@ -44,17 +44,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ToolforgeDepoolAndRemoveNode(CookbookBase):
-    """WMCS Toolforge cookbook to remove and delete an existing etcd node"""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
             "--fqdn-to-remove",
@@ -74,7 +68,7 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> "ToolforgeDepoolAndRemoveNodeRunner":
-        """Get runner"""
+
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -174,7 +168,6 @@ def _fix_kubeadm(
 
 
 class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for ToolforgeDepoolAndRemoveNode"""
 
     def __init__(
         self,
@@ -184,7 +177,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         fqdn_to_remove: str,
         skip_etcd_certs_refresh: bool,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -197,7 +190,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         )
 
     def run(self) -> None:
-        """Main entry point"""
+
         remote = self.spicerack.remote()
 
         etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)

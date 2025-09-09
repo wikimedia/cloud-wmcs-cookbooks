@@ -21,7 +21,7 @@ from typing import Any, Optional, Union
 
 from cumin.transports import Command
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 from spicerack.puppet import PuppetHosts
 from wmflib.interactive import ask_confirmation
 
@@ -51,17 +51,10 @@ def _quote(mystr: str) -> str:
 
 
 class NFSServiceMigrateVolume(CookbookBase):
-    """WMCS Toolforge cookbook to move nfs service from one VM to another
-
-    Both new and old servers must have been prepared using the nfs/add_server
-    cookbook.
-    """
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(prog=__name__, description=__doc__, formatter_class=ArgparseFormatter)
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument("--from-host-id", required=True, help="old service host ID")
         parser.add_argument("--to-host-id", required=True, help="new service host ID")
@@ -76,7 +69,7 @@ class NFSServiceMigrateVolume(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(self.spicerack, args, NFSServiceMigrateVolumeRunner)(
             from_id=args.from_host_id,
             to_id=args.to_host_id,
@@ -86,7 +79,6 @@ class NFSServiceMigrateVolume(CookbookBase):
 
 
 class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
-    """Runner for NFSServiceMigrateVolume"""
 
     def __init__(
         self,
@@ -96,7 +88,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         force: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.from_id = from_id
         self.to_id = to_id
         self.project = common_opts.project
@@ -115,7 +107,7 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         self.to_fqdn = f"{self.to_name}.{self.project}.eqiad1.wikimedia.cloud"
 
     def run(self) -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-        """Main entry point"""
+
         if not self.from_server["volumes_attached"] and self.force:
             LOGGER.warning("Source server has no volume attached, checking if target already has an attachment")
             volume_id = self.to_server["volumes_attached"][0]["id"]

@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timedelta
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.openstack.network.tests import NetworkTests
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
@@ -24,17 +24,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RebootNode(CookbookBase):
-    """WMCS Openstack cookbook to reboot a single cloudgws, handling failover."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--fqdn-to-reboot",
@@ -51,7 +45,7 @@ class RebootNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -72,7 +66,6 @@ def check_network_ok(cluster_name: OpenstackClusterName, spicerack: Spicerack) -
 
 
 class RebootNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for RebootNode"""
 
     def __init__(
         self,
@@ -81,7 +74,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         skip_checks: bool,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         self.fqdn_to_reboot = fqdn_to_reboot
         self.skip_checks = skip_checks
@@ -114,7 +107,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
         return f"for host {self.fqdn_to_reboot}"
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         node = self.spicerack.remote().query(f"D{{{self.fqdn_to_reboot}}}", use_sudo=True)
         am_hosts = self.spicerack.alertmanager_hosts(node.hosts)
 

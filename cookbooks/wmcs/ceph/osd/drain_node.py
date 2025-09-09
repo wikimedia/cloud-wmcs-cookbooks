@@ -15,7 +15,7 @@ import datetime
 import logging
 
 from spicerack import Spicerack
-from spicerack.cookbook import ArgparseFormatter, CookbookBase
+from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.alerts import remove_silence, silence_host
 from wmcs_libs.ceph import CephClusterController
@@ -26,17 +26,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DrainNode(CookbookBase):
-    """WMCS Ceph cookbook to drain a ceph OSD node."""
-
-    title = __doc__
+    __doc__ = __doc__
 
     def argument_parser(self):
-        """Parse the command line arguments for this cookbook."""
-        parser = argparse.ArgumentParser(
-            prog=__name__,
-            description=__doc__,
-            formatter_class=ArgparseFormatter,
-        )
+
+        parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
             "--cluster-name",
@@ -93,7 +87,7 @@ class DrainNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-        """Get runner"""
+
         return with_common_opts(
             self.spicerack,
             args,
@@ -110,7 +104,6 @@ class DrainNode(CookbookBase):
 
 
 class DrainNodeRunner(WMCSCookbookRunnerBase):
-    """Runner for DrainNode"""
 
     def __init__(
         self,
@@ -123,7 +116,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
         set_maintenance: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-        """Init"""
+
         self.common_opts = common_opts
         self.osd_hostnames = osd_hostnames
         self.osd_ids = osd_ids
@@ -142,7 +135,7 @@ class DrainNodeRunner(WMCSCookbookRunnerBase):
                 raise Exception(f"Host {host} is not in the cluster {', '.join(cluster_nodes.keys())}")
 
     def run_with_proxy(self) -> None:
-        """Main entry point"""
+
         LOGGER.info("Draining nodes %s, osds %s", self.osd_hostnames, self.osd_ids if self.osd_ids else "all")
 
         if not self.force:

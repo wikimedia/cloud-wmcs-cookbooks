@@ -24,7 +24,7 @@ class WMCSCookbookBatchRunnerBase(WMCSCookbookRunnerBase, metaclass=ABCMeta):
         common_opts: CommonOpts,
         spicerack: Spicerack,
     ):
-        """Init"""
+
         self.common_opts = common_opts
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.query: str | None = None
