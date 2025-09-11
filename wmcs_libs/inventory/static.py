@@ -82,6 +82,8 @@ _INVENTORY: Inventory = {
                         ToolforgeKubernetesNodeRoleName.BASTION: [
                             "tools-bastion-12.tools.eqiad1.wikimedia.cloud",
                             "tools-bastion-13.tools.eqiad1.wikimedia.cloud",
+                            "tools-bastion-14.tools.eqiad1.wikimedia.cloud",
+                            "tools-bastion-15.tools.eqiad1.wikimedia.cloud",
                             "tools-sgebastion-10.tools.eqiad1.wikimedia.cloud",
                         ],
                     },
