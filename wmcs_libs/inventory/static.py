@@ -79,11 +79,12 @@ _INVENTORY: Inventory = {
                         ToolforgeKubernetesNodeRoleName.SERVICES: [
                             "tools-services-06.tools.eqiad1.wikimedia.cloud",
                         ],
+                        # Order matters, it will use the first to run functional tests
                         ToolforgeKubernetesNodeRoleName.BASTION: [
-                            "tools-bastion-12.tools.eqiad1.wikimedia.cloud",
-                            "tools-bastion-13.tools.eqiad1.wikimedia.cloud",
-                            "tools-bastion-14.tools.eqiad1.wikimedia.cloud",
                             "tools-bastion-15.tools.eqiad1.wikimedia.cloud",
+                            "tools-bastion-14.tools.eqiad1.wikimedia.cloud",
+                            "tools-bastion-13.tools.eqiad1.wikimedia.cloud",
+                            "tools-bastion-12.tools.eqiad1.wikimedia.cloud",
                             "tools-sgebastion-10.tools.eqiad1.wikimedia.cloud",
                         ],
                     },
@@ -103,9 +104,10 @@ _INVENTORY: Inventory = {
                         ToolforgeKubernetesNodeRoleName.SERVICES: [
                             "tools-services-06.tools.eqiad1.wikimedia.cloud",
                         ],
+                        # Order matters, it will use the first to run functional tests
                         ToolforgeKubernetesNodeRoleName.BASTION: [
-                            "toolsbeta-bastion-6.toolsbeta.eqiad1.wikimedia.cloud",
                             "toolsbeta-bastion-7.toolsbeta.eqiad1.wikimedia.cloud",
+                            "toolsbeta-bastion-6.toolsbeta.eqiad1.wikimedia.cloud",
                         ],
                     },
                 ),
