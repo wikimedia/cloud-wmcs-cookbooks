@@ -6,7 +6,7 @@ from pathlib import Path
 
 from wmcs_libs.common import CUMIN_SAFE_WITH_OUTPUT, CUMIN_UNSAFE_WITHOUT_OUTPUT, CommandRunnerMixin
 
-SUPPORTED_DISTROS = ["buster", "bullseye", "bookworm", "trixie"]
+SUPPORTED_DISTROS = ["trixie"]
 
 
 class Aptly(CommandRunnerMixin):
