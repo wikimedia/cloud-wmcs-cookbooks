@@ -344,11 +344,6 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             .clusters_by_type[cluster_name.get_type()][cluster_name]
             .nodes_by_role[ToolforgeKubernetesNodeRoleName.BASTION]
         )
-        # We can't install misctools that's built for a newer debian in the old bastions,
-        # so remove if that's the case
-        # TODO: remove once we don't have buster bastions
-        if component == "misctools-cli" and "tools-sgebastion-10.tools.eqiad1.wikimedia.cloud" in bastions_fqdns:
-            bastions_fqdns.pop(bastions_fqdns.index("tools-sgebastion-10.tools.eqiad1.wikimedia.cloud"))
         bastions = self.spicerack.remote().query(f"D{{{','.join(bastions_fqdns)}}}", use_sudo=True)
 
         package = COMPONENT_TO_PACKAGE_NAME[component]
