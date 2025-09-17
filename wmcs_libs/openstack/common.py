@@ -515,6 +515,10 @@ class OpenstackAPI(CommandRunnerMixin):
         """Create a service IP with a specified name"""
         return self.run_formatted_as_dict("port", "create", "--network", _quote(network), _quote(ip_name))
 
+    def get_service_ips(self, ip_name: OpenstackName, network: OpenstackIdentifier) -> list[dict[str, Any]]:
+        """Get service IPs with a specified name"""
+        return self.run_formatted_as_list("port", "list", "--network", _quote(network), "--name", _quote(ip_name))
+
     def attach_service_ip(self, ip_address: str, server_port_id: OpenstackIdentifier) -> str:
         """Attach a specified service ip address to the specified port"""
         return self.run_raw(
@@ -619,6 +623,10 @@ class OpenstackAPI(CommandRunnerMixin):
         return self.run_formatted_as_dict(
             "recordset", "create", "--type", record_type, "--record", record, zone_id, name
         )
+
+    def recordset_get(self, zone_id, record_type, name) -> list[dict[str, Any]]:
+        """Get zone record for specified dns zone"""
+        return self.run_formatted_as_list("recordset", "list", "--type", record_type, "--name", name, zone_id)
 
     def floating_ip_show(self, address: IPv4Address) -> NeutronFloatingIP:
         """Show information about a floating IP address."""

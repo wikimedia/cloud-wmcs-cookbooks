@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import socket
 from typing import Any
 
 from spicerack import Spicerack
@@ -30,11 +31,12 @@ from wmcs_libs.common import (
     SALLogger,
     WMCSCookbookRunnerBase,
     add_common_opts,
+    get_ip_address_family,
     run_one_raw,
     with_common_opts,
 )
 from wmcs_libs.inventory.openstack import OpenstackClusterName
-from wmcs_libs.openstack.common import OpenstackAPI, OpenstackID
+from wmcs_libs.openstack.common import OpenstackAPI, OpenstackID, OpenstackIdentifier, OpenstackName
 from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
@@ -51,11 +53,6 @@ class NFSAddServer(CookbookBase):
             prog=__name__, description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
         )
         add_common_opts(parser, project_default="cloudinfra-nfs")
-        parser.add_argument(
-            "--service-ip",
-            action="store_true",
-            help="If set, a service IP and fqdn will be created and attached to the new host.",
-        )
         parser.add_argument(
             "--create-storage-volume-size",
             type=int,
@@ -76,7 +73,6 @@ class NFSAddServer(CookbookBase):
         return runner(
             prefix=args.prefix,
             volume=args.volume,
-            service_ip=args.service_ip,
             create_storage_volume_size=args.create_storage_volume_size,
             spicerack=self.spicerack,
         )
@@ -88,7 +84,6 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         prefix: str,
-        service_ip: bool,
         volume: str,
         create_storage_volume_size: int,
         spicerack: Spicerack,
@@ -100,8 +95,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
         self.volume = volume
         self.project = common_opts.project
         super().__init__(spicerack=spicerack, common_opts=common_opts)
-        self.prefix = prefix
-        self.service_ip = service_ip
+        self.prefix = prefix if prefix is not None else self.volume
         self.instance_creation_opts = instance_creation_opts
         if self.instance_creation_opts.network is None:
             raise Exception("Missing network please provide one")
@@ -109,15 +103,14 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
         self.network = self.instance_creation_opts.network
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
-    def run(self) -> None:
+    def run(self) -> None:  # pylint: disable=too-many-locals
         """Main entry point"""
-        prefix = self.prefix if self.prefix is not None else f"{self.volume}"
 
         start_args = [
             "--project",
             self.project,
             "--prefix",
-            prefix,
+            self.prefix,
             "--security-group",
             "nfs",
             "--sign-puppet-certs",
@@ -178,20 +171,50 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
                 node=new_node,
             )
 
-        if self.service_ip:
+        # Create the service IP in the network, idempotent
+        service_ip, service_ip_created = self._get_or_create_service_ip(openstack_api, self.volume, self.network)
+        if service_ip_created:
+            logging.warning("The new service IP is %s", service_ip)
             host_port = openstack_api.port_get_for_server(new_server.server_id)[0]
-
-            service_ip_response = openstack_api.create_service_ip(self.volume, self.network)
-            service_ip = service_ip_response["fixed_ips"][0]["ip_address"]
-
-            logging.warning("The new service_ip is %s", service_ip)
             openstack_api.attach_service_ip(service_ip, host_port.port_id)
 
-            zone_record = openstack_api.zone_get(f"svc.{self.project}.eqiad1.wikimedia.cloud.")
-            openstack_api.recordset_create(
-                zone_record[0]["id"], "A", f"{self.prefix}.svc.{self.project}.eqiad1.wikimedia.cloud.", service_ip
-            )
+        # Create DNS records, idempotent
+        zone_name = f"svc.{self.project}.eqiad1.wikimedia.cloud."
+        service_name = f"{self.prefix}.{zone_name}"
+        zone_record = openstack_api.zone_get(zone_name)
+        zone_id = zone_record[0]["id"]
+
+        recordset_entry = openstack_api.recordset_get(zone_id, "A", service_name)
+        if len(recordset_entry) == 0:
+            openstack_api.recordset_create(zone_id, "A", service_name, service_ip)
 
         # Apply all pending changes
         run_one_raw(node=new_node, command=["/usr/local/sbin/run-puppet-agent"])
         self.sallogger.log(f"created NFS server {new_server.server_fqdn}")
+
+    def _get_or_create_service_ip(
+        self,
+        api: OpenstackAPI,
+        name: OpenstackName,
+        network: OpenstackIdentifier,
+    ) -> tuple[Any, bool]:
+        """Check if service IPv4 exists, if not create it.
+        Return the first service IP found and whether or not it was created."""
+
+        service_ip_af = socket.AF_INET
+
+        existing = api.get_service_ips(name, network)
+        if len(existing) > 0:
+            for service_ip in existing:
+                for entry in service_ip["Fixed IP Addresses"]:
+                    if service_ip_af == get_ip_address_family(entry["ip_address"]):
+                        return entry["ip_address"], False
+            return None, False
+
+        # Create and return IP
+        response = api.create_service_ip(name, network)
+        for entry in response["fixed_ips"]:
+            if service_ip_af == get_ip_address_family(entry["ip_address"]):
+                return entry["ip_address"], True
+        # No suitable addresses found or returned by create_service_ip
+        return None, False
