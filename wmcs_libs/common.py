@@ -6,9 +6,11 @@ from __future__ import annotations
 __title__ = __doc__
 import argparse
 import base64
+import ipaddress
 import json
 import logging
 import re
+import socket
 import uuid
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -18,7 +20,7 @@ from functools import partial
 from itertools import chain
 from pathlib import Path
 from types import MethodType
-from typing import Any, Callable, Generator, Pattern
+from typing import Any, Callable, Generator, Optional, Pattern
 from unittest import mock
 
 import yaml
@@ -854,3 +856,19 @@ def ask_confirmation_with_all(message: str) -> bool:
         raise AbortError("Task manually aborted")
 
     return response == "all"
+
+
+def get_ip_address_family(ip_string: str) -> Optional[socket.AddressFamily]:
+    """Return the address family of IP address as socket AF_INET / AF_INET6 constants, or on error."""
+    af = None
+
+    try:
+        addr = ipaddress.ip_address(ip_string)
+        if addr.version == 4:
+            af = socket.AF_INET
+        if addr.version == 6:
+            af = socket.AF_INET6
+    except ValueError:
+        pass
+
+    return af
