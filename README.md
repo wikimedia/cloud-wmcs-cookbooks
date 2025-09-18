@@ -9,7 +9,7 @@ the cookbooks (pulls the dependencies):
 ```
 dcaro@vulcanus:wmcs-cookbooks$  python3 -m venv ~/.spicerack_venv
 dcaro@vulcanus:wmcs-cookbooks$  source ~/.spicerack_venv/bin/activate
-dcaro@vulcanus:wmcs-cookbooks$  python setup.py install
+dcaro@vulcanus:wmcs-cookbooks$  pip install -e .
 ```
 
 To configure the cookbooks, just run the config generation script from the top
