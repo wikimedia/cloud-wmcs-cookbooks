@@ -422,6 +422,7 @@ class NeutronPort(NeutronPartialPort):
 
     device_id: OpenstackID | None
     device_owner: str | None
+    network_id: str
 
     @classmethod
     def from_port_data(cls, port_data: dict[str, Any]) -> "NeutronPort":
@@ -431,6 +432,7 @@ class NeutronPort(NeutronPartialPort):
             mac_address=port_data["mac_address"],
             device_id=_if_not_empty(port_data["device_id"]),
             device_owner=_if_not_empty(port_data["device_owner"]),
+            network_id=port_data["network_id"],
         )
 
 
