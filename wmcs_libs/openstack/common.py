@@ -628,6 +628,14 @@ class OpenstackAPI(CommandRunnerMixin):
         """Get zone record for specified dns zone"""
         return self.run_formatted_as_list("recordset", "list", "--type", record_type, "--name", name, zone_id)
 
+    def recordset_show(self, zone_id, record_id) -> dict[str, Any]:
+        """Show zone record details for specified dns zone"""
+        return self.run_formatted_as_dict("recordset", "show", zone_id, record_id)
+
+    def recordset_delete(self, zone_id, recordset_id) -> dict[str, Any]:
+        """Delete zone record for specified dns zone"""
+        return self.run_formatted_as_dict("recordset", "delete", zone_id, recordset_id)
+
     def floating_ip_show(self, address: IPv4Address) -> NeutronFloatingIP:
         """Show information about a floating IP address."""
         data = self.run_formatted_as_dict(

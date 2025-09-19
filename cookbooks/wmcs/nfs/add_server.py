@@ -172,7 +172,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
             )
 
         # Create the service IP in the network, idempotent
-        service_ip, service_ip_created = self._get_or_create_service_ip(openstack_api, self.volume, self.network)
+        service_ip, service_ip_created = self._get_or_create_service_ip(openstack_api, self.prefix, self.network)
         if service_ip_created:
             logging.warning("The new service IP is %s", service_ip)
             host_port = openstack_api.port_get_for_server(new_server.server_id)[0]
