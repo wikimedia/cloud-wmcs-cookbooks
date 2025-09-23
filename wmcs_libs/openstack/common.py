@@ -479,8 +479,6 @@ class OpenstackAPI(CommandRunnerMixin):
             format_args = ["-f", "json"]
         else:
             format_args = []
-        if "delete" in command:
-            format_args = []
 
         if "--os-cloud" not in command:
             oscloud_args = ["--os-cloud", "novaadmin"]
@@ -707,7 +705,7 @@ class OpenstackAPI(CommandRunnerMixin):
         Openstack, that's probably not the FQDN (and hopefully the hostname,
         but maybe not).
         """
-        self.run_raw("server", "delete", name_to_remove)
+        self.run_raw("server", "delete", name_to_remove, json_output=False)
 
     def server_force_reboot(self, name_to_reboot: OpenstackName) -> None:
         """Force reboot a VM.
