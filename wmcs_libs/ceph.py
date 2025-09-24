@@ -1535,7 +1535,10 @@ class CephClusterController(CommandRunnerMixin):
                 device
                 for device in host_devices
                 if device.get("children", [])
-                and any(child.get("mountpoint", "") == "/" for child in device["children"])
+                and (
+                    any(child.get("mountpoint", "") == "/" for child in device["children"])
+                    or any(child.get("mountpoints", "") == ["/"] for child in device["children"])
+                )
             ]
             if len(os_devices) != 1:
                 LOGGER.info("    NOOK")
