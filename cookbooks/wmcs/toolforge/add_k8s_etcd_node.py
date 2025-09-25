@@ -103,7 +103,7 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
 
         etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
 
-        security_group = get_cluster_security_group_name(self.cluster_name)
+        security_group = get_cluster_security_group_name(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
         server_group = get_cluster_node_server_group_name(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
 
         start_args = [

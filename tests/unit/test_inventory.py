@@ -1,10 +1,13 @@
-from typing import Type
+from __future__ import annotations
+
+from typing import Type, cast
 
 import pytest
 
 from wmcs_libs.common import UtilsForTesting
 from wmcs_libs.inventory.ceph import CephNodeRoleName
 from wmcs_libs.inventory.cluster import Cluster, ClusterName, ClusterType, NodeRoleName, Site, SiteName
+from wmcs_libs.inventory.dynamic import get_inventory
 from wmcs_libs.inventory.exceptions import InventoryError
 from wmcs_libs.inventory.libs import NodeInventoryInfo, get_node_inventory_info, get_openstack_project_deployment
 from wmcs_libs.inventory.openstack import OpenstackCluster, OpenstackClusterName, OpenstackNodeRoleName
@@ -244,3 +247,23 @@ def test_get_openstack_project_deployment_ok(
 def test_get_openstack_project_deployment_invalid(node_fqdn: str) -> None:
     with pytest.raises(InventoryError):
         assert get_openstack_project_deployment(node_fqdn) is None
+
+
+@pytest.mark.parametrize(
+    "cluster_name,expected_cluster_prefix",
+    [
+        [ToolforgeKubernetesClusterName.TOOLS, "k8s"],
+        [ToolforgeKubernetesClusterName.TOOLSBETA, "test-k8s"],
+    ],
+)
+def test_ToolforgeKubernetesCluster_cluster_prefix(
+    cluster_name: ToolforgeKubernetesClusterName,
+    expected_cluster_prefix: str,
+) -> None:
+    site = cluster_name.get_site()
+    inventory = get_inventory()
+    cluster = cast(
+        ToolforgeKubernetesCluster, inventory[site].clusters_by_type[ClusterType.TOOLFORGE_KUBERNETES][cluster_name]
+    )
+
+    assert cluster.cluster_prefix == expected_cluster_prefix

@@ -173,7 +173,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
 
         node_prefix = get_cluster_node_prefix(self.cluster_name, self.role)
-        security_group = get_cluster_security_group_name(self.cluster_name)
+        security_group = get_cluster_security_group_name(self.cluster_name, self.role)
         server_group = get_cluster_node_server_group_name(self.cluster_name, self.role)
 
         start_args = [

@@ -25,6 +25,7 @@ from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
     get_cluster_node_prefix,
     get_cluster_node_server_group_name,
+    get_cluster_security_group_name,
     with_toolforge_kubernetes_cluster_opts,
 )
 from wmcs_libs.k8s.kubeadm import (
@@ -152,6 +153,7 @@ class ToolforgeAddK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
     def run(self) -> None:
 
         haproxy_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.HAPROXY)
+        security_group = get_cluster_security_group_name(self.cluster_name, ToolforgeKubernetesNodeRoleName.HAPROXY)
         server_group = get_cluster_node_server_group_name(self.cluster_name, ToolforgeKubernetesNodeRoleName.HAPROXY)
 
         start_args = [
@@ -160,10 +162,7 @@ class ToolforgeAddK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
             "--prefix",
             haproxy_prefix,
             "--security-group",
-            # This is intentionally haproxy_prefix. We don't want to re-use the
-            # full-connectivity one since we don't need that, and haproxy_prefix
-            # is already prefixed and is role-specific.
-            haproxy_prefix,
+            security_group,
             "--server-group",
             server_group,
             "--sign-puppet-certs",

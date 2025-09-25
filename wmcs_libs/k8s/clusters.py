@@ -57,9 +57,14 @@ def _get_cluster(cluster_name: ToolforgeKubernetesClusterName) -> ToolforgeKuber
     )
 
 
-def get_cluster_security_group_name(cluster_name: ToolforgeKubernetesClusterName) -> str:
+def get_cluster_security_group_name(
+    cluster_name: ToolforgeKubernetesClusterName,
+    role: ToolforgeKubernetesNodeRoleName,
+) -> str:
     """Gets the name of the OpenStack security group that is used between all the members of a given cluster."""
     cluster = _get_cluster(cluster_name)
+    if role.has_own_security_group:
+        return f"{cluster.cluster_prefix}-{role.value}"
     return cluster.security_group_name
 
 
@@ -73,4 +78,7 @@ def get_cluster_node_server_group_name(
     cluster_name: ToolforgeKubernetesClusterName, role: ToolforgeKubernetesNodeRoleName
 ) -> str:
     """Gets the name of the OpenStack server group to use for given role in a given cluster."""
+    if role.is_tofu_managed:
+        cluster = _get_cluster(cluster_name)
+        return f"{cluster.instance_prefix}-k8s-{role.value}"
     return f"{cluster_name.name.lower()}-k8s-{role.value}"

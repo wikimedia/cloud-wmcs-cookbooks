@@ -68,6 +68,16 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
         )
 
     @property
+    def is_tofu_managed(self) -> bool:
+        """Check if the server and security groups for are managed by Tofu."""
+        return self in (ToolforgeKubernetesNodeRoleName.HAPROXY,)
+
+    @property
+    def has_own_security_group(self) -> bool:
+        """Check if this role uses its own security group instead of the cluster-wide one."""
+        return self in (ToolforgeKubernetesNodeRoleName.HAPROXY,)
+
+    @property
     def has_extra_image_storage(self) -> bool:
         """Check if nodes in this role have an extra partition for container image storage."""
         return self in (ToolforgeKubernetesNodeRoleName.WORKER, ToolforgeKubernetesNodeRoleName.WORKER_NFS)
@@ -111,3 +121,12 @@ class ToolforgeKubernetesCluster(Cluster):
     security_group_name: str
     nodes_by_role: dict[ToolforgeKubernetesNodeRoleName, list[str]]
     prometheus_url: str
+
+    @property
+    def cluster_prefix(self) -> str:
+        """Prefix for this cluster without the project name prefix (e.g. "k8s", "test-k8s")."""
+        if self.instance_prefix == self.name.value:
+            prefix = ""
+        else:
+            prefix = f'{self.instance_prefix.removeprefix(f"{self.name}-")}-'
+        return f"{prefix}k8s"
