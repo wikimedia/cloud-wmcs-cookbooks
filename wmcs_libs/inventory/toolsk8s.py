@@ -56,7 +56,7 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     @property
     def runs_kubelet(self) -> bool:
         """Check if this node type is a Kubernetes worker or control node."""
-        return self not in (ToolforgeKubernetesNodeRoleName.ETCD, ToolforgeKubernetesNodeRoleName.HAPROXY)
+        return self.is_worker or self == ToolforgeKubernetesNodeRoleName.CONTROL
 
     @property
     def is_worker(self) -> bool:
