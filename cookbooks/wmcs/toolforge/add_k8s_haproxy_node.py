@@ -15,16 +15,22 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix, CreateServerResponse
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
+from wmcs_libs.common import (
+    CommonOpts,
+    WMCSCookbookRunnerBase,
+    get_ip_address_family,
+)
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
-    get_cluster_api_vip_fqdn,
     get_cluster_node_prefix,
     get_cluster_node_server_group_name,
     with_toolforge_kubernetes_cluster_opts,
 )
-from wmcs_libs.k8s.kubeadm import HAPROXY_KEEPALIVED_PEERS_HIERA_KEY
+from wmcs_libs.k8s.kubeadm import (
+    HAPROXY_KEEPALIVED_PEERS_HIERA_KEY,
+    HAPROXY_KEEPALIVED_VIPS_HIERA_KEY,
+)
 from wmcs_libs.openstack.common import OpenstackAPI
 from wmcs_libs.openstack.enc import Enc
 
@@ -104,20 +110,31 @@ class ToolforgeAddK8sHaproxyNodeRunner(WMCSCookbookRunnerBase):
             project=self.cluster_name.get_project(),
         )
 
+        self.enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
+
         self.image = image
         self.flavor = flavor
         self.network = network
 
     def _attach_service_vip(self, new_server: CreateServerResponse):
-        service_vip_fqdn = get_cluster_api_vip_fqdn(self.cluster_name)
-        service_vip = self.spicerack.dns().resolve_ipv4(service_vip_fqdn)[0]
+        config = self.enc.node_config(self.cluster_name.get_project(), new_server.server_hostname)
+        vips = config.hiera.get(HAPROXY_KEEPALIVED_VIPS_HIERA_KEY, [])
+        if not vips:
+            raise ValueError("No VIPs found?")
+
+        ips = []
+        dns = self.spicerack.dns()
+        for vip in vips:
+            if get_ip_address_family(vip) is not None:
+                ips.append(vip)
+            else:
+                ips.extend(dns.resolve_ips(vip))
 
         server_port = self.openstack_api.port_get_for_server(new_server.server_id)[0]
-        self.openstack_api.attach_service_ip(service_vip, server_port.port_id)
+        self.openstack_api.attach_service_ips(vips, server_port.port_id)
 
     def _update_enc_node_list(self, new_server: CreateServerResponse, hiera_prefix: str) -> list[str]:
-        enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
-        enc_prefix = enc.prefix(
+        enc_prefix = self.enc.prefix(
             self.cluster_name.get_project(),
             hiera_prefix,
         )

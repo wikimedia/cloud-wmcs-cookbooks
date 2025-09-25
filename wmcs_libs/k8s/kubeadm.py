@@ -26,6 +26,7 @@ PKI_FILES_TO_TRANSFER = [
 ]
 
 HAPROXY_KEEPALIVED_PEERS_HIERA_KEY = "profile::toolforge::k8s::haproxy::keepalived_peers"
+HAPROXY_KEEPALIVED_VIPS_HIERA_KEY = "profile::toolforge::k8s::haproxy::keepalived_vips"
 KUBEADM_VERSION_COMPONENT_HIERA_KEY = "profile::wmcs::kubeadm::component"
 KUBERNETES_VERSION_HIERA_KEY = "profile::wmcs::kubeadm::kubernetes_version"
 

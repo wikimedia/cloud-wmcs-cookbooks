@@ -68,7 +68,6 @@ _INVENTORY: Inventory = {
                     name=ToolforgeKubernetesClusterName.TOOLS,
                     instance_prefix="tools",
                     security_group_name="tools-new-k8s-full-connectivity",
-                    api_vip_fqdn="k8s.svc.tools.eqiad1.wikimedia.cloud",
                     prometheus_url="https://prometheus.svc.toolforge.org/tools/api/v1",
                     nodes_by_role={
                         ToolforgeKubernetesNodeRoleName.CONTROL: [
@@ -90,7 +89,6 @@ _INVENTORY: Inventory = {
                     name=ToolforgeKubernetesClusterName.TOOLSBETA,
                     instance_prefix="toolsbeta-test",
                     security_group_name="toolsbeta-k8s-full-connectivity",
-                    api_vip_fqdn="k8s.svc.toolsbeta.eqiad1.wikimedia.cloud",
                     prometheus_url="https://prometheus.svc.beta.toolforge.org/tools/api/v1",
                     nodes_by_role={
                         ToolforgeKubernetesNodeRoleName.CONTROL: [

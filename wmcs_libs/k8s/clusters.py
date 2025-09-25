@@ -74,9 +74,3 @@ def get_cluster_node_server_group_name(
 ) -> str:
     """Gets the name of the OpenStack server group to use for given role in a given cluster."""
     return f"{cluster_name.name.lower()}-k8s-{role.value}"
-
-
-def get_cluster_api_vip_fqdn(cluster_name: ToolforgeKubernetesClusterName) -> str:
-    """Gets the FQDN of the service IP address used to access the Kubernetes API."""
-    cluster = _get_cluster(cluster_name)
-    return cluster.api_vip_fqdn

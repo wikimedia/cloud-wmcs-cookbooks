@@ -154,7 +154,6 @@ def get_dummy_inventory(
                     cluster_extra_args={
                         "instance_prefix": "toolsbeta-test",
                         "security_group_name": "toolsbeta-k8s-full-connectivity",
-                        "api_vip_fqdn": "k8s.svc.toolsbeta.eqiad1.wikimedia.cloud",
                         "prometheus_url": "https://dummy.local",
                     },
                 ),
@@ -178,7 +177,6 @@ def get_dummy_inventory(
                     cluster_extra_args={
                         "instance_prefix": "tools",
                         "security_group_name": "tools-new-k8s-full-connectivity",
-                        "api_vip_fqdn": "k8s.svc.toolsbeta.eqiad1.wikimedia.cloud",
                         "prometheus_url": "https://dummy.local",
                     },
                 ),

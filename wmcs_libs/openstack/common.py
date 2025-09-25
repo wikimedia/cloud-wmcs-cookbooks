@@ -521,11 +521,23 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def attach_service_ip(self, ip_address: str, server_port_id: OpenstackIdentifier) -> str:
         """Attach a specified service ip address to the specified port"""
+        return self.attach_service_ips([ip_address], server_port_id)
+
+    def attach_service_ips(self, ip_addresses: list[str], server_port_id: OpenstackIdentifier) -> str:
+        """Attach the specified service ip addresses to the specified port"""
+        address_args = []
+        for addr in ip_addresses:
+            address_args.extend(
+                [
+                    "--allowed-address",
+                    f"ip-address={addr}",
+                ]
+            )
+
         return self.run_raw(
             "port",
             "set",
-            "--allowed-address",
-            f"ip-address={ip_address}",
+            *address_args,
             _quote(server_port_id),
             json_output=False,
         )

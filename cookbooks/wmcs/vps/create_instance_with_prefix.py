@@ -50,6 +50,10 @@ class CreateServerResponse:
     server_id: OpenstackIdentifier
     server_fqdn: str
 
+    @property
+    def server_hostname(self) -> str:
+        return self.server_fqdn.split(".", maxsplit=1)[0]
+
 
 @dataclass(frozen=True)
 class InstanceCreationOpts:
