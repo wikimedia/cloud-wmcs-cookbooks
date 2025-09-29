@@ -81,7 +81,7 @@ class ToolforgeK8sRebootStuckWorkersRunner(WMCSCookbookRunnerBase):
         inventory = get_static_inventory()
         # this comes from the alert ToolforgeKubernetesWorkerTooManyDProcesses
         # https://gitlab.wikimedia.org/repos/cloud/toolforge/alerts/-/blob/main/kubernetes/worker_stuck.yaml?ref_type=heads
-        self.query = 'avg_over_time(node_processes_state{instance=~"tools.*-k8s-worker-nfs.*",state="D"}[1h]) > 12'
+        self.query = "sum(prometheus_k8s_nfs_stuck_total_procs) by (instance) > 0"
         self.prometheus_url = cast(
             ToolforgeKubernetesCluster,
             inventory[SiteName.EQIAD].clusters_by_type[ClusterType.TOOLFORGE_KUBERNETES][cluster_name],
@@ -103,7 +103,7 @@ class ToolforgeK8sRebootStuckWorkersRunner(WMCSCookbookRunnerBase):
 
         if not self.yes_i_know:
             workers_str = "\n* ".join(self.hostname_list)
-            ask_confirmation(f"Will reboot the workers:{workers_str}" + "\nAre you sure?")
+            ask_confirmation(f"Will reboot the workers:\n* {workers_str}" + "\nAre you sure?")
 
         ToolforgeK8sRebootRunner(
             common_opts=self.common_opts,
