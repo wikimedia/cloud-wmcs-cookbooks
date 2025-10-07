@@ -809,12 +809,16 @@ class OpenstackAPI(CommandRunnerMixin):
         out = self.run_formatted_as_dict("volume", "create", "--size", str(size), "--type", "standard", name)
         return out["id"]
 
+    def volume_set_state(self, volume_id: OpenstackID, state: str):
+        """Set volume state."""
+        self.run_raw("volume", "set", "--state", state, volume_id, json_output=False)
+
     def volume_attach(self, server_id: OpenstackID, volume_id: OpenstackID) -> None:
         """Attach a volume to a server"""
         self.run_raw("server", "add", "volume", server_id, volume_id, json_output=False)
 
     def volume_detach(self, server_id: OpenstackID, volume_id: OpenstackID) -> None:
-        """Attach a volume to a server"""
+        """Detach a volume from a server"""
         self.run_raw("server", "remove", "volume", server_id, volume_id, json_output=False)
 
     def server_from_id(self, server_id: OpenstackIdentifier) -> dict[str, Any]:
