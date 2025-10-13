@@ -113,4 +113,5 @@ class ToolforgeK8sRebootStuckWorkersRunner(WMCSCookbookRunnerBase):
             do_all=False,
             do_all_nfs_workers=False,
             do_all_workers=False,
+            skip_drain=False,
         ).run_with_proxy()

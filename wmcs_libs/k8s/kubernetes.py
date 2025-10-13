@@ -395,14 +395,15 @@ class KubernetesController:
         )
 
     def reboot_node(
-        self, node_hostname: str, domain: str
+        self, node_hostname: str, domain: str, skip_drain: bool = False
     ) -> Generator[KubernetesRebootNodePhase, KubernetesRebootNodePhase, KubernetesRebootNodePhase]:
         """Reboot k8s node."""
-        yield KubernetesRebootNodePhase.DRAIN
-        self.drain_node(node_hostname)
+        if not skip_drain:
+            yield KubernetesRebootNodePhase.DRAIN
+            self.drain_node(node_hostname)
 
-        yield KubernetesRebootNodePhase.WAIT_DRAIN
-        self.wait_for_drain(node_hostname)
+            yield KubernetesRebootNodePhase.WAIT_DRAIN
+            self.wait_for_drain(node_hostname)
 
         yield KubernetesRebootNodePhase.VM_REBOOT
         node_fqdn = f"{node_hostname}.{domain}"

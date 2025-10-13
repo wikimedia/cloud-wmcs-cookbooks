@@ -54,6 +54,12 @@ class ToolforgeK8sReboot(CookbookBase):
             help="operate on all cluster nodes",
         )
         parser.add_argument(
+            "--skip-drain",
+            required=False,
+            action="store_true",
+            help="don't drain, just reboot, useful when kubelet is not responsive",
+        )
+        parser.add_argument(
             "--all-workers",
             required=False,
             action="store_true",
@@ -79,6 +85,7 @@ class ToolforgeK8sReboot(CookbookBase):
             do_all=args.all,
             do_all_workers=args.all_workers,
             do_all_nfs_workers=args.all_nfs_workers,
+            skip_drain=args.skip_drain,
         )
 
 
@@ -92,6 +99,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
         do_all: bool,
         do_all_workers: bool,
         do_all_nfs_workers: bool,
+        skip_drain: bool,
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
 
@@ -108,6 +116,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
             cluster_name=OpenstackClusterName.EQIAD1,
             project=self.common_opts.project,
         )
+        self.skip_drain = skip_drain
 
         if (do_all or do_all_workers or do_all_nfs_workers) and hostname_list:
             raise Exception("--all/--all-workers/--all-nfs-workers and --hostname-list are mutually exclusive")
@@ -152,7 +161,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
                 k8s_controller = KubernetesController(self.spicerack.remote(), control_node_fqdn)
 
             try:
-                for phase in k8s_controller.reboot_node(node_hostname, self.domain):
+                for phase in k8s_controller.reboot_node(node_hostname, self.domain, skip_drain=self.skip_drain):
                     LOGGER.info("INFO: %s: reboot phase: %s", node_hostname, phase)
             except Exception:  # pylint: disable=broad-except
                 LOGGER.info(
