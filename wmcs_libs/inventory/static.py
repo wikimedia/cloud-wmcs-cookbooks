@@ -56,8 +56,8 @@ _INVENTORY: Inventory = {
                             "cloudcontrol1011.eqiad.wmnet",
                         ],
                         OpenstackNodeRoleName.GATEWAY: [
-                            "cloudgw1001.eqiad.wmnet",
-                            "cloudgw1002.eqiad.wmnet",
+                            "cloudgw1003.eqiad.wmnet",
+                            "cloudgw1004.eqiad.wmnet",
                         ],
                     },
                     internal_network_name="VXLAN/IPv6-dualstack",
@@ -136,7 +136,6 @@ _INVENTORY: Inventory = {
                             "cloudcontrol2010-dev.codfw.wmnet",
                         ],
                         OpenstackNodeRoleName.GATEWAY: [
-                            "cloudgw2001-dev.codfw.wmnet",
                             "cloudgw2002-dev.codfw.wmnet",
                             "cloudgw2003-dev.codfw.wmnet",
                         ],
