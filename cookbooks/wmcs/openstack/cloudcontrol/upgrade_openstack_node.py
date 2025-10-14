@@ -31,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 
 def check_network_ok(cluster_name: OpenstackClusterName, spicerack: Spicerack) -> None:
     """Run the network tests and check if they pass."""
-    args = ["--cluster_name", str(cluster_name)]
+    args = ["--cluster-name", str(cluster_name)]
     network_test_cookbook = NetworkTests(spicerack=spicerack)
     if network_test_cookbook.get_runner(args=network_test_cookbook.argument_parser().parse_args(args)).run() != 0:
         raise Exception("Network tests failed, see logs or run the cookbook for details.")

@@ -1,8 +1,8 @@
 r"""WMCS openstack network tests - Run a network testsuite
 
 Usage example:
-  cookbook wmcs.openstack.network.tests --cluster_name codfw1dev
-  cookbook wmcs.openstack.network.tests --cluster_name eqiad1
+  cookbook wmcs.openstack.network.tests --cluster-name codfw1dev
+  cookbook wmcs.openstack.network.tests --cluster-name eqiad1
 
 Documentation:
   https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Network/Tests

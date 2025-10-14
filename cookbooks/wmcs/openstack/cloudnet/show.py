@@ -2,7 +2,7 @@ r"""WMCS Openstack - Show the current cloudnets and some info.
 
 Usage example:
     cookbook wmcs.openstack.cloudnet.show \
-        --cluster_name eqiad1
+        --cluster-name eqiad1
 
 """
 
