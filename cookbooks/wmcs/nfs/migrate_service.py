@@ -241,6 +241,11 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
             # Don't fail if it's already mounted.
             run_one_raw(command=Command(command=f"mount {volume_path}", ok_codes=[]), node=to_node)
         else:
+            # This is both ugly and effective. The proper solution would be to
+            # retry until the device shows up, however the small race window
+            # means that an arbitrary sleep is good enough.
+            time.sleep(10)
+
             run_one_raw(
                 node=to_node,
                 command=[
