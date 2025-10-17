@@ -226,9 +226,15 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         try:
             self.openstack_api.volume_detach(self.from_id, volume_id)
 
-            # Force state to be 'available', see also T404584
             volume_detached_info = self.openstack_api.volume_from_id(volume_id)
             if volume_detached_info["status"] == "reserved":
+                LOGGER.warning(
+                    """
+                    Volume %s was found in status 'reserved'. Forcing status to 'available'.
+                    THIS SHOULD NOT HAPPEN! See also https://phabricator.wikimedia.org/T406688
+                    """,
+                    volume_id,
+                )
                 self.openstack_api.volume_set_state(volume_id, "available")
 
             self.openstack_api.volume_attach(self.to_id, volume_id)
