@@ -1176,7 +1176,7 @@ class CephClusterController(CommandRunnerMixin):
         Return True if there were any osds removed (so you can decide if waiting for rebalancing or not).
         """
         start_time = datetime.now()
-        timeout = timedelta(hours=8)
+        timeout = timedelta(hours=12)
 
         if batch_size == 0:
             batch_size = len(osd_ids)
@@ -1250,7 +1250,7 @@ class CephClusterController(CommandRunnerMixin):
             return
 
         start_time = datetime.now()
-        timeout = timedelta(hours=8)
+        timeout = timedelta(hours=12)
 
         if batch_size == 0:
             batch_size = len(osd_id_nodes)
