@@ -29,6 +29,7 @@ from cookbooks.wmcs.toolforge.run_tests import ToolforgeRunTestsRunner
 from wmcs_libs.aptly import SUPPORTED_DISTROS, Aptly
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
+    CUMIN_UNSAFE_WITH_OUTPUT,
     CUMIN_UNSAFE_WITHOUT_OUTPUT,
     CommonOpts,
     WMCSCookbookRunnerBase,
@@ -401,7 +402,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         # deploy!
         cmd = f"{repo_dir}/deploy.sh '{component}' {wait and '--wait' or ''}"
         LOGGER.info("INFO: deploying ...")
-        run_one_raw(node=deploy_node, command=[cmd], cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
+        run_one_raw(node=deploy_node, command=[cmd], cumin_params=CUMIN_UNSAFE_WITH_OUTPUT)
 
         self._cleanup_temp_dir(node=deploy_node)
         LOGGER.info("INFO: deployed %s on %s from branch %s", component, cluster_name.value, git_branch)
