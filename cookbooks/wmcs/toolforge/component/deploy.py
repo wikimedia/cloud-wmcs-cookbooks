@@ -156,17 +156,22 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
 
         if self.component in COMPONENT_TO_PACKAGE_NAME:
             self._deploy_package(component=self.component, cluster_name=self.cluster_name, branch=self.git_branch)
+            # packages are not tracked in toolforge-deploy, so they use the
+            # main branch for the tests
+            test_branch = "main"
         else:
             self._deploy_k8s_component(
                 component=self.component,
                 git_branch=self.git_branch,
                 cluster_name=self.cluster_name,
             )
+            test_branch = self.git_branch
 
         if self.run_tests:
             tests_results = self._run_tests(
                 cluster_name=self.cluster_name,
-                branch=self.git_branch,
+                test_branch=test_branch,
+                mr_branch=self.git_branch,
                 filter_tags=self.filter_tags,
                 component=self.component,
                 run_all_tests=self.run_all_tests,
@@ -175,10 +180,11 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             if "PASSED" not in tests_results["status"]:
                 raise Exception(f"Failed deploying {self.component} in {self.cluster_name} (see logs for details)")
 
-    def _run_tests(
+    def _run_tests(  # pylint: disable=too-many-arguments
         self,
         cluster_name: ToolforgeKubernetesClusterName,
-        branch: str,
+        test_branch: str,
+        mr_branch: str,
         filter_tags: list[str],
         component: str,
         run_all_tests: bool,
@@ -188,19 +194,19 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             cluster_name=cluster_name,
             spicerack=self.spicerack,
             # these ones is not really used as we use the internal method
-            branch=branch,
+            branch=test_branch,
             filter_tags=filter_tags,
         )
         test_results = tests_cookbook.run_tests(
-            filter_tags=filter_tags, branch=branch, component=None if run_all_tests else component
+            filter_tags=filter_tags, branch=test_branch, component=None if run_all_tests else component
         )
 
         try:
             self._send_mr_comment(
-                test_result=test_results, branch=branch, cluster_name=cluster_name, component=component
+                test_result=test_results, branch=mr_branch, cluster_name=cluster_name, component=component
             )
         except MrNotFound:
-            LOGGER.warning("Unable to find an MR for branch %s, skipping sending a comment.", branch)
+            LOGGER.warning("Unable to find an MR for branch %s, skipping sending a comment.", mr_branch)
 
         return test_results
 
