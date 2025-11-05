@@ -4,6 +4,7 @@ import logging
 from dataclasses import dataclass, fields
 from typing import Literal
 
+from spicerack.mysql import Instance
 from spicerack.remote import Remote, RemoteExecutionError, RemoteHosts
 
 from wmcs_libs.common import CUMIN_SAFE_WITHOUT_OUTPUT, run_one_formatted_as_list, run_one_raw
@@ -15,6 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 ReplicationStatus = Literal["Running", "Stopped", "Unknown"]
 HostStatus = Literal["Up", "Down", "Unknown"]
+ReadOnlyStatus = Literal["Read-only", "Read-write", "Unknown"]
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,7 @@ class NodeStatus:
 
     fqdn: str
     nodeid: str
+    readonly: ReadOnlyStatus
     replication_state: ReplicationState
     host_status: HostStatus
     mariadb_status: str
@@ -162,13 +165,18 @@ class MariaDBNode:
     def get_node_status(self) -> NodeStatus:
         host_status = self.get_host_status()
         mariadb_status = "Unknown" if host_status != "Up" else self.get_mariadb_status()
-        replication_state = (
-            ReplicationState(status="Unknown") if mariadb_status != "Running" else self.get_replication_state()
-        )
-        nodeid = "Unknown" if mariadb_status != "Running" else self.get_mariadb_nodeid()
+        replication_state = ReplicationState(status="Unknown")
+        nodeid = "Unknown"
+        readonly: ReadOnlyStatus = "Unknown"
+        if mariadb_status == "Running":
+            replication_state = self.get_replication_state()
+            nodeid = self.get_mariadb_nodeid()
+            readonly = "Read-only" if self.im_readonly() else "Read-write"
+
         return NodeStatus(
             fqdn=self.fqdn,
             host_status=host_status,
+            readonly=readonly,
             mariadb_status=mariadb_status,
             replication_state=replication_state,
             nodeid=nodeid,
@@ -190,6 +198,10 @@ class MariaDBNode:
             ],
             cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
         )
+
+    def im_readonly(self) -> bool:
+        result = Instance(self.node).run_vertical_query("select @@read_only")
+        return result[0]["@@read_only"] == "1"
 
 
 class ToolsDBController:
