@@ -31,7 +31,7 @@ from wmcs_libs.openstack.common import OpenstackAPI, OpenstackClusterName, Opens
 LOGGER = logging.getLogger(__name__)
 
 FLAVOR = "g4.cores1.ram1.disk20"
-IMAGE = "debian-12.0-bookworm"
+IMAGE = "debian-13.0-trixie"
 
 
 class EnsureCanaryVM(CookbookBase):
