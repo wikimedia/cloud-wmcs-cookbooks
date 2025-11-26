@@ -127,9 +127,6 @@ class OpenstackTofuRunner(WMCSCookbookRunnerBase):
         if self.gitlab_mr and self.apply:
             raise Exception("You cannot run 'apply' for a merge request. Merge it then apply main.")
 
-        if self.apply and self.cluster_name:
-            raise Exception("You can only run 'apply' for all clusters, i.e: don't specify --cluster-name")
-
         self.gitlab_controller = None
         if self.gitlab_mr and not no_gitlab_mr_note:
             private_token = self.wmcs_config.get("gitlab_token", None)
