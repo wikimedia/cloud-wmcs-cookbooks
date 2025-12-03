@@ -306,7 +306,7 @@ module "project_{self.common_opts.project}" {{
             new_branch=branch_name,
             actions=[projects_main_tf_file_change, new_project_file_commit_change],
             commit_message=(
-                f"{mr_title}\nAutomatic commit by cookbook wmcs.vps.create_project\n\nBug: "
+                f"{mr_title}\n\nAutomatic commit by cookbook wmcs.vps.create_project\n\nBug: "
                 f"{self.common_opts.task_id or 'no task'}"
             ),
             author_email="donotreply@cookbook.wmcs.local",
