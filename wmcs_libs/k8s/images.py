@@ -13,8 +13,9 @@ class ImageController:
         self.spicerack = spicerack
         self.uploader_node = uploader_node
 
-    def update_image(self, pull_url: str, push_url: str) -> str:
-        self.spicerack.sal_logger.info("Updating container image %s", push_url)
+    def update_image(self, pull_url: str, push_url: str, log: bool = True) -> str:
+        if log:
+            self.spicerack.sal_logger.info("Updating container image %s", push_url)
         run_one_raw(command=["docker", "pull", pull_url], node=self.uploader_node)
         run_one_raw(command=["docker", "tag", pull_url, push_url], node=self.uploader_node)
         return run_one_raw(command=["docker", "push", push_url], node=self.uploader_node)

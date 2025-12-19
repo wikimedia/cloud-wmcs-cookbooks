@@ -76,16 +76,22 @@ class GenericCopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         dest_image_version: str,
         spicerack: Spicerack,
     ):
-
         self.uploader_node = uploader_node
         self.pull_url = origin_image
         self.push_url = f"{image_repo_url}/{dest_image_name}:{dest_image_version}"
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
-    def run(self) -> None:
+    @property
+    def runtime_description(self) -> str:
+        return f"for image {self.push_url}"
 
+    def run(self) -> None:
         remote = self.spicerack.remote()
         uploader_node = remote.query(f"D{{{self.uploader_node}}}", use_sudo=True)
         image_ctrl = ImageController(spicerack=self.spicerack, uploader_node=uploader_node)
 
-        image_ctrl.update_image(pull_url=self.pull_url, push_url=self.push_url)
+        image_ctrl.update_image(
+            pull_url=self.pull_url,
+            push_url=self.push_url,
+            log=False,
+        )
