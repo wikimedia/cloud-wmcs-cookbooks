@@ -229,7 +229,7 @@ class OpenstackQuotaEntry(NamedTuple):
             cur_value = int(human_spec)
 
         except ValueError as error:
-            unit_match = re.match("([0-9]+)([^0-9]+)$", human_spec)
+            unit_match = re.match("(-?[0-9]+)([^0-9]+)$", human_spec)
             if not unit_match:
                 raise ValueError(f"Unable to parse human spec '{human_spec}'") from error
 

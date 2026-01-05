@@ -99,6 +99,11 @@ def test_OpenstackQuotaEntry_name_to_cli_works(quota_name: OpenstackQuotaName, v
                 "quota_name": OpenstackQuotaName.RAM,
                 "expected_value": 20,
             },
+            "RAM passing -20": {
+                "human_str": "-20",
+                "quota_name": OpenstackQuotaName.RAM,
+                "expected_value": -20,
+            },
             "RAM passing 20M": {
                 "human_str": "20M",
                 "quota_name": OpenstackQuotaName.RAM,
@@ -108,6 +113,11 @@ def test_OpenstackQuotaEntry_name_to_cli_works(quota_name: OpenstackQuotaName, v
                 "human_str": "20G",
                 "quota_name": OpenstackQuotaName.RAM,
                 "expected_value": 20 * 1024,
+            },
+            "RAM passing -1G": {
+                "human_str": "-1G",
+                "quota_name": OpenstackQuotaName.RAM,
+                "expected_value": -1024,
             },
         }
     )
