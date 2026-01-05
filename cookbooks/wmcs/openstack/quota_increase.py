@@ -62,10 +62,10 @@ class QuotaIncrease(CookbookBase):
             if getattr(args, quota_name.value.replace("-", "_"), None) is not None
         ]
         for increase in increases:
-            if increase.name == OpenstackQuotaName.RAM and increase.value < 1024:
+            if increase.name == OpenstackQuotaName.RAM and abs(increase.value) < 1024:
                 ask_confirmation(
                     "Are you sure you want to increase the ram with less than 1G? (got "
-                    f"{increase}M, maybe you forgot to add 'G' to the value?)"
+                    f"{increase.value}M, maybe you forgot to add 'G' to the value?)"
                 )
 
         return with_common_opts(spicerack=self.spicerack, args=args, runner=QuotaIncreaseRunner)(
