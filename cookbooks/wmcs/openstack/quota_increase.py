@@ -19,7 +19,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 
-from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackQuotaEntry, OpenstackQuotaName
 
@@ -91,13 +91,14 @@ class QuotaIncreaseRunner(WMCSCookbookRunnerBase):
             remote=spicerack.remote(), cluster_name=cluster_name, project=self.common_opts.project
         )
         self.increases = increases
-        self.sallogger = SALLogger.from_common_opts(self.common_opts)
+
+    @property
+    def runtime_description(self) -> str:
+        return f"by {', '.join(str(increase) for increase in self.increases)}"
 
     def run(self) -> None:
-
         if not self.increases:
-            print("Nothing to increase, did you forget to pass any options?")
+            LOGGER.error("Nothing to increase, did you forget to pass any options?")
             return
 
         self.openstack_api.quota_increase(*self.increases)
-        self.sallogger.log(f"Increased quotas by {', '.join(str(increase) for increase in self.increases)}")
