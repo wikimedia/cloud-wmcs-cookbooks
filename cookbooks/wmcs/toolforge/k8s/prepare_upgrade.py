@@ -17,6 +17,7 @@ from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 from wmflib.requests import http_session
 
+from cookbooks.wmcs.toolforge.run_tests import ToolforgeRunTestsRunner
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
 from wmcs_libs.k8s.clusters import (
@@ -104,6 +105,14 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
 
         LOGGER.info("Validating inputs")
         self._check_component_exists()
+
+        LOGGER.info("Ensuring functional tests pass")
+        ToolforgeRunTestsRunner(
+            common_opts=self.common_opts,
+            cluster_name=self.cluster_name,
+            spicerack=self.spicerack,
+            filter_tags=[],
+        ).run_with_proxy()
 
         LOGGER.info("Querying node data")
         node_fqdns = [f"{node}.{k8s_controller.get_nodes_domain()}" for node in k8s_controller.get_nodes_hostnames()]
