@@ -84,14 +84,11 @@ class ToolforgeK8sUpgradeBastionsRunner(WMCSCookbookRunnerBase):
             self.hostname_list = [host.strip() for host in hosts.split(",")]
         else:
             site = cluster_name.get_openstack_cluster_name().get_site()
-            self.hostname_list = [
-                bastion
-                for bastion in get_static_inventory()[site]
+            self.hostname_list = (
+                get_static_inventory()[site]
                 .clusters_by_type[cluster_name.get_type()][cluster_name]
                 .nodes_by_role[ToolforgeKubernetesNodeRoleName.BASTION]
-                # skip old bastion
-                if "sge" not in bastion
-            ]
+            )
 
     @property
     def runtime_description(self) -> str:
