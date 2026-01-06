@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+from datetime import timedelta
 
-from spicerack import Spicerack
+from spicerack import Spicerack, SpicerackError
 from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 from wmflib.requests import http_session
@@ -97,6 +98,30 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
         if self.dst_version not in result.text or ".deb" not in result.text:
             raise Exception(f"{component} has no .deb files. Check reprepro and URL {url_to_check}")
 
+    def _downtime(self) -> None:
+        """Set a downtime."""
+        try:
+            alertmanager = self.spicerack.alertmanager(
+                instance_name=f"metricsinfra-{self.cluster_name.get_openstack_cluster_name().value}"
+            )
+        except SpicerackError as e:
+            # Most likely this means we're running on a local setup with no metricsinfra configuration.
+            LOGGER.info("Not downtiming alerts because Alertmanager is not available: %s", str(e))
+            ask_confirmation("Have you added a manual downtime to https://prometheus-alerts.wmcloud.org yet?")
+            return
+
+        silence_id = alertmanager.downtime(
+            reason=self.spicerack.admin_reason(
+                f"kubernetes upgrade to {self.dst_version}", task_id=self.common_opts.task_id
+            ),
+            matchers=[
+                {"name": "project", "value": self.cluster_name.get_project(), "isRegex": False},
+            ],
+            duration=timedelta(hours=3),
+        )
+
+        LOGGER.info("Set Alertmanager silence %s", silence_id)
+
     def run(self) -> None:
 
         control_node_fqdn = get_control_nodes(self.cluster_name)[0]
@@ -123,9 +148,7 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
         puppet.disable(self.spicerack.admin_reason(f"kubernetes upgrade to {self.dst_version}"), verbatim_reason=True)
 
         LOGGER.info("Downtiming project on Alertmanager")
-        LOGGER.info("The cookbook can't yet do this automatically, please manually add a downtime")
-        # TODO: automate this
-        ask_confirmation("Have you added a downtime to https://prometheus-alerts.wmcloud.org yet?")
+        self._downtime()
 
         LOGGER.info("Updating Hiera key")
         enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
