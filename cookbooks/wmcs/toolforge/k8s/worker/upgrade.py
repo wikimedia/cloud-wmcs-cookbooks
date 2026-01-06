@@ -118,7 +118,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         tries=10,
         backoff_mode="power",
         failure_message="Node still has old version in Kubernetes API",
-        exceptions=(RuntimeError,),
+        exceptions=(Exception,),
     )
     def _ensure_new_version(self, kubectl: KubernetesController):
         node_info = kubectl.get_node_info(self.hostname)
