@@ -217,4 +217,6 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Restarting static pods in kube-system namespace")
             kubelet.restart_all_static_pods(namespace="kube-system")
 
-            ask_confirmation("As this is a control node, please check that control plane services work fine")
+            ask_confirmation(
+                f"As {self.hostname} is a control node, please check that control plane services work fine"
+            )
