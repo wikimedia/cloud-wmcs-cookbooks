@@ -104,26 +104,15 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         """Return a nicely formatted string that represents the cookbook action."""
         return f"for node {self.hostname} from {self.src_version} to {self.dst_version}"
 
-    def _format_kubeadm_config_map(self) -> str:
-        dst_parts = self.dst_version.split(".")
-        return f"kubelet-config-{dst_parts[0]}.{dst_parts[1]}"
-
     def _is_first_node(self, kubectl: KubernetesController, inventory_info: NodeInventoryInfo) -> bool:
         if inventory_info.role_name != ToolforgeKubernetesNodeRoleName.CONTROL:
             return False
 
-        # TODO: kubeadm as of 1.23 logs a warning like this:
-        # NOTE: The "kubelet-config-1.23" naming of the kubelet ConfigMap is deprecated. Once the
-        # UnversionedKubeletConfigMap feature gate graduates to Beta the default name will become just
-        # "kubelet-config". Kubeadm upgrade will handle this transition transparently.
-        # So this mechanism will need to be updated soon-ish.
-
-        return (
-            kubectl.get_object(
-                "configmaps", self._format_kubeadm_config_map(), namespace="kube-system", missing_ok=True
-            )
-            is None
-        )
+        # First time we upgrade a control node, all nodes will be on the old
+        # version. For all later control nodes, some nodes are on the new
+        # version and some still on the old one. So checking whether we have one
+        # or more versions installed in the cluster is enough to check
+        return len(kubectl.get_nodes_versions()) == 1
 
     @retry(
         tries=10,

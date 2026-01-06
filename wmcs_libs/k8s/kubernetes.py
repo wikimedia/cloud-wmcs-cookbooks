@@ -203,8 +203,15 @@ class KubernetesController:
 
         return hostname_list
 
+    def get_nodes_versions(self, selector: str | None = None) -> set[str]:
+        """Get the set of node versions currently used in the cluster."""
+        versions = set()
+        for item in self.get_nodes(selector):
+            versions.add(item["status"]["nodeInfo"]["kubeletVersion"])
+        return versions
+
     def get_node(self, node_hostname: str) -> list[dict[str, Any]]:
-        """Get only info for the the given node."""
+        """Get only info for the given node."""
         return self.get_nodes(selector=f"kubernetes.io/hostname={node_hostname}")
 
     def get_node_info(self, node_hostname: str) -> KubernetesNodeInfo:
