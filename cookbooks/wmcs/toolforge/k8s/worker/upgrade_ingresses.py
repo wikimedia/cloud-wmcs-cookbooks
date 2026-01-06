@@ -1,10 +1,10 @@
 r"""WMCS Toolforge Kubernetes - upgrade ingress k8s workers
 
 Usage example:
-    cookbook wmcs.toolforge.k8s.upgrade_ingresses \
+    cookbook wmcs.toolforge.k8s.worker.upgrade_ingresses \
         --cluster-name tools
 
-    cookbook wmcs.toolforge.k8s.upgrade_ingresses \
+    cookbook wmcs.toolforge.k8s.worker.upgrade_ingresses \
         --cluster-name toolsbeta
 
 """

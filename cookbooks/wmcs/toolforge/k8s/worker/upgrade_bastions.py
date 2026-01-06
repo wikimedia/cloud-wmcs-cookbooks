@@ -1,10 +1,10 @@
 r"""WMCS Toolforge Kubernetes - upgrade bastion nodes
 
 Usage example:
-    cookbook wmcs.toolforge.k8s.upgrade_bastions \
+    cookbook wmcs.toolforge.k8s.worker.upgrade_bastions \
         --cluster-name tools
 
-    cookbook wmcs.toolforge.k8s.upgrade_bastions \
+    cookbook wmcs.toolforge.k8s.worker.upgrade_bastions \
         --cluster-name toolsbeta
 
 """

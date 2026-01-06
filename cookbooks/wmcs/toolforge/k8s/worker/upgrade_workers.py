@@ -1,11 +1,11 @@
 r"""WMCS Toolforge Kubernetes - upgrade batches of k8s workers
 
 Usage example:
-    cookbook wmcs.toolforge.k8s.upgrade_workers \
+    cookbook wmcs.toolforge.k8s.worker.upgrade_workers \
         --cluster-name tools \
         --batch-number 1
 
-    cookbook wmcs.toolforge.k8s.upgrade_workers \
+    cookbook wmcs.toolforge.k8s.worker.upgrade_workers \
         --cluster-name toolsbeta \
         --non-nfs-workers \
         --nfs-workers \
