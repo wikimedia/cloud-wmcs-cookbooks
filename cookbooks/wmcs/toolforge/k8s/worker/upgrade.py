@@ -17,7 +17,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from spicerack.decorators import retry
-from wmflib.interactive import ask_confirmation
+from wmflib.interactive import ask_confirmation, confirm_on_failure
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw
 from wmcs_libs.inventory.libs import NodeInventoryInfo, get_node_inventory_info
@@ -175,7 +175,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         apt_get.install("kubeadm")
 
         LOGGER.info("Waiting for drain of %s to complete", self.hostname)
-        self.kubectl.wait_for_drain(node_hostname=self.hostname)
+        confirm_on_failure(self.kubectl.wait_for_drain, node_hostname=self.hostname)
 
         # TODO: this would be a perfect opportunity to apply any pending kernel updates
 
