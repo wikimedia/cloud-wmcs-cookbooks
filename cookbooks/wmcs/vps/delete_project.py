@@ -88,8 +88,11 @@ class DeleteProjectRunner(WMCSCookbookRunnerBase):
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
             cluster_name=cluster_name,
-            project=self.common_opts.project,
         )
+        # Make sure we are consistent that the argument is the project name,
+        # and OpenStack calls use the project ID.
+        # (Note _resolve_project_id uses the project-less self.openstack_api object!)
+        self.openstack_api.project = self._resolve_project_id()
 
         self.skip_mr = skip_mr
 
@@ -97,6 +100,16 @@ class DeleteProjectRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
         self.gitlab_controller = GitlabController(private_token=self.wmcs_config.get("gitlab_token", None))
+
+    def _resolve_project_id(self) -> str:
+        projects = [
+            project for project in self.openstack_api.get_all_projects() if project["Name"] == self.common_opts.project
+        ]
+        if not projects:
+            # Already deleted!
+            raise Exception(f"Project {self.common_opts.project} not found!")
+
+        return projects[0]["ID"]
 
     @property
     def runtime_description(self) -> str:
