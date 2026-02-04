@@ -504,6 +504,21 @@ class DesignatePartialZone:
         )
 
 
+@dataclass(frozen=True)
+class OpenstackPartialDatabaseInstance:
+    """Represents details of a database instance shown on the list."""
+
+    instance_id: OpenstackID
+    name: OpenstackName
+
+    @classmethod
+    def from_list_entry(cls, data: dict[str, Any]) -> "OpenstackPartialDatabaseInstance":
+        return cls(
+            instance_id=data["ID"],
+            name=data["Name"],
+        )
+
+
 class OpenstackAPI(CommandRunnerMixin):
     """Class to interact with the Openstack API (indirectly for now)."""
 
@@ -738,6 +753,11 @@ class OpenstackAPI(CommandRunnerMixin):
     def server_show(self, vm_name_or_id: OpenstackIdentifier) -> dict[str, Any]:
         """Get the information for a VM."""
         return self.run_formatted_as_dict("server", "show", vm_name_or_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+
+    def db_instance_list(self) -> list[OpenstackPartialDatabaseInstance]:
+        """List all database instances in this project."""
+        data = self.run_formatted_as_list("database", "instance", "list")
+        return [OpenstackPartialDatabaseInstance.from_list_entry(entry) for entry in data]
 
     def db_instance_reboot(self, db_instance_id: OpenstackIdentifier) -> None:
         """Restart guest agent on db instance."""

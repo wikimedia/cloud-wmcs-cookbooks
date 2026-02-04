@@ -134,6 +134,14 @@ class DeleteProjectRunner(WMCSCookbookRunnerBase):
             LOGGER.error(message)
             raise Exception(message)
 
+        db_instances = self.openstack_api.volume_list()
+        if db_instances:
+            message = (
+                f"The following database instances still exist: {', '.join(instance.name for instance in db_instances)}"
+            )
+            LOGGER.error(message)
+            raise Exception(message)
+
     def _cleanup_dns(self) -> None:
         zones = self.openstack_api.zone_list()
         for zone in zones:
