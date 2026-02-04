@@ -85,6 +85,7 @@ class DeleteProjectRunner(WMCSCookbookRunnerBase):
     ):
         """Init"""
         self.common_opts = common_opts
+        self.cluster_name = cluster_name
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
             cluster_name=cluster_name,
@@ -217,6 +218,7 @@ module "project_{self.common_opts.project}" {{
                         apply=False,
                         gitlab_mr=change_mr.iid,
                         no_gitlab_mr_note=False,
+                        cluster_name=self.cluster_name,
                         spicerack=self.spicerack,
                     ).run
                 )
@@ -235,6 +237,7 @@ module "project_{self.common_opts.project}" {{
                     apply=False,
                     gitlab_mr=change_mr.iid,
                     no_gitlab_mr_note=False,
+                    cluster_name=self.cluster_name,
                     spicerack=self.spicerack,
                 ).run
             )
@@ -246,6 +249,7 @@ module "project_{self.common_opts.project}" {{
                 common_opts=self.common_opts,
                 plan=True,
                 apply=True,
+                cluster_name=self.cluster_name,
                 spicerack=self.spicerack,
             ).run
         )
