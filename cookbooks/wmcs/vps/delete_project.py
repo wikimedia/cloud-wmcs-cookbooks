@@ -134,6 +134,12 @@ class DeleteProjectRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Deleting DNS zone %s (%s)", zone.name, zone.zone_id)
             self.openstack_api.zone_delete(zone.zone_id)
 
+    def _cleanup_floating_ips(self) -> None:
+        floating_ips = self.openstack_api.floating_ip_list()
+        for ip in floating_ips:
+            LOGGER.info("Deleting floating IP %s (%s)", ip.floating_ip_address, ip.floating_ip_id)
+            self.openstack_api.floating_ip_delete(ip.floating_ip_id)
+
     def _create_tofu_mr(self) -> gitlab.v4.objects.merge_requests.ProjectMergeRequest:
         branch_name = f"delete_project_{self.common_opts.project}"
         mr_title = f"projects: delete project {self.common_opts.project}"
@@ -280,6 +286,7 @@ module "project_{self.common_opts.project}" {{
         self._do_preflight_checks()
 
         self._cleanup_dns()
+        self._cleanup_floating_ips()
 
         self._delete_via_tofu()
 

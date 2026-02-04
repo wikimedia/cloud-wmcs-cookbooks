@@ -437,6 +437,23 @@ class NeutronPort(NeutronPartialPort):
 
 
 @dataclass(frozen=True)
+class NeutronPartialFloatingIP:
+    """Represents the details of a Neutron floating IP that can be seen in 'openstack floating ip list' output."""
+
+    floating_ip_id: OpenstackID
+    floating_ip_address: IPv4Address
+    port_id: OpenstackID | None
+
+    @classmethod
+    def from_ip_data(cls, ip_data: dict[str, Any]) -> "NeutronPartialFloatingIP":
+        return cls(
+            floating_ip_id=ip_data["ID"],
+            floating_ip_address=IPv4Address(ip_data["Floating IP Address"]),
+            port_id=ip_data["Port"],
+        )
+
+
+@dataclass(frozen=True)
 class NeutronFloatingIP:
     """Represents a Neutron floating IP address.
 
@@ -674,12 +691,34 @@ class OpenstackAPI(CommandRunnerMixin):
         """Delete zone record for specified dns zone"""
         return self.run_formatted_as_dict("recordset", "delete", zone_id, recordset_id)
 
+    def floating_ip_list(self) -> list[NeutronPartialFloatingIP]:
+        """List all floating IP addresses in this project."""
+        data = self.run_formatted_as_list(
+            "floating",
+            "ip",
+            "list",
+            f"--project={self.project}",
+            cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+        )
+        return [NeutronPartialFloatingIP.from_ip_data(entry) for entry in data]
+
     def floating_ip_show(self, address: IPv4Address) -> NeutronFloatingIP:
         """Show information about a floating IP address."""
         data = self.run_formatted_as_dict(
             "floating", "ip", "show", str(address), cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT
         )
         return NeutronFloatingIP.from_ip_data(data)
+
+    def floating_ip_delete(self, address: OpenstackID | IPv4Address):
+        """Delete a specified floating IP address."""
+        self.run_raw(
+            "floating",
+            "ip",
+            "delete",
+            str(address),
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
+            json_output=False,
+        )
 
     def server_show(self, vm_name_or_id: OpenstackIdentifier) -> dict[str, Any]:
         """Get the information for a VM."""
