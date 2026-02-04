@@ -128,6 +128,12 @@ class DeleteProjectRunner(WMCSCookbookRunnerBase):
             LOGGER.error(message)
             raise Exception(message)
 
+        volumes = self.openstack_api.volume_list()
+        if volumes:
+            message = f"The following volumes still exist: {', '.join(volume.name for volume in volumes)}"
+            LOGGER.error(message)
+            raise Exception(message)
+
     def _cleanup_dns(self) -> None:
         zones = self.openstack_api.zone_list()
         for zone in zones:

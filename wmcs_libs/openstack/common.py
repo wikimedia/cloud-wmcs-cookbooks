@@ -260,6 +260,21 @@ class OpenstackServerGroupPolicy(ArgparsableEnum):
     SOFT_AFFINITY = "soft-affinity"
 
 
+@dataclass(frozen=True)
+class OpenstackPartialVolume:
+    """Represents details of a volume shown on the list."""
+
+    volume_id: OpenstackID
+    name: OpenstackName
+
+    @classmethod
+    def from_list_entry(cls, data: dict[str, Any]) -> "OpenstackPartialVolume":
+        return cls(
+            volume_id=data["ID"],
+            name=data["Name"],
+        )
+
+
 class NeutronAgentType(Enum):
     """list of neutron agent types and their 'agent type' string.
 
@@ -865,6 +880,11 @@ class OpenstackAPI(CommandRunnerMixin):
     def server_remove_floating_ip(self, server: OpenstackIdentifier, floating_ip: IPv4Address) -> None:
         """Remove a floating IP address from a server."""
         self.run_raw("server", "remove", "floating", "ip", server, str(floating_ip), json_output=False)
+
+    def volume_list(self) -> list[OpenstackPartialVolume]:
+        """List all volumes in this project."""
+        data = self.run_formatted_as_list("volume", "list")
+        return [OpenstackPartialVolume.from_list_entry(entry) for entry in data]
 
     def volume_create(self, name: OpenstackName, size: int) -> str:
         """Create a volume and return the ID of the created volume.
