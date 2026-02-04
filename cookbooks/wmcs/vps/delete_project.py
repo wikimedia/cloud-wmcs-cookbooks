@@ -16,7 +16,7 @@ import re
 import gitlab
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
-from wmflib.interactive import ask_input
+from wmflib.interactive import ask_input, confirm_on_failure
 
 from cookbooks.wmcs.openstack.tofu import OpenstackTofuRunner
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
@@ -210,14 +210,16 @@ module "project_{self.common_opts.project}" {{
                 raise Exception("Aborted at user request.")
 
             if response == "plan":
-                OpenstackTofuRunner(
-                    common_opts=self.common_opts,
-                    plan=True,
-                    apply=False,
-                    gitlab_mr=change_mr.iid,
-                    no_gitlab_mr_note=False,
-                    spicerack=self.spicerack,
-                ).run()
+                confirm_on_failure(
+                    OpenstackTofuRunner(
+                        common_opts=self.common_opts,
+                        plan=True,
+                        apply=False,
+                        gitlab_mr=change_mr.iid,
+                        no_gitlab_mr_note=False,
+                        spicerack=self.spicerack,
+                    ).run
+                )
 
             else:
                 is_merged = self._is_mr_merged(mr_iid=change_mr.mr_iid)
@@ -226,23 +228,27 @@ module "project_{self.common_opts.project}" {{
         if not self.skip_mr:
             change_mr = self._create_tofu_mr()
 
-            OpenstackTofuRunner(
-                common_opts=self.common_opts,
-                plan=True,
-                apply=False,
-                gitlab_mr=change_mr.iid,
-                no_gitlab_mr_note=False,
-                spicerack=self.spicerack,
-            ).run()
+            confirm_on_failure(
+                OpenstackTofuRunner(
+                    common_opts=self.common_opts,
+                    plan=True,
+                    apply=False,
+                    gitlab_mr=change_mr.iid,
+                    no_gitlab_mr_note=False,
+                    spicerack=self.spicerack,
+                ).run
+            )
 
             self._wait_for_merged_loop(change_mr=change_mr)
 
-        OpenstackTofuRunner(
-            common_opts=self.common_opts,
-            plan=True,
-            apply=True,
-            spicerack=self.spicerack,
-        ).run()
+        confirm_on_failure(
+            OpenstackTofuRunner(
+                common_opts=self.common_opts,
+                plan=True,
+                apply=True,
+                spicerack=self.spicerack,
+            ).run
+        )
 
     def _delete_unmanaged_project(self):
         """Delete a project via the openstack CLI, if it was not already deleted by tofu."""
