@@ -150,6 +150,8 @@ def _guess_role_name(  # pylint: disable=too-many-return-statements
         return OpenstackNodeRoleName.NET
     if node.startswith("cloudvirt"):
         return OpenstackNodeRoleName.VIRT
+    if node.startswith("cloudrabbit"):
+        return OpenstackNodeRoleName.RABBIT
 
     if "-k8s-control-" in node:
         return ToolforgeKubernetesNodeRoleName.CONTROL

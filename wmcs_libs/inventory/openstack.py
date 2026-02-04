@@ -10,6 +10,7 @@ class OpenstackNodeRoleName(NodeRoleName):
     """Different types of openstack node roles."""
 
     GATEWAY = "cloudgw"
+    RABBIT = "cloudrabbit"
     CONTROL = "cloudcontrol"
     SERVICES = "cloudservices"
     NET = "cloudnet"

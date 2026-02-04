@@ -48,6 +48,11 @@ def get_control_nodes(cluster_name: OpenstackClusterName) -> list[str]:
     return get_nodes_by_role(cluster_name, role_name=OpenstackNodeRoleName.CONTROL)
 
 
+def get_rabbit_nodes(cluster_name: OpenstackClusterName) -> list[str]:
+    """Get all the FQDNs of the rabbitmq nodes."""
+    return get_nodes_by_role(cluster_name, role_name=OpenstackNodeRoleName.RABBIT)
+
+
 def get_control_nodes_from_node(node: str) -> list[str]:
     """Get all the FQDNs of the control nodes from the cluster a given a node is part of."""
     return get_control_nodes(cluster_name=get_node_cluster_name(node))

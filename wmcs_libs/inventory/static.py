@@ -59,6 +59,11 @@ _INVENTORY: Inventory = {
                             "cloudgw1003.eqiad.wmnet",
                             "cloudgw1004.eqiad.wmnet",
                         ],
+                        OpenstackNodeRoleName.RABBIT: [
+                            "cloudrabbit1001.eqiad.wmnet",
+                            "cloudrabbit1002.eqiad.wmnet",
+                            "cloudrabbit1003.eqiad.wmnet",
+                        ],
                     },
                     internal_network_name="VXLAN/IPv6-dualstack",
                 ),
@@ -138,6 +143,11 @@ _INVENTORY: Inventory = {
                         OpenstackNodeRoleName.GATEWAY: [
                             "cloudgw2002-dev.codfw.wmnet",
                             "cloudgw2003-dev.codfw.wmnet",
+                        ],
+                        OpenstackNodeRoleName.RABBIT: [
+                            "cloudrabbit2001-dev.codfw.wmnet",
+                            "cloudrabbit2002-dev.codfw.wmnet",
+                            "cloudrabbit2003-dev.codfw.wmnet",
                         ],
                     },
                     internal_network_name="VXLAN/IPv6-dualstack",
