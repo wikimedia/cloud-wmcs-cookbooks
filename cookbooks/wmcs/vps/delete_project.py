@@ -128,6 +128,12 @@ class DeleteProjectRunner(WMCSCookbookRunnerBase):
             LOGGER.error(message)
             raise Exception(message)
 
+    def _cleanup_dns(self) -> None:
+        zones = self.openstack_api.zone_list()
+        for zone in zones:
+            LOGGER.info("Deleting DNS zone %s (%s)", zone.name, zone.zone_id)
+            self.openstack_api.zone_delete(zone.zone_id)
+
     def _create_tofu_mr(self) -> gitlab.v4.objects.merge_requests.ProjectMergeRequest:
         branch_name = f"delete_project_{self.common_opts.project}"
         mr_title = f"projects: delete project {self.common_opts.project}"
@@ -272,6 +278,9 @@ module "project_{self.common_opts.project}" {{
         """Main entry point"""
 
         self._do_preflight_checks()
+
+        self._cleanup_dns()
+
         self._delete_via_tofu()
 
         # Project might not exist at this point

@@ -455,6 +455,23 @@ class NeutronFloatingIP:
         )
 
 
+@dataclass(frozen=True)
+class DesignatePartialZone:
+    """Represents the parts of a DNS zone that are shown on the list output.
+
+    We are only storing the fields we are using, if you need more please add them."""
+
+    zone_id: OpenstackID
+    name: str
+
+    @classmethod
+    def from_list_data(cls, data: dict[str, Any]) -> "DesignatePartialZone":
+        return cls(
+            zone_id=data["id"],
+            name=data["name"],
+        )
+
+
 class OpenstackAPI(CommandRunnerMixin):
     """Class to interact with the Openstack API (indirectly for now)."""
 
@@ -626,9 +643,18 @@ class OpenstackAPI(CommandRunnerMixin):
         data = self.run_formatted_as_dict("port", "show", port_id, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
         return NeutronPort.from_port_data(data)
 
+    def zone_list(self) -> list[DesignatePartialZone]:
+        """List DNS zones in this project."""
+        data = self.run_formatted_as_list("zone", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        return [DesignatePartialZone.from_list_data(entry) for entry in data]
+
     def zone_get(self, name) -> list[dict[str, Any]]:
         """Get zone record for specified dns zone"""
         return self.run_formatted_as_list("zone", "list", "--name", name, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+
+    def zone_delete(self, zone_id: OpenstackID) -> None:
+        """Delete a specified DNS zone."""
+        self.run_formatted_as_dict("zone", "delete", zone_id, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
     def recordset_create(self, zone_id, record_type, name, record) -> dict[str, Any]:
         """Get zone record for specified dns zone"""
