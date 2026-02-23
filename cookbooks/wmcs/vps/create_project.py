@@ -4,7 +4,7 @@ Usage example:
     cookbook wmcs.vps.create_project \
         --user projectUser1 \
         --user projectUser2 \
-        --cpu 32 \
+        --cores 32 \
         --cluster-name eqiad1 \
         --project my_fancy_new_project
 
@@ -20,7 +20,7 @@ from typing import Any
 import gitlab
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
-from wmflib.interactive import ask_confirmation, ask_input
+from wmflib.interactive import ask_confirmation, ask_input, confirm_on_failure
 
 from cookbooks.wmcs.openstack.tofu import OpenstackTofuRunner
 from cookbooks.wmcs.vps.add_user_to_project import AddUserToProjectRunner
@@ -160,6 +160,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
     ):  # pylint: disable=too-many-arguments
 
         self.common_opts = common_opts
+        self.cluster_name = cluster_name
         self.openstack_api = OpenstackAPI(
             remote=spicerack.remote(),
             cluster_name=cluster_name,
@@ -350,14 +351,17 @@ module "project_{self.common_opts.project}" {{
                 raise Exception("Aborted at user request.")
 
             if response == "plan":
-                OpenstackTofuRunner(
-                    common_opts=self.common_opts,
-                    plan=True,
-                    apply=False,
-                    gitlab_mr=change_mr.iid,
-                    no_gitlab_mr_note=False,
-                    spicerack=self.spicerack,
-                ).run()
+                confirm_on_failure(
+                    OpenstackTofuRunner(
+                        common_opts=self.common_opts,
+                        plan=True,
+                        apply=False,
+                        gitlab_mr=change_mr.iid,
+                        no_gitlab_mr_note=False,
+                        cluster_name=self.cluster_name,
+                        spicerack=self.spicerack,
+                    ).run
+                )
 
             else:
                 is_merged = self._is_mr_merged(mr_iid=change_mr.mr_iid)
@@ -369,24 +373,30 @@ module "project_{self.common_opts.project}" {{
         if not self.skip_mr:
             change_mr = self._create_tofu_mr()
 
-            OpenstackTofuRunner(
-                common_opts=self.common_opts,
-                plan=True,
-                apply=False,
-                gitlab_mr=change_mr.iid,
-                no_gitlab_mr_note=False,
-                spicerack=self.spicerack,
-            ).run()
+            confirm_on_failure(
+                OpenstackTofuRunner(
+                    common_opts=self.common_opts,
+                    plan=True,
+                    apply=False,
+                    gitlab_mr=change_mr.iid,
+                    no_gitlab_mr_note=False,
+                    cluster_name=self.cluster_name,
+                    spicerack=self.spicerack,
+                ).run
+            )
 
             self._wait_for_merged_loop(change_mr=change_mr)
 
         if not self.skip_tofu_apply:
-            OpenstackTofuRunner(
-                common_opts=self.common_opts,
-                plan=True,
-                apply=True,
-                spicerack=self.spicerack,
-            ).run()
+            confirm_on_failure(
+                OpenstackTofuRunner(
+                    common_opts=self.common_opts,
+                    plan=True,
+                    apply=True,
+                    cluster_name=self.cluster_name,
+                    spicerack=self.spicerack,
+                ).run
+            )
 
         # NOTE! change to the newly created project
         self.openstack_api.project = self.common_opts.project
