@@ -310,6 +310,7 @@ class NeutronAgentHAState(Enum):
 
     ACTIVE = "active"
     STANDBY = "standby"
+    UNKNOWN = "unknown"
 
 
 @dataclass(frozen=True)
