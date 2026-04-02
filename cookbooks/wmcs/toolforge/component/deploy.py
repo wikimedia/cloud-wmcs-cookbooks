@@ -237,16 +237,25 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         note = self.gitlab_controller.create_mr_note(
             project_id=project["id"],
             merge_request_iid=mr_iid,
-            note_body=f"""Ran the tests on {cluster_name}: **{test_result["status"]}**
+            # the spaces/empty lines here have a big impact on how it looks in
+            # gitlab
+            note_body=f"""Ran the tests on **{cluster_name.value.upper()}**: **{test_result["status"]}**
+<details><summary>Versions installed</summary>
+
 ```
 {pre_version}
 ```
-
 {version}
+
+</details>
+
+<details><summary>Deploy and test logs</summary>
 
 ```
 {post_version}
 ```
+
+</details>
 """,
         )
         mr_link = (
