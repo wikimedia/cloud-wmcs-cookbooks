@@ -26,7 +26,6 @@ class RollRebootOsds(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
-
         parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
@@ -35,6 +34,11 @@ class RollRebootOsds(CookbookBase):
             choices=list(CephClusterName),
             type=CephClusterName,
             help="Ceph cluster to roll reboot.",
+        )
+        parser.add_argument(
+            "--resume-with",
+            required=False,
+            help="If a previous roll failed midway, specify which node to start with",
         )
         parser.add_argument(
             "--force",
@@ -46,26 +50,23 @@ class RollRebootOsds(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
         return with_common_opts(self.spicerack, args, RollRebootOsdsRunner)(
-            cluster_name=args.cluster_name,
-            force=args.force,
-            spicerack=self.spicerack,
+            cluster_name=args.cluster_name, force=args.force, spicerack=self.spicerack, resume_with=args.resume_with
         )
 
 
 class RollRebootOsdsRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
         cluster_name: CephClusterName,
         force: bool,
+        resume_with: str,
         spicerack: Spicerack,
     ):
-
         self.common_opts = common_opts
         self.force = force
+        self.resume_with = resume_with
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
         self.controller = CephClusterController(
@@ -73,8 +74,15 @@ class RollRebootOsdsRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
+        osd_nodes = sorted(list(self.controller.get_nodes()["osd"].keys()))
 
-        osd_nodes = list(self.controller.get_nodes()["osd"].keys())
+        if self.resume_with:
+            if self.resume_with not in osd_nodes:
+                err_msg = f"Node {self.resume_with} not found in osd node list."
+                LOGGER.error(err_msg)
+                raise Exception(err_msg)
+
+            osd_nodes = osd_nodes[osd_nodes.index(self.resume_with) :]
 
         self.sallogger.log(message=f"Rebooting the nodes {','.join(osd_nodes)}")
 
