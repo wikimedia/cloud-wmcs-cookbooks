@@ -13,7 +13,7 @@ def test_get_cluster_security_group_name() -> None:
     assert (
         get_cluster_security_group_name(
             ToolforgeKubernetesClusterName.TOOLS,
-            ToolforgeKubernetesNodeRoleName.INGRESS,
+            ToolforgeKubernetesNodeRoleName.GATEWAY,
         )
         == "tools-new-k8s-full-connectivity"
     )
@@ -47,9 +47,9 @@ def test_get_cluster_node_server_group_name() -> None:
     assert (
         get_cluster_node_server_group_name(
             ToolforgeKubernetesClusterName.TOOLS,
-            ToolforgeKubernetesNodeRoleName.INGRESS,
+            ToolforgeKubernetesNodeRoleName.WORKER,
         )
-        == "tools-k8s-ingress"
+        == "tools-k8s-worker"
     )
     assert (
         get_cluster_node_server_group_name(

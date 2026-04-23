@@ -38,7 +38,6 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     CONTROL = "control"
     WORKER = "worker"
     WORKER_NFS = "worker-nfs"
-    INGRESS = "ingress"
     GATEWAY = "gateway"
     ETCD = "etcd"
     HAPROXY = "haproxy"
@@ -65,7 +64,6 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
         return self in (
             ToolforgeKubernetesNodeRoleName.WORKER,
             ToolforgeKubernetesNodeRoleName.WORKER_NFS,
-            ToolforgeKubernetesNodeRoleName.INGRESS,
             ToolforgeKubernetesNodeRoleName.GATEWAY,
         )
 
@@ -87,8 +85,6 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     @property
     def labels(self) -> set[str]:
         """A set of labels that must be applied to all new nodes of this role."""
-        if self == ToolforgeKubernetesNodeRoleName.INGRESS:
-            return {"kubernetes.io/role=ingressgen2"}
         if self == ToolforgeKubernetesNodeRoleName.GATEWAY:
             return {"kubernetes.io/role=gateway"}
         return set()
@@ -96,8 +92,6 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     @property
     def taints(self) -> set[str]:
         """A set of taints that must be applied to all new nodes of this role."""
-        if self == ToolforgeKubernetesNodeRoleName.INGRESS:
-            return {"ingressgen2=true:NoSchedule"}
         if self == ToolforgeKubernetesNodeRoleName.GATEWAY:
             return {"toolforge.org/gateway=true:NoSchedule"}
         return set()
@@ -109,11 +103,6 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
             return (
                 ToolforgeKubernetesNodeRoleName.HAPROXY,
                 "profile::toolforge::k8s::control_nodes",
-            )
-        if self == ToolforgeKubernetesNodeRoleName.INGRESS:
-            return (
-                ToolforgeKubernetesNodeRoleName.HAPROXY,
-                "profile::toolforge::k8s::ingress_nodes",
             )
         if self == ToolforgeKubernetesNodeRoleName.GATEWAY:
             return (
