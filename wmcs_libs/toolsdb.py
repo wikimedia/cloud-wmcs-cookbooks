@@ -159,6 +159,8 @@ class MariaDBNode:
             status: ReplicationStatus = "Running"
         elif params.get("slave_io_running", "Unknown") == "No" and params.get("slave_sql_running", "Unknown") == "No":
             status = "Stopped"
+        else:
+            raise RuntimeError("Unable to determine status")
 
         return ReplicaReplicationState(status=status, **params)
 

@@ -337,7 +337,8 @@ module "project_{self.common_opts.project}" {{
                     "We track project lifecycle now via opentofu.\n"
                     f"I created the merge request {change_mr.web_url} and ran tofu plan on it, "
                     "get it reviewed and merged before continuing\n\n"
-                    "See: https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle#Creating_a_new_project\n"  # noqa: E501
+                    "See: https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS/Admin/Projects_lifecycle"
+                    "#Creating_a_new_project\n"
                     "\n"
                     "Enter go when the patch is merged, plan to rerun the tofu plan, or abort to exit:"
                 ),

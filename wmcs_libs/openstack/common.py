@@ -411,7 +411,10 @@ class NeutronPartialRouter:
 
     def __str__(self) -> str:
         """Return the string representation of this class."""
-        return f"{self.name}: router_id:{self.router_id} tenant_id:{self.tenant_id} status:{self.status} has_ha:{self.has_ha}"  # noqa: E501
+        return (
+            f"{self.name}: router_id:{self.router_id} tenant_id:{self.tenant_id} "
+            f"status:{self.status} has_ha:{self.has_ha}"
+        )
 
     def is_healthy(self) -> bool:
         """Given a router, check if it's up."""

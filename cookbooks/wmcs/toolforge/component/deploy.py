@@ -228,7 +228,8 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         mr_iid = get_branch_mr(branch=branch, project=project)
 
         logs = self._cleanup_terminal_colors(test_result["logs"])
-        # DO NOT CHANGE without updating https://gitlab.wikimedia.org/repos/cloud/toolforge/toolforge-deploy/-/blob/main/utils/run_functional_tests.sh  # noqa: E501
+        # DO NOT CHANGE without updating:
+        # https://gitlab.wikimedia.org/repos/cloud/toolforge/toolforge-deploy/-/blob/main/utils/run_functional_tests.sh
         version_output_delimiter = "-" * 47
         pre_version = logs.split(version_output_delimiter, 1)[0]
         version = logs.split(version_output_delimiter, 1)[1]

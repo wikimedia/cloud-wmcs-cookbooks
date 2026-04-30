@@ -27,10 +27,10 @@ def _is_proxy_working(port: int) -> bool:
     try:
         requests.get(
             "http://alertmanager-eqiad.wikimedia.org",
-            proxies=dict(
-                http=f"socks5h://127.0.0.1:{port}",
-                https=f"socks5h://127.0.0.1:{port}",
-            ),
+            proxies={
+                "http": f"socks5h://127.0.0.1:{port}",
+                "https": f"socks5h://127.0.0.1:{port}",
+            },
             timeout=5,
         )
     except (requests.ConnectTimeout, requests.ConnectionError):

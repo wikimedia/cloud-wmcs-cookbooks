@@ -93,9 +93,9 @@ class KubernetesClusterInfo:
 
         Example of output:
         ```
-        Kubernetes control plane is running at https://k8s.svc.toolsbeta.eqiad1.wikimedia.cloud:6443  # noqa: E501
-        CoreDNS is running at https://k8s.svc.toolsbeta.eqiad1.wikimedia.cloud:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy  # noqa: E501
-        Metrics-server is running at https://k8s.svc.toolsbeta.eqiad1.wikimedia.cloud:6443/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy  # noqa: E501
+        Kubernetes control plane is running at https://k8s.svc.toolsbeta.eqiad1.wikimedia.cloud:6443
+        CoreDNS is running at: /api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+        Metrics-server is running at: /api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
 
         To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
         ```

@@ -21,8 +21,8 @@ extras_require = {
         "freezegun>=1.2.2",
     ],
     "prospector": [
-        "prospector[with_everything]>=0.12.4,<=1.7.7",
-        "pylint<2.15.7",  # Temporary upper limit for an upstream regression
+        "prospector[with_everything]==1.18.0",
+        "pylint",
         "pytest>=6.1.0",
     ],
 }

@@ -214,10 +214,8 @@ def calculate_changelist(
             host_to_canary_vms[hypervisor] = []
 
     changelist = []
-    for host, _ in host_to_canary_vms.items():
-        hostchanges = HostChanges.from_canary_vms(
-            hostname=host, host_canary_vms=host_to_canary_vms[host], recreate=recreate
-        )
+    for host, host_canary_vms in host_to_canary_vms.items():
+        hostchanges = HostChanges.from_canary_vms(hostname=host, host_canary_vms=host_canary_vms, recreate=recreate)
         if hostchanges.has_changes():
             changelist.append(hostchanges)
 

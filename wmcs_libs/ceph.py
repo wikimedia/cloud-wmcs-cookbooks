@@ -662,7 +662,7 @@ class CephClusterController(CommandRunnerMixin):
         """Get the current cluster status."""
         try:
             cluster_status_output = self.run_formatted_as_dict("status", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
-        except Exception as error:  # noqa: broad-except
+        except Exception as error:  # pylint: disable=broad-exception-caught
             LOGGER.info("Retrying get_cluster_status (got error %s)", str(error))
             cluster_status_output = self.run_formatted_as_dict("status", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
 

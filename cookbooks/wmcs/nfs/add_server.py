@@ -58,7 +58,7 @@ class NFSAddServer(CookbookBase):
             "an existing volume can be attached later.",
         )
         add_instance_creation_options(parser)
-        parser.add_argument("volume", help=("nfs volume to be provided and managed by this server"))
+        parser.add_argument("volume", help="nfs volume to be provided and managed by this server")
 
         return parser
 

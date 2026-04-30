@@ -258,7 +258,7 @@ class BootstrapAndAddRunner(WMCSCookbookRunnerBase):
                 info("Skipping adding the new devices, fixing their class and undraining")
                 continue
 
-            osd_controller.add_all_available_devices(interactive=(not self.yes_i_know))
+            osd_controller.add_all_available_devices(interactive=not self.yes_i_know)
             self._fix_osd_classes(host_fqdn=new_osd_fqdn, info=info)
             sal_info(
                 f"Added all available disks ({new_devices}) from node {new_osd_fqdn}... "

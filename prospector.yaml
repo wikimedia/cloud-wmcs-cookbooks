@@ -34,10 +34,12 @@ pylint:
     - consider-using-f-string # Most cookbooks still use format(), disable for now
     - missing-function-docstring # Leave to the developer to decide if a docstring is helpful
     - missing-class-docstring # Leave to the developer to decide if a docstring is helpful
+    - broad-exception-raised  # used extensively
   options:
     ignore: vulture_whitelist.py
     max-line-length: 120
-    max-args: 6
+    max-args: 8
+    max-positional-arguments: 15
     max-attributes: 14
     max-locals: 16
     # Allow modules to start with numbers and have dashes, they're loaded dynamically
@@ -48,7 +50,7 @@ pylint:
     variable-name-hint: (([a-z][a-z0-9_]{0,30})|(_[a-z0-9_]*))$
 
 pyroma:
-  run: true
+  run: false
 
 # Disable McCabe complexity check as cookbooks might have a complex main function/method.
 mccabe:
