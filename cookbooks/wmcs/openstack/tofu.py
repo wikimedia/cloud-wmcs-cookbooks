@@ -18,6 +18,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 
+from cookbooks.wmcs import TOFU_GITLAB_REPO_PATH
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_PROGRESS,
     CUMIN_UNSAFE_WITHOUT_OUTPUT,
@@ -97,8 +98,7 @@ class OpenstackTofu(CookbookBase):
 class OpenstackTofuRunner(WMCSCookbookRunnerBase):
 
     GITLAB_BASE_URL = "https://gitlab.wikimedia.org"
-    GITLAB_REPO_NAME = "tofu-infra"
-    GITLAB_REPO_URL = f"{GITLAB_BASE_URL}/repos/cloud/cloud-vps/{GITLAB_REPO_NAME}"
+    GITLAB_REPO_URL = f"{GITLAB_BASE_URL}/{TOFU_GITLAB_REPO_PATH}"
     # long tofu plans in gitlab notes without collapse are annoying. But also, markdown formatting inside
     # gitlab notes is broken, so we don't want to collapse _all_ tofu plan, only those with line count
     # above this arbitrary threshold
@@ -219,7 +219,7 @@ git checkout --force 'mr-{remote}-{self.gitlab_mr}'
             return
 
         try:
-            project_id = self.gitlab_controller.get_project_id_by_name(self.GITLAB_REPO_NAME)
+            project_id = self.gitlab_controller.get_project_by_path(TOFU_GITLAB_REPO_PATH).id
         except Exception as e:  # pylint: disable=broad-except
             LOGGER.warning("WARNING: unable to write gitlab note to merge request: %s", str(e))
             return

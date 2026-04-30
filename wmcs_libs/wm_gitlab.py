@@ -113,13 +113,8 @@ class GitlabController:
             ssl_verify=False,
         )
 
-    def get_project_id_by_name(self, project_name: str) -> int:
-        projects = self.gitlab.projects.list(all=True, search=project_name)
-        for project in projects:
-            if project.name == project_name:
-                return project.id
-
-        raise Exception(f"could not find project '{project_name}'")
+    def get_project_by_path(self, project_path: str) -> upstream_gitlab_lib.v4.objects.Project:
+        return self.gitlab.projects.get(project_path)
 
     def create_mr_note(self, project_id: int, merge_request_iid: int, note_body: str) -> Any:
         project = self.gitlab.projects.get(project_id)
@@ -182,8 +177,7 @@ class GitlabController:
         ]
 
     def get_file_at_commit(self, project: str, file_path: str, commit_sha: str) -> str:
-        project_id = self.get_project_id_by_name(project_name=project)
-        project_obj = self.gitlab.projects.get(id=project_id)
+        project_obj = self.get_project_by_path(project)
         return base64.b64decode(project_obj.files.get(file_path=file_path, ref=commit_sha).content).decode("utf8")
 
     def create_commit(  # pylint: disable=too-many-arguments
@@ -195,14 +189,13 @@ class GitlabController:
         author_email: str,
         author_name: str,
         base_branch: str = "main",
-    ) -> dict[str, Any]:
+    ) -> upstream_gitlab_lib.base.RESTObject:
         """Creates a new branch with the a new commit with all the given actions applied.
 
         To see the shape of actions see:
         https://docs.gitlab.com/api/commits/#create-a-commit-with-multiple-files-and-actions
         """
-        project_id = self.get_project_id_by_name(project_name=project)
-        project_obj = self.gitlab.projects.get(id=project_id)
+        project_obj = self.get_project_by_path(project)
         return project_obj.commits.create(
             data={
                 "actions": actions,
@@ -217,8 +210,7 @@ class GitlabController:
     def create_mr(
         self, project: str, source_branch: str, title: str, target_branch: str = "main"
     ) -> "upstream_gitlab_lib.v4.objects.ProjectMergeRequest":
-        project_id = self.get_project_id_by_name(project_name=project)
-        project_obj = self.gitlab.projects.get(id=project_id)
+        project_obj = self.get_project_by_path(project)
         new_mr = project_obj.mergerequests.create(
             data={
                 "title": title,
@@ -235,7 +227,6 @@ class GitlabController:
         project: str,
         mr_iid: str,
     ) -> "upstream_gitlab_lib.v4.objects.ProjectMergeRequest":
-        project_id = self.get_project_id_by_name(project_name=project)
-        project_obj = self.gitlab.projects.get(id=project_id)
+        project_obj = self.get_project_by_path(project)
         mr = project_obj.mergerequests.get(id=mr_iid)
         return cast(upstream_gitlab_lib.v4.objects.ProjectMergeRequest, mr)

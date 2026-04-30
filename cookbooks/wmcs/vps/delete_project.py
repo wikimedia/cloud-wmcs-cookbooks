@@ -18,6 +18,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_input, confirm_on_failure
 
+from cookbooks.wmcs import TOFU_GITLAB_REPO_PATH
 from cookbooks.wmcs.openstack.tofu import OpenstackTofuRunner
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
 from wmcs_libs.inventory.openstack import OpenstackClusterName
@@ -165,7 +166,7 @@ class DeleteProjectRunner(WMCSCookbookRunnerBase):
 
         projects_main_tf = f"resources/{self.openstack_api.cluster_name}-r/main.tf"
         projects_main_tf_content = self.gitlab_controller.get_file_at_commit(
-            project="tofu-infra",
+            project=TOFU_GITLAB_REPO_PATH,
             file_path=projects_main_tf,
             commit_sha="main",
         )
@@ -189,7 +190,7 @@ module "project_{self.common_opts.project}" {{
         }
 
         self.gitlab_controller.create_commit(
-            project="tofu-infra",
+            project=TOFU_GITLAB_REPO_PATH,
             new_branch=branch_name,
             actions=[projects_main_tf_file_change, delete_project_dir_change],
             commit_message=(
@@ -200,7 +201,7 @@ module "project_{self.common_opts.project}" {{
             author_name="Cookbook",
         )
         mr = self.gitlab_controller.create_mr(
-            project="tofu-infra",
+            project=TOFU_GITLAB_REPO_PATH,
             source_branch=branch_name,
             target_branch="main",
             title=mr_title,
@@ -208,7 +209,7 @@ module "project_{self.common_opts.project}" {{
         return mr
 
     def _is_mr_merged(self, mr_iid: str) -> bool:
-        mr = self.gitlab_controller.get_mr(project="tofu-infra", mr_iid=mr_iid)
+        mr = self.gitlab_controller.get_mr(project=TOFU_GITLAB_REPO_PATH, mr_iid=mr_iid)
         if mr.state != "merged":
             LOGGER.error("The MR is not yet merged! It's %s", mr.state)
             return False

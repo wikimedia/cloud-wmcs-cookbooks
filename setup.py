@@ -8,7 +8,7 @@ install_requires = [
     "pyyaml",
     "wikimedia-spicerack>=10.0.0",
     "requests[socks]",
-    "python-gitlab==2.5.0",
+    "python-gitlab~=3.12.0",  # Debian Bookworm allowing for newer patch versions
 ]
 
 # Extra dependencies
