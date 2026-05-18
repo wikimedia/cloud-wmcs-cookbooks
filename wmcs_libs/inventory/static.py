@@ -122,9 +122,9 @@ _INVENTORY: Inventory = {
                     name=CephClusterName.CODFW1,
                     nodes_by_role={
                         CephNodeRoleName.MON: [
-                            "cloudcephmon2004-dev.codfw.wmnet",
                             "cloudcephmon2005-dev.codfw.wmnet",
                             "cloudcephmon2006-dev.codfw.wmnet",
+                            "cloudcephmon2007-dev.codfw.wmnet",
                         ]
                     },
                     osd_drives_count=8,

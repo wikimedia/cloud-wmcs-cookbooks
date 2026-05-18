@@ -537,7 +537,7 @@ def test_wait_for_cluster_health_raises(
 @parametrize(
     {
         "Parse the OSD tree returned by 'ceph osd tree' with rack levels": {
-            # root@cloudcephmon2004-dev:~# ceph osd tree -f json
+            # root@cloudcephmon2007-dev:~# ceph osd tree -f json
             "osd_tree_command_output": """
             {
                 "nodes": [
