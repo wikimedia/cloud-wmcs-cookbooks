@@ -9,7 +9,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.batch import WMCSCookbookBatchRunnerBase
-from wmcs_libs.common import CommonOpts, add_common_opts
+from wmcs_libs.common import CommonOpts, add_common_opts, validate_version
 from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import get_node_cluster_name
 
@@ -78,7 +78,12 @@ class CloudvirtBatchBase(CookbookBase, metaclass=ABCMeta):
             action="store_true",
             help="Operate on ceph-enabled nodes only",
         )
-        # TODO: add support for selecting on e.g. kernel version or similar
+        parser.add_argument(
+            "--exclude-kernel",
+            action="append",
+            help="Do not operate on hosts with this kernel version",
+            validate=validate_version,
+        )
 
         return parser
 
@@ -106,6 +111,9 @@ class CloudvirtBatchRunnerBase(WMCSCookbookBatchRunnerBase, metaclass=ABCMeta):
             )
         else:
             raise ValueError("Either --fqdn or --cluster-name must be specified")
+
+        for version in args.exclude_kernel:
+            self.query += f" AND NOT P{{F:kernelversion = {version}}}"
 
 
 class CloudwebBatchBase(CookbookBase, metaclass=ABCMeta):
