@@ -82,7 +82,7 @@ class CloudvirtBatchBase(CookbookBase, metaclass=ABCMeta):
             "--exclude-kernel",
             action="append",
             help="Do not operate on hosts with this kernel version",
-            validate=validate_version,
+            type=validate_version,
         )
 
         return parser
