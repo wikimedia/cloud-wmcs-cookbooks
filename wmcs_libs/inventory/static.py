@@ -141,8 +141,8 @@ _INVENTORY: Inventory = {
                             "cloudcontrol2010-dev.codfw.wmnet",
                         ],
                         OpenstackNodeRoleName.GATEWAY: [
-                            "cloudgw2002-dev.codfw.wmnet",
                             "cloudgw2003-dev.codfw.wmnet",
+                            "cloudgw2004-dev.codfw.wmnet",
                         ],
                         OpenstackNodeRoleName.RABBIT: [
                             "cloudrabbit2001-dev.codfw.wmnet",
