@@ -24,10 +24,10 @@ from spicerack.cookbook import CookbookBase
 from wmflib.interactive import ask_confirmation
 
 from cookbooks.wmcs.toolforge.k8s.worker.upgrade import UpgradeRunner
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, validate_version
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
 from wmcs_libs.k8s.clusters import add_toolforge_kubernetes_cluster_opts, with_toolforge_kubernetes_cluster_opts
-from wmcs_libs.k8s.kubernetes import KubernetesController, validate_version
+from wmcs_libs.k8s.kubernetes import KubernetesController
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackClusterName
 
 LOGGER = logging.getLogger(__name__)

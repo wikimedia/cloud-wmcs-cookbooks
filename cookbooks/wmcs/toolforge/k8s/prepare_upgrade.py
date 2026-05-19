@@ -19,7 +19,7 @@ from wmflib.interactive import ask_confirmation
 from wmflib.requests import http_session
 
 from cookbooks.wmcs.toolforge.run_tests import ToolforgeRunTestsRunner
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, validate_version
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
 from wmcs_libs.k8s.clusters import (
     add_toolforge_kubernetes_cluster_opts,
@@ -27,7 +27,7 @@ from wmcs_libs.k8s.clusters import (
     with_toolforge_kubernetes_cluster_opts,
 )
 from wmcs_libs.k8s.kubeadm import KUBEADM_VERSION_COMPONENT_HIERA_KEY, KUBERNETES_VERSION_HIERA_KEY
-from wmcs_libs.k8s.kubernetes import KubernetesController, validate_version
+from wmcs_libs.k8s.kubernetes import KubernetesController
 from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)

@@ -19,12 +19,12 @@ from spicerack.cookbook import CookbookBase
 from spicerack.decorators import retry
 from wmflib.interactive import ask_confirmation, confirm_on_failure
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw, validate_version
 from wmcs_libs.inventory.libs import NodeInventoryInfo, get_node_inventory_info
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
 from wmcs_libs.k8s.clusters import add_toolforge_kubernetes_cluster_opts, with_toolforge_kubernetes_cluster_opts
 from wmcs_libs.k8s.kubeadm import KubeadmController
-from wmcs_libs.k8s.kubernetes import KubeletController, KubernetesController, validate_version
+from wmcs_libs.k8s.kubernetes import KubeletController, KubernetesController
 
 LOGGER = logging.getLogger(__name__)
 

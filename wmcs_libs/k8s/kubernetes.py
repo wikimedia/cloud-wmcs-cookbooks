@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 import time
-from argparse import ArgumentTypeError
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, auto
@@ -650,19 +649,3 @@ class KubeletController:
 
         for pod in pod_list:
             self.restart_static_pod(pod, namespace)
-
-
-def validate_version(version: str) -> str:
-    """Argparse type validator for minor.major.patch versions."""
-    parts = [part.strip() for part in version.split(".") if part.strip() != "" and part.strip().isnumeric()]
-    if len(parts) != 3:
-        raise ArgumentTypeError(f"Expected version in minor.major.patch format, got '{version}'")
-    return ".".join(parts)
-
-
-def validate_v_version(version: str) -> str:
-    """Argparse type validator for vX.Y.Z versions."""
-    if not version.startswith("v"):
-        raise ArgumentTypeError(f"Expected version to start with 'v', got '{version}")
-    validated = validate_version(version[1:])
-    return f"v{validated}"

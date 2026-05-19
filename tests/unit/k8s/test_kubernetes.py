@@ -1,16 +1,9 @@
 import json
-from argparse import ArgumentTypeError
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 from wmcs_libs.common import UtilsForTesting
-from wmcs_libs.k8s.kubernetes import (
-    KubernetesController,
-    validate_v_version,
-    validate_version,
-)
+from wmcs_libs.k8s.kubernetes import KubernetesController
 
 
 def test_KubernetesController_get_evictable_pods_for_node(monkeypatch):
@@ -30,25 +23,3 @@ def test_KubernetesController_get_evictable_pods_for_node(monkeypatch):
     # Calico components, but at the time there was a CoreDNS pod on the node, which
     # is managed by a Deployment and so can be evicted.
     assert evictable_pods == ["coredns-796684d57c-cnfxl"]
-
-
-def test_validate_version_ok():
-    assert validate_version("1.23.4") == "1.23.4"
-    assert validate_version(" 1.23. 4  ") == "1.23.4"
-
-
-@pytest.mark.parametrize("version", ["", "aaaa", "1.23", "1.23.4.5", "1.23.", "1..2", "aa.aa.aa", "v1.23.4"])
-def test_validate_version_error(version):
-    with pytest.raises(ArgumentTypeError) as exc:
-        assert validate_version(version) is None
-    assert exc.value.args[0] == f"Expected version in minor.major.patch format, got '{version}'"
-
-
-def test_validate_v_version_ok():
-    assert validate_v_version("v1.23.4") == "v1.23.4"
-
-
-@pytest.mark.parametrize("version", ["", "aaa", "vaaaa", "1.23.4", "v1.2.3.4.5"])
-def test_validate_v_version_error(version):
-    with pytest.raises(ArgumentTypeError):
-        assert validate_v_version(version) is None

@@ -7,9 +7,8 @@ import argparse
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, add_common_opts, validate_v_version, with_common_opts
 from wmcs_libs.k8s.images import ImageController
-from wmcs_libs.k8s.kubernetes import validate_v_version
 
 IMAGES = (
     "cni",

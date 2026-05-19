@@ -871,3 +871,19 @@ def get_ip_address_family(ip_string: str) -> Optional[socket.AddressFamily]:
         pass
 
     return af
+
+
+def validate_version(version: str) -> str:
+    """Argparse type validator for minor.major.patch versions."""
+    parts = [part.strip() for part in version.split(".") if part.strip() != "" and part.strip().isnumeric()]
+    if len(parts) != 3:
+        raise argparse.ArgumentTypeError(f"Expected version in minor.major.patch format, got '{version}'")
+    return ".".join(parts)
+
+
+def validate_v_version(version: str) -> str:
+    """Argparse type validator for vX.Y.Z versions."""
+    if not version.startswith("v"):
+        raise argparse.ArgumentTypeError(f"Expected version to start with 'v', got '{version}")
+    validated = validate_version(version[1:])
+    return f"v{validated}"
