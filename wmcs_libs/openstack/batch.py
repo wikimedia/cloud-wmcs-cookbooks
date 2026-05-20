@@ -56,6 +56,48 @@ class CloudcontrolBatchRunnerBase(WMCSCookbookBatchRunnerBase, metaclass=ABCMeta
             raise ValueError("Either --fqdn or --cluster-name must be specified")
 
 
+class CloudlbBatchBase(CookbookBase, metaclass=ABCMeta):
+    """Base cookbook class for batch operations on cloudlb nodes."""
+
+    def argument_parser(self) -> argparse.ArgumentParser:
+        parser = super().argument_parser()
+        add_common_opts(parser)
+
+        parser.add_argument(
+            "--fqdn",
+            help="Operate on this specific node",
+        )
+        parser.add_argument(
+            "--cluster-name",
+            choices=list(OpenstackClusterName),
+            type=OpenstackClusterName,
+            help="Operate on all nodes of this cluster",
+        )
+
+        return parser
+
+
+class CloudlbBatchRunnerBase(WMCSCookbookBatchRunnerBase, metaclass=ABCMeta):
+    """Base cookbook runner class for batch operations on cloudlb nodes."""
+
+    def __init__(
+        self,
+        common_opts: CommonOpts,
+        args: argparse.Namespace,
+        spicerack: Spicerack,
+    ):
+
+        super().__init__(common_opts, spicerack)
+        if args.fqdn:
+            self.cluster = get_node_cluster_name(args.fqdn)
+            self.query = f"D{{{args.fqdn}}}"
+        elif args.cluster_name:
+            self.cluster = args.cluster_name
+            self.query = f"A:cloudlb AND A:{self.cluster.get_site().value}"
+        else:
+            raise ValueError("Either --fqdn or --cluster-name must be specified")
+
+
 class CloudvirtBatchBase(CookbookBase, metaclass=ABCMeta):
     """Base cookbook class for batch operations on cloudvirt nodes."""
 
