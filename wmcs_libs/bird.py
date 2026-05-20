@@ -2,14 +2,23 @@
 
 from __future__ import annotations
 
+import logging
+import re
+from contextlib import contextmanager
+from datetime import timedelta
+
 from attr import dataclass
+from spicerack import Spicerack, SpicerackError
+from spicerack.administrative import Reason
 from spicerack.decorators import retry
-from spicerack.remote import RemoteExecutionError
+from spicerack.remote import RemoteExecutionError, RemoteHosts
 
 from wmcs_libs.common import (
     CUMIN_SAFE_WITH_OUTPUT,
     CommandRunnerMixin,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 class BirdError(Exception):
@@ -72,3 +81,49 @@ class Bird(CommandRunnerMixin):
             if protocol.info == BGP_STATE_ESTABLISHED:
                 continue
             raise BirdError(f"Protocol {protocol.name} is in '{protocol.info}' state")
+
+
+@contextmanager
+def bgp_downtimed(*, hosts: RemoteHosts, spicerack: Spicerack, reason: Reason, duration: timedelta):
+    """Downtime BGP-related alerts on the given hosts."""
+
+    try:
+        am = spicerack.alertmanager()
+    except SpicerackError as e:
+        # Most likely this means we're running on a local setup
+        LOGGER.info("Not downtiming alerts because Alertmanager is not available: %s", str(e))
+        yield
+        return
+
+    silence_ids = []
+    for host in hosts.split(len(hosts)):
+        hostname, site, _ = str(host).split(".")
+        cloud_private_fqdn = f"{hostname}.private.{site}.wikimedia.cloud"
+        cloud_private_re = "|".join(re.escape(addr) for addr in spicerack.dns().resolve_ips(cloud_private_fqdn))
+
+        # type hint to make mypy happy
+        silences: list[list[dict[str, str | int | float | bool]]] = [
+            # CoreBGPDown
+            [
+                {"name": "alertname", "value": "CoreBGPDown", "isRegex": False},
+                {"name": "peer_descr", "value": hostname, "isRegex": False},
+            ],
+            # BFDdown
+            [
+                {"name": "alertname", "value": "BFDdown", "isRegex": False},
+                {"name": "remote_address", "value": f"^({cloud_private_re})$", "isRegex": True},
+            ],
+        ]
+
+        for matchers in silences:
+            silence_id = am.downtime(
+                reason=reason,
+                duration=duration,
+                matchers=matchers,
+            )
+            silence_ids.append(silence_id)
+
+    yield
+
+    for silence_id in silence_ids:
+        am.remove_downtime(silence_id)
