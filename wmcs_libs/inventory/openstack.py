@@ -9,11 +9,12 @@ from wmcs_libs.inventory.exceptions import InventoryError
 class OpenstackNodeRoleName(NodeRoleName):
     """Different types of openstack node roles."""
 
-    GATEWAY = "cloudgw"
-    RABBIT = "cloudrabbit"
     CONTROL = "cloudcontrol"
-    SERVICES = "cloudservices"
+    GATEWAY = "cloudgw"
+    LB = "cloudlb"
     NET = "cloudnet"
+    RABBIT = "cloudrabbit"
+    SERVICES = "cloudservices"
     VIRT = "cloudvirt"
 
 

@@ -59,6 +59,10 @@ _INVENTORY: Inventory = {
                             "cloudgw1003.eqiad.wmnet",
                             "cloudgw1004.eqiad.wmnet",
                         ],
+                        OpenstackNodeRoleName.LB: [
+                            "cloudlb1001.eqiad.wmnet",
+                            "cloudlb1002.eqiad.wmnet",
+                        ],
                         OpenstackNodeRoleName.RABBIT: [
                             "cloudrabbit1001.eqiad.wmnet",
                             "cloudrabbit1002.eqiad.wmnet",
@@ -143,6 +147,11 @@ _INVENTORY: Inventory = {
                         OpenstackNodeRoleName.GATEWAY: [
                             "cloudgw2003-dev.codfw.wmnet",
                             "cloudgw2004-dev.codfw.wmnet",
+                        ],
+                        OpenstackNodeRoleName.LB: [
+                            "cloudlb2002-dev.codfw.wmnet",
+                            "cloudlb2003-dev.codfw.wmnet",
+                            "cloudlb2004-dev.codfw.wmnet",
                         ],
                         OpenstackNodeRoleName.RABBIT: [
                             "cloudrabbit2001-dev.codfw.wmnet",
