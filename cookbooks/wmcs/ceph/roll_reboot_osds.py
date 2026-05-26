@@ -85,20 +85,23 @@ class RollRebootOsdsRunner(WMCSCookbookRunnerBase):
             osd_nodes = osd_nodes[osd_nodes.index(self.resume_with) :]
 
         self.sallogger.log(message=f"Rebooting the nodes {','.join(osd_nodes)}")
-
-        silences = self.controller.set_maintenance(reason="Roll rebooting OSDs")
+        silences = self.controller.downtime_cluster_alerts(reason="Roll rebooting OSDs")
 
         reboot_node_cookbook = RebootNode(spicerack=self.spicerack)
         for index, osd_node in enumerate(osd_nodes):
+
+            if not self.force:
+                self.controller.wait_for_cluster_healthy()
+
             LOGGER.info("Rebooting node %s, %d done, %d to go", osd_node, index, len(osd_nodes) - index)
+            # we 'force' here because we want to manage the healthy state at this level,
+            # not per OSD node. If the OSD manages it it will wait forever for a node to get
+            # healthy while 'norebalance' is set; see T427295
             args = [
-                "--skip-maintenance",
                 "--fqdn-to-reboot",
                 f"{osd_node}.{self.controller.get_nodes_domain()}",
+                "--force",
             ] + self.common_opts.to_cli_args()
-
-            if self.force:
-                args.append("--force")
 
             reboot_node_cookbook.get_runner(args=reboot_node_cookbook.argument_parser().parse_args(args)).run()
             LOGGER.info(
@@ -107,8 +110,8 @@ class RollRebootOsdsRunner(WMCSCookbookRunnerBase):
                 index + 1,
                 len(osd_nodes) - index - 1,
             )
-            self.controller.wait_for_cluster_healthy(consider_maintenance_healthy=True)
+            self.controller.wait_for_cluster_healthy()
             LOGGER.info("Cluster stable, continuing")
 
-        self.controller.unset_maintenance(silences=silences)
+        self.controller.uptime_cluster_alerts(silences=silences)
         self.sallogger.log(message=f"Finished rebooting the nodes {osd_nodes}")

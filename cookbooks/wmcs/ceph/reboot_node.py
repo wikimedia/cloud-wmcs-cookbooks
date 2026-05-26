@@ -122,7 +122,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Cluster stable, continuing")
 
         if not self.skip_maintenance:
-            self.controller.unset_maintenance(silences=silences)
+            self.controller.unset_maintenance(silences=silences, force=self.force)
 
         remove_silence(spicerack=self.spicerack, silence_id=silence_id)
 
