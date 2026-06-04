@@ -32,7 +32,6 @@ class CopyImagesToRepo(CookbookBase):
     """Uploads the external kyverno images to the local toolforge repository for local comsumption."""
 
     def argument_parser(self):
-
         parser = super().argument_parser()
         add_common_opts(parser, project_default="tools")
         parser.add_argument(
@@ -49,27 +48,23 @@ class CopyImagesToRepo(CookbookBase):
         )
         parser.add_argument(
             "--kyverno-version",
-            required=False,
-            default="v1.12.5",
+            required=True,
             help="Version of kyverno to upgrade to (matches the image tag).",
         )
         parser.add_argument(
             "--bitnami-kubectl-version",
-            required=False,
-            default="1.28.5",
+            required=True,
             help="Version of bitname/kubectl image to upgrade to (matches the image tag).",
         )
         parser.add_argument(
             "--busybox-version",
-            required=False,
-            default="1.35",
+            required=True,
             help="Version of busybox image to upgrade to (matches the image tag).",
         )
 
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
         return with_common_opts(self.spicerack, args, CopyImagesToRepoRunner)(
             image_repo_url=args.image_repo_url,
             uploader_node=args.uploader_node,
@@ -81,7 +76,6 @@ class CopyImagesToRepo(CookbookBase):
 
 
 class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -92,7 +86,6 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         busybox_version: str,
         spicerack: Spicerack,
     ):
-
         self.image_repo_url = image_repo_url
         self.uploader_node = uploader_node
         self.kyverno_version = kyverno_version
@@ -101,7 +94,6 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
         super().__init__(spicerack=spicerack, common_opts=common_opts)
 
     def run(self) -> None:
-
         remote = self.spicerack.remote()
         uploader_node = remote.query(f"D{{{self.uploader_node}}}", use_sudo=True)
         image_ctrl = ImageController(spicerack=self.spicerack, uploader_node=uploader_node)
