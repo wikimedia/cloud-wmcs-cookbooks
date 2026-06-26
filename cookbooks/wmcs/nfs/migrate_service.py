@@ -59,6 +59,12 @@ class NFSServiceMigrateVolume(CookbookBase):
         parser.add_argument("--from-host-id", required=True, help="old service host ID")
         parser.add_argument("--to-host-id", required=True, help="new service host ID")
         parser.add_argument(
+            "--to-host-service-port-name",
+            required=False,
+            default="",
+            help="In case new service IP port does not match volume name.",
+        )
+        parser.add_argument(
             "--force",
             action="store_true",
             help=(
@@ -69,28 +75,28 @@ class NFSServiceMigrateVolume(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
         return with_common_opts(self.spicerack, args, NFSServiceMigrateVolumeRunner)(
             from_id=args.from_host_id,
             to_id=args.to_host_id,
+            to_port_name=args.to_host_service_port_name,
             force=args.force,
             spicerack=self.spicerack,
         )
 
 
 class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
         from_id: OpenstackID,
         to_id: OpenstackID,
+        to_port_name: OpenstackID,
         force: bool,
         spicerack: Spicerack,
     ):
-
         self.from_id = from_id
         self.to_id = to_id
+        self.to_port_name = to_port_name
         self.project = common_opts.project
         self.force = force
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -107,7 +113,6 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         self.to_fqdn = f"{self.to_name}.{self.project}.eqiad1.wikimedia.cloud"
 
     def run(self) -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-
         if not self.from_server["volumes_attached"] and self.force:
             LOGGER.warning("Source server has no volume attached, checking if target already has an attachment")
             volume_id = self.to_server["volumes_attached"][0]["id"]
@@ -195,7 +200,10 @@ class NFSServiceMigrateVolumeRunner(WMCSCookbookRunnerBase):
         service_ip_dns = None
         network_changed = False
         if to_network != from_network:
-            service_ip_new = self._fetch_service_ip(volume_name, to_network)
+            if self.to_port_name:
+                service_ip_new = self._fetch_service_ip(self.to_port_name, to_network)
+            else:
+                service_ip_new = self._fetch_service_ip(volume_name, to_network)
             service_ip_dns = DNSFlip(self.openstack_api, service_zone, service_fqdn)
             service_ip_dns.prepare()
             network_changed = True
