@@ -14,7 +14,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.openstack.common import OpenstackAPI, OpenstackNotFound, get_node_cluster_name
+from wmcs_libs.openstack.common import OpenstackAPI, get_node_cluster_name
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,31 +62,14 @@ class SetMaintenanceRunner(WMCSCookbookRunnerBase):
         )
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
+        self.admin_reason = self.spicerack.admin_reason("host maintenance", common_opts.task_id)
 
     def run_with_proxy(self) -> None:
 
         hostname = self.fqdn.split(".", 1)[0]
-
-        current_aggregates = self.openstack_api.server_get_aggregates(name=hostname)
-        aggregate_names = [aggregate["name"] for aggregate in current_aggregates]
-
-        if aggregate_names == ["maintenance"]:
-            LOGGER.warning("Host %s is already in maintenance mode", self.fqdn)
-            return
-
-        self.openstack_api.aggregate_persist_on_host(
-            host=self.spicerack.remote().query(self.fqdn), current_aggregates=current_aggregates
+        self.openstack_api.compute_service_disable(
+            host=hostname, service="nova-compute", disable_reason=self.admin_reason
         )
 
-        try:
-            for aggregate in aggregate_names:
-                self.openstack_api.aggregate_remove_host(aggregate_name=aggregate, host_name=hostname)
-        except OpenstackNotFound as error:
-            logging.info("%s", error)
-
-        try:
-            self.openstack_api.aggregate_add_host(aggregate_name="maintenance", host_name=hostname)
-        except OpenstackNotFound as error:
-            logging.info("%s", error)
-
+        self.sallogger.log(message=f"set {self.fqdn} maintenance")
         LOGGER.info("Host %s now in maintenance mode. No new VMs will be scheduled in it.", self.fqdn)

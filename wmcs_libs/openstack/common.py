@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # pylint: disable=too-many-arguments,too-many-lines
 """Openstack generic related code."""
+
 from __future__ import annotations
 
 import logging
@@ -14,6 +15,7 @@ from typing import Any, Callable, Literal, NamedTuple, Type, Union, cast
 
 import yaml
 from cumin.transports import Command
+from spicerack.administrative import Reason
 from spicerack.decorators import retry
 from spicerack.remote import Remote, RemoteHosts
 
@@ -629,6 +631,34 @@ class OpenstackAPI(CommandRunnerMixin):
     def get_nova_services(self) -> list[dict[str, Any]]:
         """Return nova's list of registered services"""
         return self.run_formatted_as_list("compute", "service", "list", cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+
+    def compute_service_disable(self, host: str, service: str, disable_reason: Reason | None = None) -> None:
+        """Disable a compute service on a given host."""
+        reason_args = ["--disable-reason", disable_reason.reason] if disable_reason else []
+        self.run_raw(
+            "compute",
+            "service",
+            "set",
+            "--disable",
+            *reason_args,
+            host,
+            service,
+            json_output=False,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
+        )
+
+    def compute_service_enable(self, host: str, service: str) -> None:
+        """Enable a compute service on a given host."""
+        self.run_raw(
+            "compute",
+            "service",
+            "set",
+            "--enable",
+            host,
+            service,
+            json_output=False,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
+        )
 
     def get_designate_services(self) -> list[dict[str, Any]]:
         """Return designate's list of registered services"""

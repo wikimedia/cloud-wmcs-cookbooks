@@ -14,7 +14,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
-from wmcs_libs.openstack.common import AGGREGATES_FILE_PATH, OpenstackAPI, OpenstackNotFound, get_node_cluster_name
+from wmcs_libs.openstack.common import OpenstackAPI, get_node_cluster_name
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,15 +31,6 @@ class UnsetMaintenance(CookbookBase):
             required=True,
             help="FQDN of the cloudvirt to unset maintenance of.",
         )
-        parser.add_argument(
-            "--aggregates",
-            required=False,
-            default=None,
-            help=(
-                "Comma separated list of aggregate names to put the host in (by default will try to "
-                f"use {AGGREGATES_FILE_PATH} if it exists, and fail otherwise). A safe choice would be just `ceph`"
-            ),
-        )
 
         return parser
 
@@ -51,7 +42,6 @@ class UnsetMaintenance(CookbookBase):
             UnsetMaintenanceRunner,
         )(
             fqdn=args.fqdn,
-            aggregates=args.aggregates,
             spicerack=self.spicerack,
         )
 
@@ -63,49 +53,23 @@ class UnsetMaintenanceRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         fqdn: str,
         spicerack: Spicerack,
-        aggregates: str | None = None,
     ):
 
         self.fqdn = fqdn
-        self.openstack_api = OpenstackAPI(remote=spicerack.remote(), cluster_name=get_node_cluster_name(node=self.fqdn))
-        self.aggregates = aggregates
+        self.openstack_api = OpenstackAPI(
+            remote=spicerack.remote(),
+            cluster_name=get_node_cluster_name(node=self.fqdn),
+        )
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.sallogger = SALLogger.from_common_opts(common_opts=common_opts)
 
     def run_with_proxy(self) -> None:
 
         hostname = self.fqdn.split(".", 1)[0]
-        try:
-            self.openstack_api.aggregate_remove_host(aggregate_name="maintenance", host_name=hostname)
-        except OpenstackNotFound as error:
-            logging.info("%s", error)
+        self.openstack_api.compute_service_enable(host=hostname, service="nova-compute")
 
-        if self.aggregates:
-            aggregates_to_add = [aggregate.strip() for aggregate in self.aggregates.split(",")]
-        else:
-            aggregates_to_add = [
-                aggregate["name"]
-                for aggregate in self.openstack_api.aggregate_load_from_host(
-                    host=self.spicerack.remote().query(self.fqdn)
-                )
-            ]
-
-            if aggregates_to_add == ["maintenance"]:
-                raise RuntimeError(
-                    f"Host {self.fqdn} thinks it should be in 'maintenance' aggregate, "
-                    "specify real aggregate with --aggregate"
-                )
-
-        for aggregate_name in aggregates_to_add:
-            try:
-                self.openstack_api.aggregate_add_host(aggregate_name=aggregate_name, host_name=hostname)
-            except OpenstackNotFound as error:
-                logging.info("%s", error)
-
-        aggregates_str = ",".join(aggregates_to_add)
-        self.sallogger.log(message=f"unset {self.fqdn} maintenance (aggregates: {aggregates_str})")
+        self.sallogger.log(message=f"unset {self.fqdn} maintenance")
         LOGGER.info(
-            "Host %s now in out of maintenance mode. New VMs will be scheduled in it (aggregates: %s).",
+            "Host %s now out of maintenance mode. New VMs will be scheduled in it.",
             self.fqdn,
-            aggregates_str,
         )
