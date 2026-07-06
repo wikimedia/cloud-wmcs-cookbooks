@@ -13,11 +13,10 @@ from enum import Enum, auto
 from ipaddress import IPv4Address
 from typing import Any, Callable, Literal, NamedTuple, Type, Union, cast
 
-import yaml
 from cumin.transports import Command
 from spicerack.administrative import Reason
 from spicerack.decorators import retry
-from spicerack.remote import Remote, RemoteHosts
+from spicerack.remote import Remote
 
 from wmcs_libs.common import (
     CUMIN_SAFE_WITHOUT_OUTPUT,
@@ -25,16 +24,12 @@ from wmcs_libs.common import (
     ArgparsableEnum,
     CommandRunnerMixin,
     CuminParams,
-    OutputFormat,
-    run_one_formatted,
     run_one_raw,
-    simple_create_file,
 )
 from wmcs_libs.inventory.libs import generic_get_node_cluster_name, get_node_inventory_info, get_nodes_by_role
 from wmcs_libs.inventory.openstack import OpenstackClusterName, OpenstackNodeRoleName
 
 LOGGER = logging.getLogger(__name__)
-AGGREGATES_FILE_PATH = "/etc/wmcs_host_aggregates.yaml"
 MINUTES_IN_HOUR = 60
 SECONDS_IN_MINUTE = 60
 
@@ -1033,22 +1028,6 @@ class OpenstackAPI(CommandRunnerMixin):
         )
         return out["id"]
 
-    def server_get_aggregates(self, name: OpenstackName) -> list[dict[str, Any]]:
-        """Get all the aggregates for the given server."""
-        # NOTE: this currently does a bunch of requests making it slow, can be simplified
-        # once the following gets released:
-        #  https://review.opendev.org/c/openstack/python-openstackclient/+/794237
-        current_aggregates = self.aggregate_list(cumin_params=CuminParams(print_output=False))
-        server_aggregates: list[dict[str, Any]] = []
-        for aggregate in current_aggregates:
-            aggregate_details = self.aggregate_show(
-                aggregate=aggregate["Name"], cumin_params=CuminParams(print_output=False, print_progress_bars=False)
-            )
-            if name in aggregate_details.get("hosts", []):
-                server_aggregates.append(aggregate_details)
-
-        return server_aggregates
-
     def security_group_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
         """Retrieve the list of security groups."""
         return self.run_formatted_as_list(
@@ -1163,70 +1142,6 @@ class OpenstackAPI(CommandRunnerMixin):
                 return server_group
 
         raise OpenstackNotFound(f"Unable to find a server group with name {name}")
-
-    def aggregate_list(self, cumin_params: CuminParams | None = None) -> list[dict[str, Any]]:
-        """Get the simplified list of aggregates."""
-        return self.run_formatted_as_list("aggregate", "list", "--long", cumin_params=CuminParams.as_safe(cumin_params))
-
-    def aggregate_show(self, aggregate: OpenstackIdentifier, cumin_params: CuminParams | None) -> dict[str, Any]:
-        """Get the details of a given aggregate."""
-        return self.run_formatted_as_dict(
-            "aggregate", "show", aggregate, cumin_params=CuminParams.as_safe(cumin_params)
-        )
-
-    def aggregate_remove_host(self, aggregate_name: OpenstackName, host_name: OpenstackName) -> None:
-        """Remove the given host from the aggregate."""
-        result = self.run_raw(
-            "aggregate",
-            "remove",
-            "host",
-            aggregate_name,
-            host_name,
-            capture_errors=True,
-            cumin_params=CuminParams(print_output=False, print_progress_bars=False),
-        )
-        if "HTTP 404" in result:
-            raise OpenstackNotFound(
-                f"Node {host_name} was not found in aggregate {aggregate_name}, did you try using the hostname "
-                "instead of the fqdn?"
-            )
-
-    def aggregate_add_host(self, aggregate_name: OpenstackName, host_name: OpenstackName) -> None:
-        """Add the given host to the aggregate."""
-        result = self.run_raw("aggregate", "add", "host", aggregate_name, host_name, capture_errors=True)
-        if "HTTP 404" in result:
-            raise OpenstackNotFound(
-                f"Node {host_name} was not found in aggregate {aggregate_name}, did you try using the hostname "
-                "instead of the fqdn?"
-            )
-
-    def aggregate_persist_on_host(self, host: RemoteHosts, current_aggregates: list[dict[str, Any]]) -> None:
-        """Creates a file in the host with its current list of aggregates.
-
-        For later usage, for example, when moving the host temporarily to another aggregate.
-        """
-        simple_create_file(
-            dst_node=host, contents=yaml.dump(current_aggregates, indent=4), remote_path=AGGREGATES_FILE_PATH
-        )
-
-    @staticmethod
-    def aggregate_load_from_host(host: RemoteHosts) -> list[dict[str, Any]]:
-        """Load the persisted list of aggregates from the host."""
-        try:
-            result = run_one_formatted(
-                command=["cat", AGGREGATES_FILE_PATH],
-                node=host,
-                try_format=OutputFormat.YAML,
-                cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
-            )
-
-        except Exception as error:
-            raise OpenstackNotFound(f"Unable to cat the file {AGGREGATES_FILE_PATH} on host {host}") from error
-
-        if isinstance(result, list):
-            return result
-
-        raise TypeError(f"Expected a list, got {result}")
 
     def drain_hypervisor(self, hypervisor_name: OpenstackName) -> None:
         """Drain a hypervisor."""
