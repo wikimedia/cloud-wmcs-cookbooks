@@ -212,6 +212,13 @@ class CreateInstanceWithPrefix(CookbookBase):
             action="store_true",
             help="Enroll the newly created instance on the project Puppet server",
         )
+        parser.add_argument(
+            "--start-from-ordinal",
+            required=False,
+            help="Server number to start from, if no existing members of the prefix are found.",
+            type=int,
+            default=1,
+        )
 
         return parser
 
@@ -230,6 +237,7 @@ class CreateInstanceWithPrefix(CookbookBase):
             server_group_policy=args.server_group_policy,
             ssh_retries=args.ssh_retries,
             sign_puppet_certs=args.sign_puppet_certs,
+            start_from_ordinal=args.start_from_ordinal,
             spicerack=self.spicerack,
         )
 
@@ -243,6 +251,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         instance_creation_opts: InstanceCreationOpts,
         server_group_policy: OpenstackServerGroupPolicy,
         security_group: str,
+        start_from_ordinal: int,
         server_group: str | None = None,
         sign_puppet_certs: bool = False,
         ssh_retries: int = 15,
@@ -265,6 +274,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         self.security_group = security_group
         self.ssh_retries = ssh_retries
         self.sign_puppet_certs = sign_puppet_certs
+        self.start_from_ordinal = start_from_ordinal
 
     @property
     def runtime_description(self) -> str:
@@ -323,7 +333,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
                 LOGGER.error(message)
                 raise Exception(message)
 
-            last_prefix_member_id = 0
+            last_prefix_member_id = self.start_from_ordinal - 1
 
         else:
             # the trimming by length of the prefix allows prefixes with trailing integers (ex. tools-sgeexec-09)
