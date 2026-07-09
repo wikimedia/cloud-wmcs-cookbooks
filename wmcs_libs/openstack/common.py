@@ -629,7 +629,7 @@ class OpenstackAPI(CommandRunnerMixin):
 
     def compute_service_disable(self, host: str, service: str, disable_reason: Reason | None = None) -> None:
         """Disable a compute service on a given host."""
-        reason_args = ["--disable-reason", disable_reason.reason] if disable_reason else []
+        reason_args = ["--disable-reason", f"'{disable_reason.reason}'"] if disable_reason else []
         self.run_raw(
             "compute",
             "service",
