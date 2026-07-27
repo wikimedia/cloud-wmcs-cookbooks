@@ -336,7 +336,12 @@ class CephClusterStatus:
         if temp_status["health"]["status"] == "HEALTH_OK":
             return False
 
-        if "OSDMAP_FLAGS" in temp_status["health"]["checks"] and len(temp_status["health"]["checks"]) == 1:
+        unmuted_checks = {
+            i: temp_status["health"]["checks"][i]
+            for i in temp_status["health"]["checks"]
+            if not temp_status["health"]["checks"][i].get("muted", False)
+        }
+        if "OSDMAP_FLAGS" in unmuted_checks and len(unmuted_checks) == 1:
             current_flags = self.get_osdmap_set_flags()
             return current_flags.issubset({CephOSDFlag.NOOUT, CephOSDFlag.NOREBALANCE, CephOSDFlag.NOIN})
 
@@ -362,11 +367,7 @@ class CephClusterStatus:
             if not temp_status["health"]["checks"]:
                 return
 
-        if (
-            consider_maintenance_healthy
-            and self.is_cluster_in_maintenance()
-            and len(temp_status["health"]["checks"]) == 1
-        ):
+        if consider_maintenance_healthy and self.is_cluster_in_maintenance():
             return
 
         if temp_status["health"]["status"] != "HEALTH_OK":
@@ -391,7 +392,6 @@ class CephOSDNodeController:
     """Controller for a CEPH OSD node."""
 
     def __init__(self, remote: Remote, node_fqdn: str):
-
         self._remote = remote
         self.node_fqdn = node_fqdn
         self._node = self._remote.query(f"D{{{self.node_fqdn}}}", use_sudo=True)
@@ -606,7 +606,6 @@ class CephClusterController(CommandRunnerMixin):
         expected_drives: int = 0,
         expected_version: str = "",
     ):  # pylint: disable=too-many-arguments
-
         self._remote = remote
         self.cluster_name = cluster_name
         self.controlling_node_fqdn = get_mon_nodes(cluster_name)[0]

@@ -42,7 +42,16 @@ from wmcs_libs.ceph import CephClusterStatus, CephClusterUnhealthy, CephOSDFlag,
                                     "summary": {
                                         "message": "noout,norebalance flag(s) set",
                                     },
-                                }
+                                    "muted": False,
+                                },
+                                "BLUESTORE_SLOW_OP_ALERT": {
+                                    "severity": "HEALTH_WARN",
+                                    "summary": {
+                                        "message": "55 OSD(s) experiencing slow operations in BlueStore",
+                                        "count": 55,
+                                    },
+                                    "muted": True,
+                                },
                             },
                         },
                     }
@@ -76,6 +85,7 @@ def test_check_healthy_happy_path(status_dict: dict[str, Any], consider_maintena
                                     "summary": {
                                         "message": "noout,norebalance flag(s) set",
                                     },
+                                    "muted": False,
                                 }
                             },
                         },
@@ -92,7 +102,16 @@ def test_check_healthy_happy_path(status_dict: dict[str, Any], consider_maintena
                                     "summary": {
                                         "message": "noout,norebalance flag(s) set",
                                     },
-                                }
+                                    "muted": False,
+                                },
+                                "BLUESTORE_SLOW_OP_ALERT": {
+                                    "severity": "HEALTH_WARN",
+                                    "summary": {
+                                        "message": "55 OSD(s) experiencing slow operations in BlueStore",
+                                        "count": 55,
+                                    },
+                                    "muted": True,
+                                },
                             },
                         },
                     }
@@ -266,6 +285,7 @@ def test_in_progress_happy_path(status_dict: dict[str, Any], expected_in_progres
                                     "summary": {
                                         "message": "noout,norebalance flag(s) set",
                                     },
+                                    "muted": False,
                                 },
                                 "AUTH_INSECURE_GLOBAL_ID_RECLAIM": {
                                     "summary": {
