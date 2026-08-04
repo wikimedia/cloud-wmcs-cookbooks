@@ -1,4 +1,4 @@
-r"""WMCS Toolforge - Add a new instance to the given prefix.
+r"""WMCS Cloud VPS - Add a new instance to the given prefix.
 
 It will make sure to use the same flavor, network, groups and increment the
 index of the existing instance with the same prefix unless you pass a specific
@@ -59,6 +59,7 @@ class CreateServerResponse:
 class InstanceCreationOpts:
     """Instance creation options."""
 
+    cluster: OpenstackClusterName = OpenstackClusterName.EQIAD1
     prefix: str | None = None
     flavor: OpenstackIdentifier | None = None
     image: OpenstackIdentifier | None = None
@@ -90,6 +91,11 @@ class InstanceCreationOpts:
 
 def add_instance_creation_options(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Adds the common instance creation option to a parser."""
+    parser.add_argument(
+        "--cluster",
+        default=OpenstackClusterName.EQIAD1,
+        help="OpenStack cluster to operate on",
+    )
     parser.add_argument(
         "--prefix",
         required=False,
@@ -178,6 +184,7 @@ def with_instance_creation_options(args: argparse.Namespace, runner: Callable) -
 
     """
     instance_creation_opts = InstanceCreationOpts(
+        cluster=OpenstackClusterName(args.cluster),
         prefix=args.prefix,
         flavor=args.flavor,
         image=args.image,
@@ -258,8 +265,9 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
     ):
 
         self.common_opts = common_opts
+        self.cluster = instance_creation_opts.cluster
         self.openstack_api = OpenstackAPI(
-            remote=spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.common_opts.project
+            remote=spicerack.remote(), cluster_name=self.cluster, project=self.common_opts.project
         )
         if instance_creation_opts.prefix is None:
             raise Exception("Instance prefix missing, please pass one")
@@ -366,7 +374,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
             name=new_prefix_member_name,
         )
 
-        new_instance_fqdn = f"{new_prefix_member_name}.{self.common_opts.project}.eqiad1.wikimedia.cloud"
+        new_instance_fqdn = f"{new_prefix_member_name}.{self.common_opts.project}.{self.cluster.value}.wikimedia.cloud"
         new_prefix_node = self.spicerack.remote().query(f"D{{{new_instance_fqdn}}}", use_sudo=True)
 
         @retry(

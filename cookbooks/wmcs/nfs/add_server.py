@@ -35,7 +35,6 @@ from wmcs_libs.common import (
     run_one_raw,
     with_common_opts,
 )
-from wmcs_libs.inventory.openstack import OpenstackClusterName
 from wmcs_libs.openstack.common import OpenstackAPI, OpenstackID, OpenstackIdentifier, OpenstackName
 from wmcs_libs.openstack.enc import Enc
 
@@ -90,6 +89,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
         self.volume = volume
         self.project = common_opts.project
         super().__init__(spicerack=spicerack, common_opts=common_opts)
+        self.cluster = instance_creation_opts.cluster
         self.prefix = prefix if prefix is not None else self.volume
         self.instance_creation_opts = instance_creation_opts
         if self.instance_creation_opts.network is None:
@@ -116,9 +116,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
         ).create_instance()
 
         new_node = self.spicerack.remote().query(f"D{{{new_server.server_fqdn}}}", use_sudo=True)
-        openstack_api = OpenstackAPI(
-            remote=self.spicerack.remote(), cluster_name=OpenstackClusterName.EQIAD1, project=self.project
-        )
+        openstack_api = OpenstackAPI(remote=self.spicerack.remote(), cluster_name=self.cluster, project=self.project)
 
         if self.create_storage_volume_size > 0:
             new_volume = openstack_api.volume_create(OpenstackID(self.prefix), self.create_storage_volume_size)
@@ -173,7 +171,7 @@ class NFSAddServerRunner(WMCSCookbookRunnerBase):
             openstack_api.attach_service_ip(service_ip, host_port.port_id)
 
         # Create DNS records, idempotent
-        zone_name = f"svc.{self.project}.eqiad1.wikimedia.cloud."
+        zone_name = f"svc.{self.project}.{self.cluster.value}.wikimedia.cloud."
         service_name = f"{self.prefix}.{zone_name}"
         zone_record = openstack_api.zone_get(zone_name)
         zone_id = zone_record[0]["id"]
