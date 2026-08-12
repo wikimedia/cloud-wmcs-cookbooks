@@ -111,7 +111,6 @@ _INVENTORY: Inventory = {
                         # Order matters, it will use the first to run functional tests
                         ToolforgeKubernetesNodeRoleName.BASTION: [
                             "toolsbeta-bastion-7.toolsbeta.eqiad1.wikimedia.cloud",
-                            "toolsbeta-bastion-6.toolsbeta.eqiad1.wikimedia.cloud",
                         ],
                     },
                 ),
