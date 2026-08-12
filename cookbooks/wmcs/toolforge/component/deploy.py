@@ -58,6 +58,11 @@ COMPONENT_TO_PACKAGE_NAME = {
     "toolforge-weld": "python3-toolforge-weld",
     "webservice-cli": "toolforge-webservice",
 }
+ALREADY_RUNNING_MESSAGE = "Found already running tests"
+
+
+class TestsAlreadeRunning(Exception):
+    pass
 
 
 class ToolforgeComponentDeploy(CookbookBase):
@@ -232,8 +237,15 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         # https://gitlab.wikimedia.org/repos/cloud/toolforge/toolforge-deploy/-/blob/main/utils/run_functional_tests.sh
         version_output_delimiter = "-" * 47
         pre_version = logs.split(version_output_delimiter, 1)[0]
-        version = logs.split(version_output_delimiter, 1)[1]
-        version, post_version = version.split(version_output_delimiter, 1)
+        try:
+            version = logs.split(version_output_delimiter, 1)[1]
+            version, post_version = version.split(version_output_delimiter, 1)
+        except IndexError as error:
+            if ALREADY_RUNNING_MESSAGE in logs:
+                raise TestsAlreadeRunning(f"Functional tests are already being run by someone else:\n{logs}") from error
+
+            LOGGER.exception("Failed to parse version info from test logs:\n%s", logs)
+            raise
 
         note = self.gitlab_controller.create_mr_note(
             project_id=project["id"],
