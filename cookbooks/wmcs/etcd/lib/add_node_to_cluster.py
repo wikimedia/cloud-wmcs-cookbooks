@@ -16,13 +16,13 @@ import argparse
 import base64
 import logging
 import time
+from typing import Any
 
 import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from spicerack.remote import Remote, RemoteHosts
 
-from cookbooks.wmcs.etcd.lib.add_node_to_hiera import AddNodeToHiera
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 from wmcs_libs.common import (
     CommonOpts,
@@ -35,11 +35,13 @@ from wmcs_libs.common import (
 )
 from wmcs_libs.etcd.clusters import (
     add_etcd_cluster_opts,
+    get_cluster_node_prefix,
     get_cluster_related_toolforge_k8s_cluster,
     with_etcd_cluster_opts,
 )
 from wmcs_libs.inventory.etcd import EtcdClusterName
 from wmcs_libs.k8s.clusters import get_control_nodes
+from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -200,17 +202,8 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Skipping the puppet bootstrapping (--skip-puppet-bootstrap)")
 
         LOGGER.info("Adding node to the hiera configuration")
-        add_node_to_hiera_cookbook = AddNodeToHiera(spicerack=self.spicerack)
-        hiera_data = add_node_to_hiera_cookbook.get_runner(
-            args=add_node_to_hiera_cookbook.argument_parser().parse_args(
-                [
-                    "--cluster",
-                    self.cluster_name.value,
-                    "--fqdn-to-add",
-                    self.new_member_fqdn,
-                ]
-            ),
-        ).add_node_to_hiera()
+        hiera_data = self._add_node_to_hiera()
+
         LOGGER.info("Give some time for caches to flush")
         time.sleep(60)
 
@@ -243,6 +236,35 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         new_etcd_member_puppet.run()
 
         self._maybe_fix_k8s_cluster(remote=remote, etcd_members=etcd_members)
+
+    def _add_node_to_hiera(self) -> dict[str, Any]:
+        """Update Hiera keys."""
+        enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
+        enc_prefix = enc.prefix(self.cluster_name.get_project(), get_cluster_node_prefix(self.cluster_name))
+
+        current_hiera_config = enc_prefix.get_current_hiera()
+        changed = False
+
+        nodes = current_hiera_config.get("profile::toolforge::k8s::etcd_nodes", [])
+        if self.new_member_fqdn not in nodes:
+            nodes.append(self.new_member_fqdn)
+            changed = True
+
+        current_hiera_config["profile::toolforge::k8s::etcd_nodes"] = nodes
+
+        alt_names = current_hiera_config.get("profile::puppet::agent::dns_alt_names", [])
+        if self.new_member_fqdn not in alt_names:
+            alt_names.append(self.new_member_fqdn)
+            changed = True
+
+        current_hiera_config["profile::puppet::agent::dns_alt_names"] = alt_names
+
+        if changed:
+            enc_prefix.replace_hiera(current_hiera_config)
+        else:
+            LOGGER.info("Hiera config was already correct.")
+
+        return current_hiera_config
 
     def _do_puppet_bootstrap(self, new_etcd_member_fqdn: str, etcd_members: list[str]) -> None:
         # done one by one to avoid taking the cluster down

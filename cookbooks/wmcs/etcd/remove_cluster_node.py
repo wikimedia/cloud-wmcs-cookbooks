@@ -13,13 +13,13 @@ import argparse
 import base64
 import logging
 import time
+from typing import Any
 
 import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from spicerack.remote import Remote, RemoteHosts
 
-from cookbooks.wmcs.etcd.lib.remove_node_from_hiera import RemoveNodeFromHiera
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import (
@@ -40,6 +40,7 @@ from wmcs_libs.etcd.clusters import (
 from wmcs_libs.inventory.etcd import EtcdClusterName
 from wmcs_libs.k8s.clusters import get_control_nodes
 from wmcs_libs.openstack.common import OpenstackAPI
+from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -211,17 +212,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             fqdn_to_remove = self.fqdn_to_remove
 
         LOGGER.info("Removing etcd member %s...", fqdn_to_remove)
-        remove_node_from_hiera_cookbook = RemoveNodeFromHiera(spicerack=self.spicerack)
-        hiera_data = remove_node_from_hiera_cookbook.get_runner(
-            args=remove_node_from_hiera_cookbook.argument_parser().parse_args(
-                [
-                    "--cluster",
-                    self.cluster_name.value,
-                    "--fqdn-to-remove",
-                    fqdn_to_remove,
-                ]
-            ),
-        ).remove_node_from_hiera()
+        hiera_data = self._remove_node_from_hiera()
         # Give some time for caches to flush
         time.sleep(30)
 
@@ -248,6 +239,35 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
                 ],
             ),
         ).run()
+
+    def _remove_node_from_hiera(self) -> dict[str, Any]:
+        """Update Hiera keys."""
+        enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
+        enc_prefix = enc.prefix(self.cluster_name.get_project(), get_cluster_node_prefix(self.cluster_name))
+
+        current_hiera_config = enc_prefix.get_current_hiera()
+        changed = False
+
+        nodes = current_hiera_config.get("profile::toolforge::k8s::etcd_nodes", [])
+        if self.fqdn_to_remove in nodes:
+            nodes.pop(nodes.index(self.fqdn_to_remove))
+            changed = True
+
+        current_hiera_config["profile::toolforge::k8s::etcd_nodes"] = nodes
+
+        alt_names = current_hiera_config.get("profile::puppet::agent::dns_alt_names", [])
+        if self.fqdn_to_remove in alt_names:
+            alt_names.pop(alt_names.index(self.fqdn_to_remove))
+            changed = True
+
+        current_hiera_config["profile::puppet::agent::dns_alt_names"] = alt_names
+
+        if changed:
+            enc_prefix.replace_hiera(current_hiera_config)
+        else:
+            LOGGER.info("Hiera config was already correct.")
+
+        return current_hiera_config
 
     def _refresh_etcd_certs(self, etcd_members: list[str]) -> None:
         # refresh the puppet certs with the new alt-name, we use puppet certs
