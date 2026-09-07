@@ -40,4 +40,10 @@ class EtcdCluster(Cluster):
     instance_prefix: str
     security_group_name: str
     server_group_name: str
+    hiera_member_lists: list[str]
+    """
+    List of Hiera entries on the prefix specified by :py:attr:`instance_prefix`
+    containing a list of the cluster member nodes. Must not be empty, and the
+    key listed first must not contain any other unrelated entries.
+    """
     toolforge_k8s_cluster: ToolforgeKubernetesClusterName | None = None

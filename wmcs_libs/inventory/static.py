@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 
+from wmcs_libs.etcd import DNS_ALT_NAMES_HIERA_KEY
 from wmcs_libs.inventory.ceph import CephCluster, CephClusterName, CephNodeRoleName
 from wmcs_libs.inventory.cluster import ClusterType, Site, SiteName
 from wmcs_libs.inventory.etcd import EtcdCluster, EtcdClusterName
@@ -80,6 +81,10 @@ _INVENTORY: Inventory = {
                     instance_prefix="tools-k8s-etcd",
                     security_group_name="tools-new-k8s-full-connectivity",
                     server_group_name="tools-k8s-etcd",
+                    hiera_member_lists=[
+                        "profile::toolforge::k8s::etcd_nodes",
+                        DNS_ALT_NAMES_HIERA_KEY,
+                    ],
                     toolforge_k8s_cluster=ToolforgeKubernetesClusterName.TOOLS,
                 ),
                 EtcdClusterName.TOOLSBETA_K8S: EtcdCluster(
@@ -88,6 +93,10 @@ _INVENTORY: Inventory = {
                     instance_prefix="toolsbeta-test-k8s-etcd",
                     security_group_name="toolsbeta-k8s-full-connectivity",
                     server_group_name="toolsbeta-k8s-etcd",
+                    hiera_member_lists=[
+                        "profile::toolforge::k8s::etcd_nodes",
+                        DNS_ALT_NAMES_HIERA_KEY,
+                    ],
                     toolforge_k8s_cluster=ToolforgeKubernetesClusterName.TOOLSBETA,
                 ),
             },

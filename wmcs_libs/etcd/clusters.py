@@ -61,6 +61,12 @@ def get_cluster_node_server_group_name(cluster_name: EtcdClusterName) -> str:
     return cluster.server_group_name
 
 
+def get_cluster_hiera_member_lists(cluster_name: EtcdClusterName) -> list[str]:
+    """Gets the Hiera keys for lists of instances in a given cluster."""
+    cluster = _get_cluster(cluster_name)
+    return cluster.hiera_member_lists
+
+
 def get_cluster_related_toolforge_k8s_cluster(cluster_name: EtcdClusterName) -> ToolforgeKubernetesClusterName | None:
     """Gets the name of the Kubernetes cluster a given Etcd cluster is related to, if any."""
     cluster = _get_cluster(cluster_name)

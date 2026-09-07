@@ -31,8 +31,10 @@ from wmcs_libs.common import (
     run_one_raw,
     simple_create_file,
 )
+from wmcs_libs.etcd import DNS_ALT_NAMES_HIERA_KEY
 from wmcs_libs.etcd.clusters import (
     add_etcd_cluster_opts,
+    get_cluster_hiera_member_lists,
     get_cluster_node_prefix,
     get_cluster_related_toolforge_k8s_cluster,
     with_etcd_cluster_opts,
@@ -212,18 +214,19 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             fqdn_to_remove = self.fqdn_to_remove
 
         LOGGER.info("Removing etcd member %s...", fqdn_to_remove)
-        hiera_data = self._remove_node_from_hiera()
+        hiera_keys = get_cluster_hiera_member_lists(self.cluster_name)
+        hiera_data = self._remove_node_from_hiera(hiera_keys)
         # Give some time for caches to flush
         time.sleep(30)
 
-        etcd_members = list(sorted(hiera_data["profile::toolforge::k8s::etcd_nodes"], key=natural_sort_key))
+        etcd_members = list(sorted(hiera_data[hiera_keys[0]], key=natural_sort_key))
         other_etcd_member = etcd_members[0]
         other_etcd_node = remote.query(f"D{{{other_etcd_member}}}", use_sudo=True)
         self.spicerack.etcdctl(remote_host=other_etcd_node).ensure_node_does_not_exist(member_fqdn=fqdn_to_remove)
 
         if self.skip_etcd_certs_refresh:
             LOGGER.info("Skipping the refresh of all the ssl certs in the cluster (--skip-etcd-certs-refresh)")
-        else:
+        elif DNS_ALT_NAMES_HIERA_KEY in hiera_keys:
             self._refresh_etcd_certs(etcd_members=etcd_members)
 
         self._maybe_fix_k8s_cluster(remote=remote, etcd_members=etcd_members, fqdn_to_remove=fqdn_to_remove)
@@ -240,7 +243,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             ),
         ).run()
 
-    def _remove_node_from_hiera(self) -> dict[str, Any]:
+    def _remove_node_from_hiera(self, keys: list[str]) -> dict[str, Any]:
         """Update Hiera keys."""
         enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
         enc_prefix = enc.prefix(self.cluster_name.get_project(), get_cluster_node_prefix(self.cluster_name))
@@ -248,19 +251,12 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         current_hiera_config = enc_prefix.get_current_hiera()
         changed = False
 
-        nodes = current_hiera_config.get("profile::toolforge::k8s::etcd_nodes", [])
-        if self.fqdn_to_remove in nodes:
-            nodes.pop(nodes.index(self.fqdn_to_remove))
-            changed = True
-
-        current_hiera_config["profile::toolforge::k8s::etcd_nodes"] = nodes
-
-        alt_names = current_hiera_config.get("profile::puppet::agent::dns_alt_names", [])
-        if self.fqdn_to_remove in alt_names:
-            alt_names.pop(alt_names.index(self.fqdn_to_remove))
-            changed = True
-
-        current_hiera_config["profile::puppet::agent::dns_alt_names"] = alt_names
+        for key in keys:
+            nodes = current_hiera_config.get(key, [])
+            if self.fqdn_to_remove in nodes:
+                nodes.pop(nodes.index(self.fqdn_to_remove))
+                changed = True
+            current_hiera_config[key] = nodes
 
         if changed:
             enc_prefix.replace_hiera(current_hiera_config)

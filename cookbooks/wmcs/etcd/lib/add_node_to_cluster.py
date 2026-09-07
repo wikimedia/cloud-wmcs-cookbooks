@@ -33,8 +33,10 @@ from wmcs_libs.common import (
     run_one_raw,
     simple_create_file,
 )
+from wmcs_libs.etcd import DNS_ALT_NAMES_HIERA_KEY
 from wmcs_libs.etcd.clusters import (
     add_etcd_cluster_opts,
+    get_cluster_hiera_member_lists,
     get_cluster_node_prefix,
     get_cluster_related_toolforge_k8s_cluster,
     with_etcd_cluster_opts,
@@ -202,15 +204,16 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
             LOGGER.info("Skipping the puppet bootstrapping (--skip-puppet-bootstrap)")
 
         LOGGER.info("Adding node to the hiera configuration")
-        hiera_data = self._add_node_to_hiera()
+        hiera_keys = get_cluster_hiera_member_lists(self.cluster_name)
+        hiera_data = self._add_node_to_hiera(hiera_keys)
 
         LOGGER.info("Give some time for caches to flush")
         time.sleep(60)
 
-        etcd_members = list(sorted(hiera_data["profile::toolforge::k8s::etcd_nodes"], key=natural_sort_key))
+        etcd_members = list(sorted(hiera_data[hiera_keys[0]], key=natural_sort_key))
         if self.skip_puppet_bootstrap:
             LOGGER.info("Skipping the refresh of all the ssl certs in the cluster (--skip-puppet-bootstrap)")
-        else:
+        elif DNS_ALT_NAMES_HIERA_KEY in hiera_keys:
             LOGGER.info("Refreshing certs on all etcd members (to get the new alt-names)")
             self._do_puppet_bootstrap(
                 new_etcd_member_fqdn=self.new_member_fqdn,
@@ -237,7 +240,7 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
 
         self._maybe_fix_k8s_cluster(remote=remote, etcd_members=etcd_members)
 
-    def _add_node_to_hiera(self) -> dict[str, Any]:
+    def _add_node_to_hiera(self, keys: list[str]) -> dict[str, Any]:
         """Update Hiera keys."""
         enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
         enc_prefix = enc.prefix(self.cluster_name.get_project(), get_cluster_node_prefix(self.cluster_name))
@@ -245,19 +248,12 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         current_hiera_config = enc_prefix.get_current_hiera()
         changed = False
 
-        nodes = current_hiera_config.get("profile::toolforge::k8s::etcd_nodes", [])
-        if self.new_member_fqdn not in nodes:
-            nodes.append(self.new_member_fqdn)
-            changed = True
-
-        current_hiera_config["profile::toolforge::k8s::etcd_nodes"] = nodes
-
-        alt_names = current_hiera_config.get("profile::puppet::agent::dns_alt_names", [])
-        if self.new_member_fqdn not in alt_names:
-            alt_names.append(self.new_member_fqdn)
-            changed = True
-
-        current_hiera_config["profile::puppet::agent::dns_alt_names"] = alt_names
+        for key in keys:
+            nodes = current_hiera_config.get(key, [])
+            if self.new_member_fqdn not in nodes:
+                nodes.append(self.new_member_fqdn)
+                changed = True
+            current_hiera_config[key] = nodes
 
         if changed:
             enc_prefix.replace_hiera(current_hiera_config)
