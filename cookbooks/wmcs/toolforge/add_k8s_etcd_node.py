@@ -2,7 +2,7 @@ r"""WMCS Toolforge - Add a new etcd node to a toolforge installation.
 
 Usage example:
     cookbook wmcs.toolforge.add_k8s_etcd_node \
-        --cluster-name toolsbeta
+        --cluster-name toolsbeta-k8s
 
 """
 
@@ -18,14 +18,14 @@ from spicerack.cookbook import CookbookBase
 from cookbooks.wmcs.toolforge.k8s.etcd.add_node_to_cluster import AddNodeToCluster
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
-from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
-from wmcs_libs.k8s.clusters import (
-    add_toolforge_kubernetes_cluster_opts,
+from wmcs_libs.etcd.clusters import (
+    add_etcd_cluster_opts,
     get_cluster_node_prefix,
     get_cluster_node_server_group_name,
     get_cluster_security_group_name,
-    with_toolforge_kubernetes_cluster_opts,
+    with_etcd_cluster_opts,
 )
+from wmcs_libs.inventory.etcd import EtcdClusterName
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,9 +34,8 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
-
         parser = super().argument_parser()
-        add_toolforge_kubernetes_cluster_opts(parser)
+        add_etcd_cluster_opts(parser)
         parser.add_argument(
             "--skip-puppet-bootstrap",
             action="store_true",
@@ -67,8 +66,7 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
-        return with_toolforge_kubernetes_cluster_opts(
+        return with_etcd_cluster_opts(
             self.spicerack,
             args,
             ToolforgeAddK8sEtcdNodeRunner,
@@ -81,11 +79,10 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
 
 
 class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
-        cluster_name: ToolforgeKubernetesClusterName,
+        cluster_name: EtcdClusterName,
         spicerack: Spicerack,
         skip_puppet_bootstrap: bool,
         image: str | None = None,
@@ -100,11 +97,10 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
         self.flavor = flavor
 
     def run(self) -> None:
+        etcd_prefix = get_cluster_node_prefix(self.cluster_name)
 
-        etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
-
-        security_group = get_cluster_security_group_name(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
-        server_group = get_cluster_node_server_group_name(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
+        security_group = get_cluster_security_group_name(self.cluster_name)
+        server_group = get_cluster_node_server_group_name(self.cluster_name)
 
         start_args = [
             "--project",

@@ -12,6 +12,7 @@ import logging
 
 from wmcs_libs.inventory.ceph import CephCluster, CephClusterName, CephNodeRoleName
 from wmcs_libs.inventory.cluster import ClusterType, Site, SiteName
+from wmcs_libs.inventory.etcd import EtcdCluster, EtcdClusterName
 from wmcs_libs.inventory.openstack import OpenstackCluster, OpenstackClusterName, OpenstackNodeRoleName
 from wmcs_libs.inventory.toolsk8s import (
     ToolforgeKubernetesCluster,
@@ -70,6 +71,24 @@ _INVENTORY: Inventory = {
                         ],
                     },
                     internal_network_name="VXLAN/IPv6-dualstack",
+                ),
+            },
+            ClusterType.ETCD: {
+                EtcdClusterName.TOOLS_K8S: EtcdCluster(
+                    name=EtcdClusterName.TOOLS_K8S,
+                    nodes_by_role={},
+                    instance_prefix="tools-k8s-etcd",
+                    security_group_name="tools-new-k8s-full-connectivity",
+                    server_group_name="tools-k8s-etcd",
+                    toolforge_k8s_cluster=ToolforgeKubernetesClusterName.TOOLS,
+                ),
+                EtcdClusterName.TOOLSBETA_K8S: EtcdCluster(
+                    name=EtcdClusterName.TOOLSBETA_K8S,
+                    nodes_by_role={},
+                    instance_prefix="toolsbeta-test-k8s-etcd",
+                    security_group_name="toolsbeta-k8s-full-connectivity",
+                    server_group_name="toolsbeta-k8s-etcd",
+                    toolforge_k8s_cluster=ToolforgeKubernetesClusterName.TOOLSBETA,
                 ),
             },
             ClusterType.TOOLFORGE_KUBERNETES: {

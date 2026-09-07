@@ -2,7 +2,7 @@ r"""WMCS Toolforge - Add a new etcd node to hiera
 
 Usage examples:
     cookbook wmcs.toolforge.k8s.etcd.add_node_to_hiera \
-        --cluster-name toolsbeta \
+        --cluster-name toolsbeta-k8s \
         --fqdn-to-add toolsbeta-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
 
 """
@@ -19,12 +19,12 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
 from wmcs_libs.common import CommonOpts, CuminParams, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict
-from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
-from wmcs_libs.k8s.clusters import (
-    add_toolforge_kubernetes_cluster_opts,
+from wmcs_libs.etcd.clusters import (
+    add_etcd_cluster_opts,
     get_cluster_node_prefix,
-    with_toolforge_kubernetes_cluster_opts,
+    with_etcd_cluster_opts,
 )
+from wmcs_libs.inventory.etcd import EtcdClusterName
 from wmcs_libs.openstack.common import get_control_nodes
 
 LOGGER = logging.getLogger(__name__)
@@ -34,16 +34,15 @@ class AddNodeToHiera(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
-
         parser = super().argument_parser()
-        add_toolforge_kubernetes_cluster_opts(parser)
+        add_etcd_cluster_opts(parser)
         parser.add_argument("--fqdn-to-add", required=True, help="FQDN of the node to add")
 
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> "AddNodeToHieraRunner":
         """Get Runner"""
-        return with_toolforge_kubernetes_cluster_opts(
+        return with_etcd_cluster_opts(
             self.spicerack,
             args,
             AddNodeToHieraRunner,
@@ -54,11 +53,10 @@ class AddNodeToHiera(CookbookBase):
 
 
 class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
-        cluster_name: ToolforgeKubernetesClusterName,
+        cluster_name: EtcdClusterName,
         spicerack: Spicerack,
         fqdn_to_add: str,
     ):
@@ -69,7 +67,6 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
         self.fqdn_to_add = fqdn_to_add
 
     def run(self) -> None:
-
         self.add_node_to_hiera()
 
     def add_node_to_hiera(self) -> dict[str, Any]:
@@ -77,7 +74,7 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
         openstack_control_node_fqdn = get_control_nodes(self.cluster_name.get_openstack_cluster_name())[1]
         control_node = self.spicerack.remote().query(f"D{{{openstack_control_node_fqdn}}}", use_sudo=True)
 
-        etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
+        etcd_prefix = get_cluster_node_prefix(self.cluster_name)
 
         response = run_one_as_dict(
             node=control_node,

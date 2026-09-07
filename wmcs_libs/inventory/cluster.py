@@ -12,6 +12,7 @@ class ClusterType(Enum):
 
     OPENSTACK = auto()
     CEPH = auto()
+    ETCD = auto()
     TOOLFORGE_KUBERNETES = auto()
     TOOLFORGE_TOOLSDB = auto()
 

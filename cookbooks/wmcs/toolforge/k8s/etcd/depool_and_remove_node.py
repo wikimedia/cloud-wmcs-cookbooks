@@ -2,7 +2,7 @@ r"""WMCS Toolforge - Depool and delete the given etcd node from a toolforge inst
 
 Usage example:
     cookbook wmcs.toolforge.k8s.etcd.depool_and_remove_node \
-        --cluster-name toolsbeta \
+        --cluster-name toolsbeta-k8s \
         --node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud
 
 """
@@ -31,13 +31,14 @@ from wmcs_libs.common import (
     run_one_raw,
     simple_create_file,
 )
-from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName, ToolforgeKubernetesNodeRoleName
-from wmcs_libs.k8s.clusters import (
-    add_toolforge_kubernetes_cluster_opts,
+from wmcs_libs.etcd.clusters import (
+    add_etcd_cluster_opts,
     get_cluster_node_prefix,
-    get_control_nodes,
-    with_toolforge_kubernetes_cluster_opts,
+    get_cluster_related_toolforge_k8s_cluster,
+    with_etcd_cluster_opts,
 )
+from wmcs_libs.inventory.etcd import EtcdClusterName
+from wmcs_libs.k8s.clusters import get_control_nodes
 from wmcs_libs.openstack.common import OpenstackAPI
 
 LOGGER = logging.getLogger(__name__)
@@ -47,9 +48,8 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
-
         parser = super().argument_parser()
-        add_toolforge_kubernetes_cluster_opts(parser)
+        add_etcd_cluster_opts(parser)
         parser.add_argument(
             "--fqdn-to-remove",
             required=False,
@@ -68,8 +68,7 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> "ToolforgeDepoolAndRemoveNodeRunner":
-
-        return with_toolforge_kubernetes_cluster_opts(
+        return with_etcd_cluster_opts(
             self.spicerack,
             args,
             ToolforgeDepoolAndRemoveNodeRunner,
@@ -168,16 +167,14 @@ def _fix_kubeadm(
 
 
 class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
-        cluster_name: ToolforgeKubernetesClusterName,
+        cluster_name: EtcdClusterName,
         spicerack: Spicerack,
         fqdn_to_remove: str,
         skip_etcd_certs_refresh: bool,
     ):
-
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -190,10 +187,9 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         )
 
     def run(self) -> None:
-
         remote = self.spicerack.remote()
 
-        etcd_prefix = get_cluster_node_prefix(self.cluster_name, ToolforgeKubernetesNodeRoleName.ETCD)
+        etcd_prefix = get_cluster_node_prefix(self.cluster_name)
 
         if not self.fqdn_to_remove:
             all_project_servers = self.openstack_api.server_list()
@@ -239,13 +235,7 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
         else:
             self._refresh_etcd_certs(etcd_members=etcd_members)
 
-        k8s_control_nodes = get_control_nodes(self.cluster_name)
-        _fix_kubeadm(
-            remote=remote,
-            k8s_control_members=k8s_control_nodes,
-            etcd_fqdn_to_remove=fqdn_to_remove,
-            etcd_members=etcd_members,
-        )
+        self._maybe_fix_k8s_cluster(remote=remote, etcd_members=etcd_members, fqdn_to_remove=fqdn_to_remove)
 
         remove_instance_cookbook = RemoveInstance(spicerack=self.spicerack)
         remove_instance_cookbook.get_runner(
@@ -272,3 +262,16 @@ class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
             ).run()
             # give time for etcd to stabilize
             time.sleep(10)
+
+    def _maybe_fix_k8s_cluster(self, remote: Remote, etcd_members: list[str], fqdn_to_remove: str):
+        k8s_cluster = get_cluster_related_toolforge_k8s_cluster(self.cluster_name)
+        if not k8s_cluster:
+            return
+
+        k8s_control_nodes = get_control_nodes(k8s_cluster)
+        _fix_kubeadm(
+            remote=remote,
+            k8s_control_members=k8s_control_nodes,
+            etcd_fqdn_to_remove=fqdn_to_remove,
+            etcd_members=etcd_members,
+        )

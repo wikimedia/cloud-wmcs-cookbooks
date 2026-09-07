@@ -5,7 +5,7 @@ work (might refresh puppet certs though, and restart services).
 
 Usage example:
     cookbook wmcs.toolforge.k8s.etcd.add_node_to_cluster \
-        --cluster-name toolsbeta
+        --cluster-name toolsbeta-k8s
 
 """
 
@@ -32,12 +32,13 @@ from wmcs_libs.common import (
     run_one_raw,
     simple_create_file,
 )
-from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
-from wmcs_libs.k8s.clusters import (
-    add_toolforge_kubernetes_cluster_opts,
-    get_control_nodes,
-    with_toolforge_kubernetes_cluster_opts,
+from wmcs_libs.etcd.clusters import (
+    add_etcd_cluster_opts,
+    get_cluster_related_toolforge_k8s_cluster,
+    with_etcd_cluster_opts,
 )
+from wmcs_libs.inventory.etcd import EtcdClusterName
+from wmcs_libs.k8s.clusters import get_control_nodes
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,13 +47,12 @@ class AddNodeToCluster(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
-
         parser = super().argument_parser()
-        add_toolforge_kubernetes_cluster_opts(parser)
+        add_etcd_cluster_opts(parser)
         parser.add_argument(
             "--new-member-fqdn",
             required=True,
-            help=("Fully qualified domain name of the member to add."),
+            help="Fully qualified domain name of the member to add.",
         )
         parser.add_argument(
             "--skip-puppet-bootstrap",
@@ -67,8 +67,7 @@ class AddNodeToCluster(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
-        return with_toolforge_kubernetes_cluster_opts(
+        return with_etcd_cluster_opts(
             self.spicerack,
             args,
             AddNodeToClusterRunner,
@@ -172,11 +171,10 @@ def _fix_kubeadm(
 
 
 class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
-        cluster_name: ToolforgeKubernetesClusterName,
+        cluster_name: EtcdClusterName,
         spicerack: Spicerack,
         new_member_fqdn: str,
         skip_puppet_bootstrap: bool,
@@ -189,7 +187,6 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         self.skip_puppet_bootstrap = skip_puppet_bootstrap
 
     def run(self) -> None:
-
         remote = self.spicerack.remote()
 
         if not self.skip_puppet_bootstrap:
@@ -244,14 +241,7 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         new_etcd_member_puppet = self.spicerack.puppet(remote.query(f"D{{{self.new_member_fqdn}}}", use_sudo=True))
         new_etcd_member_puppet.run()
 
-        LOGGER.info("Updating the kubernetes configs to let the control nodes know about the new etcd member.")
-        k8s_control_nodes = get_control_nodes(self.cluster_name)
-        _fix_kubeadm(
-            remote=remote,
-            k8s_control_members=k8s_control_nodes,
-            new_etcd_member_fqdn=self.new_member_fqdn,
-            existing_etcd_members=etcd_members,
-        )
+        self._maybe_fix_k8s_cluster(remote=remote, etcd_members=etcd_members)
 
     def _do_puppet_bootstrap(self, new_etcd_member_fqdn: str, etcd_members: list[str]) -> None:
         # done one by one to avoid taking the cluster down
@@ -265,3 +255,17 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
             ).run()
             # give time for etcd to stabilize
             time.sleep(10)
+
+    def _maybe_fix_k8s_cluster(self, remote: Remote, etcd_members: list[str]) -> None:
+        k8s_cluster = get_cluster_related_toolforge_k8s_cluster(self.cluster_name)
+        if not k8s_cluster:
+            return
+
+        LOGGER.info("Updating the kubernetes configs to let the control nodes know about the new etcd member.")
+        k8s_control_nodes = get_control_nodes(k8s_cluster)
+        _fix_kubeadm(
+            remote=remote,
+            k8s_control_members=k8s_control_nodes,
+            new_etcd_member_fqdn=self.new_member_fqdn,
+            existing_etcd_members=etcd_members,
+        )

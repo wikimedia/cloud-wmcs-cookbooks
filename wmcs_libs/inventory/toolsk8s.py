@@ -39,7 +39,6 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     WORKER = "worker"
     WORKER_NFS = "worker-nfs"
     GATEWAY = "gateway"
-    ETCD = "etcd"
     HAPROXY = "haproxy"
     SERVICES = "service"
     BASTION = "bastion"

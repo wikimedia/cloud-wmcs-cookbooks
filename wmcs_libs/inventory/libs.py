@@ -79,6 +79,9 @@ def _guess_cluster_type(node: str) -> ClusterType | None:
     ):
         return ClusterType.OPENSTACK
 
+    if "-etcd-" in node:
+        return ClusterType.ETCD
+
     if "-k8s-" in node:
         return ClusterType.TOOLFORGE_KUBERNETES
 
