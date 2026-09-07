@@ -10,22 +10,20 @@ Usage examples:
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 from typing import Any
 
-import yaml
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from wmcs_libs.common import CommonOpts, CuminParams, OutputFormat, WMCSCookbookRunnerBase, run_one_as_dict
+from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
 from wmcs_libs.etcd.clusters import (
     add_etcd_cluster_opts,
     get_cluster_node_prefix,
     with_etcd_cluster_opts,
 )
 from wmcs_libs.inventory.etcd import EtcdClusterName
-from wmcs_libs.openstack.common import get_control_nodes
+from wmcs_libs.openstack.enc import Enc
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,19 +69,10 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
 
     def add_node_to_hiera(self) -> dict[str, Any]:
         """Needed to be able to change the return type."""
-        openstack_control_node_fqdn = get_control_nodes(self.cluster_name.get_openstack_cluster_name())[1]
-        control_node = self.spicerack.remote().query(f"D{{{openstack_control_node_fqdn}}}", use_sudo=True)
+        enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
+        enc_prefix = enc.prefix(self.cluster_name.get_project(), get_cluster_node_prefix(self.cluster_name))
 
-        etcd_prefix = get_cluster_node_prefix(self.cluster_name)
-
-        response = run_one_as_dict(
-            node=control_node,
-            command=["wmcs-enc-cli", "--openstack-project", self.common_opts.project, "get_prefix_hiera", etcd_prefix],
-            cumin_params=CuminParams(is_safe=True),
-            try_format=OutputFormat.YAML,
-        )
-        # double yaml yep xd
-        current_hiera_config = yaml.safe_load(response["hiera"])
+        current_hiera_config = enc_prefix.get_current_hiera()
         changed = False
 
         nodes = current_hiera_config.get("profile::toolforge::k8s::etcd_nodes", [])
@@ -101,23 +90,7 @@ class AddNodeToHieraRunner(WMCSCookbookRunnerBase):
         current_hiera_config["profile::puppet::agent::dns_alt_names"] = alt_names
 
         if changed:
-            # json is a one-line string, with only double quotes, nicer for
-            # usage as cli parameter, and it's valid yaml :)
-            current_hiera_config_str = json.dumps(current_hiera_config)
-            LOGGER.info("New hiera config:\n%s", current_hiera_config_str)
-
-            run_one_as_dict(
-                node=control_node,
-                command=(
-                    "wmcs-enc-cli",
-                    "--openstack-project",
-                    self.common_opts.project,
-                    "set_prefix_hiera",
-                    etcd_prefix,
-                    f"'{current_hiera_config_str}'",
-                ),
-                try_format=OutputFormat.YAML,
-            )
+            enc_prefix.replace_hiera(current_hiera_config)
         else:
             LOGGER.info("Hiera config was already correct.")
 
