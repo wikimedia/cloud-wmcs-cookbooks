@@ -1,9 +1,9 @@
-r"""WMCS Toolforge - Add a new etcd node to hiera
+r"""Add a new etcd node to Hiera for a given cluster.
 
 Usage examples:
-    cookbook wmcs.toolforge.k8s.etcd.add_node_to_hiera \
+    cookbook wmcs.etcd.lib.add_node_to_hiera \
         --cluster-name toolsbeta-k8s \
-        --fqdn-to-add toolsbeta-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
+        --fqdn-to-add toolsbeta-test-k8s-etcd-9.toolsbeta.eqiad1.wikimedia.cloud
 
 """
 

@@ -80,9 +80,8 @@ Some known services and packages are:
 - openstack: lower layer of the infrastructure for the Cloud VPS service.
 - vps: operations with Openstack APIs.
 - nfs: NFS related stuff.
+- etcd: Etcd clusters in Toolforge and elsewhere.
 - toolforge: everything Toolforge.
-- toolforge.k8s: everything Toolforge kubernetes infrastructure.
-- toolforge.k8s.etcd: everything Toolforge kubernetes etcd infrastructure.
 
 Some well known keywords:
 

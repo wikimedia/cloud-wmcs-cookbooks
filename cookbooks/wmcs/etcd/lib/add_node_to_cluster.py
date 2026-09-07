@@ -1,11 +1,12 @@
-r"""WMCS Toolforge - Add an existing etcd node to an existing etcd cluster.
+r"""Add an existing etcd node to an existing etcd cluster.
 
 Note that if the node is already part of the cluster, this cookbook will still
 work (might refresh puppet certs though, and restart services).
 
 Usage example:
-    cookbook wmcs.toolforge.k8s.etcd.add_node_to_cluster \
-        --cluster-name toolsbeta-k8s
+    cookbook wmcs.etcd.lib.add_node_to_cluster \
+        --cluster-name toolsbeta-k8s \
+        --new-member-fqdn toolsbeta-test-k8s-etcd-9.toolsbeta.eqiad1.wikimedia.cloud
 
 """
 
@@ -21,7 +22,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from spicerack.remote import Remote, RemoteHosts
 
-from cookbooks.wmcs.toolforge.k8s.etcd.add_node_to_hiera import AddNodeToHiera
+from cookbooks.wmcs.etcd.lib.add_node_to_hiera import AddNodeToHiera
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 from wmcs_libs.common import (
     CommonOpts,

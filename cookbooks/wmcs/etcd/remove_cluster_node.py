@@ -1,4 +1,4 @@
-r"""WMCS Toolforge - Depool and delete the given etcd node from a toolforge installation
+r"""Remove a node from an existing etcd cluster.
 
 Usage example:
     cookbook wmcs.toolforge.k8s.etcd.depool_and_remove_node \
@@ -19,7 +19,7 @@ from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from spicerack.remote import Remote, RemoteHosts
 
-from cookbooks.wmcs.toolforge.k8s.etcd.remove_node_from_hiera import RemoveNodeFromHiera
+from cookbooks.wmcs.etcd.lib.remove_node_from_hiera import RemoveNodeFromHiera
 from cookbooks.wmcs.vps.refresh_puppet_certs import RefreshPuppetCerts
 from cookbooks.wmcs.vps.remove_instance import RemoveInstance
 from wmcs_libs.common import (

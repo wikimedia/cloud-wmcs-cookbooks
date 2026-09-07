@@ -1,9 +1,9 @@
-r"""WMCS Toolforge - Remove an exsting etcd node from hiera
+r"""Remove an existing etcd node from Hiera from a given cluster.
 
 Usage examples:
-    cookbook wmcs.toolforge.remove_etcd_node_from_hiera \
+    cookbook wmcs.etcd.lib.remove_etcd_node_from_hiera \
         --cluster-name toolsbeta-k8s \
-        --fqdn-to-remove toolsbeta-k8s-etcd-09.toolsbeta.eqiad1.wikimedia.cloud
+        --fqdn-to-remove toolsbeta-k8s-etcd-9.toolsbeta.eqiad1.wikimedia.cloud
 
 """
 

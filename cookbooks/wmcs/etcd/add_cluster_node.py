@@ -1,7 +1,7 @@
-r"""WMCS Toolforge - Add a new etcd node to a toolforge installation.
+r"""Add a new etcd node to an existing cluster.
 
 Usage example:
-    cookbook wmcs.toolforge.add_k8s_etcd_node \
+    cookbook wmcs.etcd.add_cluster_node \
         --cluster-name toolsbeta-k8s
 
 """
@@ -15,7 +15,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 
-from cookbooks.wmcs.toolforge.k8s.etcd.add_node_to_cluster import AddNodeToCluster
+from cookbooks.wmcs.etcd.lib.add_node_to_cluster import AddNodeToCluster
 from cookbooks.wmcs.vps.create_instance_with_prefix import CreateInstanceWithPrefix
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase
 from wmcs_libs.etcd.clusters import (
