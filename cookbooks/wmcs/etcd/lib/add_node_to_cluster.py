@@ -220,22 +220,29 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
                 etcd_members=etcd_members,
             )
 
-        existing_etcd_member_fqdn = etcd_members[0]
-        # this might happen when the new member is number 10, as the sorting is
-        # alphabetical, so 10 goes before 1
-        if existing_etcd_member_fqdn == self.new_member_fqdn:
-            existing_etcd_member_fqdn = etcd_members[1]
+        new_member_node = remote.query(f"D{{{self.new_member_fqdn}}}", use_sudo=True)
 
-        existing_etcd_member_node = remote.query(f"D{{{existing_etcd_member_fqdn}}}", use_sudo=True)
-        self.spicerack.etcdctl(remote_host=existing_etcd_member_node).ensure_node_exists(
-            new_member_fqdn=self.new_member_fqdn,
-        )
+        # Is this a new cluster?
+        if len(etcd_members) > 1:
+            existing_etcd_member_fqdn = etcd_members[0]
+            # this might happen when the new member is number 10, as the sorting is
+            # alphabetical, so 10 goes before 1
+            if existing_etcd_member_fqdn == self.new_member_fqdn:
+                existing_etcd_member_fqdn = etcd_members[1]
+
+            existing_etcd_member_node = remote.query(f"D{{{existing_etcd_member_fqdn}}}", use_sudo=True)
+            cluster = self.spicerack.etcdctl(remote_host=existing_etcd_member_node)
+        else:
+            cluster = self.spicerack.etcdctl(remote_host=new_member_node)
+
+        LOGGER.info("Joining the node to the cluster")
+        cluster.ensure_node_exists(new_member_fqdn=self.new_member_fqdn)
 
         LOGGER.info(
             "Rerunning puppet on the new host to force etcd to start and join the cluster now that all the members "
             "have the correct configs."
         )
-        new_etcd_member_puppet = self.spicerack.puppet(remote.query(f"D{{{self.new_member_fqdn}}}", use_sudo=True))
+        new_etcd_member_puppet = self.spicerack.puppet(new_member_node)
         new_etcd_member_puppet.run()
 
         self._maybe_fix_k8s_cluster(remote=remote, etcd_members=etcd_members)
