@@ -75,6 +75,14 @@ _INVENTORY: Inventory = {
                 ),
             },
             ClusterType.ETCD: {
+                EtcdClusterName.CLOUDINFRA: EtcdCluster(
+                    name=EtcdClusterName.CLOUDINFRA,
+                    nodes_by_role={},
+                    instance_prefix="cloudinfra-etcd",
+                    security_group_name="etcd",
+                    server_group_name="etcd",
+                    hiera_member_lists=["profile::wmcs::kubeadm::etcd_nodes"],
+                ),
                 EtcdClusterName.TOOLS_K8S: EtcdCluster(
                     name=EtcdClusterName.TOOLS_K8S,
                     nodes_by_role={},

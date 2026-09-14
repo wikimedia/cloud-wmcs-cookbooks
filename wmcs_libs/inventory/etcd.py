@@ -12,6 +12,7 @@ from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
 class EtcdClusterName(OpenStackProjectSpecificClusterName):
     """Every Etcd cluster we manage in Cloud VPS."""
 
+    CLOUDINFRA = "cloudinfra"
     TOOLS_K8S = "tools-k8s"
     TOOLSBETA_K8S = "toolsbeta-k8s"
 
@@ -25,6 +26,8 @@ class EtcdClusterName(OpenStackProjectSpecificClusterName):
 
     def get_project(self) -> str:
         """Get the OpenStack cluster project where a cluster is deployed in by the name."""
+        if self == EtcdClusterName.CLOUDINFRA:
+            return "cloudinfra"
         if self == EtcdClusterName.TOOLS_K8S:
             return "tools"
         if self == EtcdClusterName.TOOLSBETA_K8S:
