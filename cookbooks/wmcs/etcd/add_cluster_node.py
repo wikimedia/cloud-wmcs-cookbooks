@@ -62,6 +62,15 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
                 "debian-10.0-buster, ex. 64351116-a53e-4a62-8866-5f0058d89c2b)"
             ),
         )
+        parser.add_argument(
+            "--network",
+            required=False,
+            default=None,
+            help=(
+                "Network for the new instance (will use the same as the latest existing one by default, ex. "
+                "VXLAN/IPv6-dualstack, ex. d8a16ddf-c01f-4f22-8b67-8ed18b4b1b45)"
+            ),
+        )
 
         return parser
 
@@ -74,6 +83,7 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
             skip_puppet_bootstrap=args.skip_puppet_bootstrap,
             image=args.image,
             flavor=args.flavor,
+            network=args.network,
             spicerack=self.spicerack,
         )
 
@@ -87,6 +97,7 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
         skip_puppet_bootstrap: bool,
         image: str | None = None,
         flavor: str | None = None,
+        network: str | None = None,
     ):
 
         self.common_opts = common_opts
@@ -95,6 +106,7 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
         self.skip_puppet_bootstrap = skip_puppet_bootstrap
         self.image = image
         self.flavor = flavor
+        self.network = network
 
     def run(self) -> None:
         etcd_prefix = get_cluster_node_prefix(self.cluster_name)
@@ -112,11 +124,13 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
             "--server-group",
             server_group,
         ]
+
         if self.image:
             start_args.extend(["--image", self.image])
-
         if self.flavor:
             start_args.extend(["--flavor", self.flavor])
+        if self.network:
+            start_args.extend(["--network", self.network])
 
         create_instance_cookbook = CreateInstanceWithPrefix(spicerack=self.spicerack)
         new_member = create_instance_cookbook.get_runner(
