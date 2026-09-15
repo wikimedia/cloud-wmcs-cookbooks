@@ -1,9 +1,9 @@
 r"""Remove a node from an existing etcd cluster.
 
 Usage example:
-    cookbook wmcs.toolforge.k8s.etcd.depool_and_remove_node \
+    cookbook wmcs.etcd.remove_cluster_node \
         --cluster-name toolsbeta-k8s \
-        --node-fqdn toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud
+        --fqdn-to-remove toolsbeta-test-etcd-8.toolsbeta.eqiad1.wikimedia.cloud
 
 """
 
@@ -47,7 +47,7 @@ from wmcs_libs.openstack.enc import Enc
 LOGGER = logging.getLogger(__name__)
 
 
-class ToolforgeDepoolAndRemoveNode(CookbookBase):
+class RemoveClusterNode(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
@@ -70,11 +70,11 @@ class ToolforgeDepoolAndRemoveNode(CookbookBase):
 
         return parser
 
-    def get_runner(self, args: argparse.Namespace) -> "ToolforgeDepoolAndRemoveNodeRunner":
+    def get_runner(self, args: argparse.Namespace) -> "RemoveClusterNodeRunner":
         return with_etcd_cluster_opts(
             self.spicerack,
             args,
-            ToolforgeDepoolAndRemoveNodeRunner,
+            RemoveClusterNodeRunner,
         )(
             fqdn_to_remove=args.fqdn_to_remove,
             skip_etcd_certs_refresh=args.skip_etcd_certs_refresh,
@@ -169,7 +169,7 @@ def _fix_kubeadm(
     )
 
 
-class ToolforgeDepoolAndRemoveNodeRunner(WMCSCookbookRunnerBase):
+class RemoveClusterNodeRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
