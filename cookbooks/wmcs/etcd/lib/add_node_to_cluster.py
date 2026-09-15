@@ -219,6 +219,11 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
                 new_etcd_member_fqdn=self.new_member_fqdn,
                 etcd_members=etcd_members,
             )
+        else:
+            LOGGER.info("Running Puppet to pick up new firewall settings")
+            existing_hosts = [host for host in etcd_members if host != self.new_member_fqdn]
+            existing_remote = remote.query(f"D{{{','.join(existing_hosts)}}}", use_sudo=True)
+            self.spicerack.puppet(existing_remote).run()
 
         new_member_node = remote.query(f"D{{{self.new_member_fqdn}}}", use_sudo=True)
 
