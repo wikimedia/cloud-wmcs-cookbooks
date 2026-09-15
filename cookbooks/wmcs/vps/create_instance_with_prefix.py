@@ -67,6 +67,7 @@ class InstanceCreationOpts:
     security_group: OpenstackIdentifier | None = None
     server_group: OpenstackIdentifier | None = None
     server_group_policy: OpenstackServerGroupPolicy | None = None
+    availability_zone: str | None = None
 
     def to_cli_args(self) -> list[str]:
         """Helper to unwrap the options for use with argument parsers."""
@@ -85,6 +86,8 @@ class InstanceCreationOpts:
             args.extend(["--server-group", self.server_group])
         if self.server_group_policy:
             args.extend(["--server-group-policy", self.server_group_policy.value])
+        if self.availability_zone:
+            args.extend(["--availability-zone", self.availability_zone])
 
         return args
 
@@ -157,6 +160,12 @@ def add_instance_creation_options(parser: argparse.ArgumentParser) -> argparse.A
         type=OpenstackServerGroupPolicy,
         default=OpenstackServerGroupPolicy.ANTI_AFFINITY,
     )
+    parser.add_argument(
+        "--availability-zone",
+        required=False,
+        default=None,
+        help="OpenStack availability zone where the new instance should be scheduled",
+    )
     return parser
 
 
@@ -192,6 +201,7 @@ def with_instance_creation_options(args: argparse.Namespace, runner: Callable) -
         security_group=args.security_group,
         server_group=args.server_group,
         server_group_policy=args.server_group_policy,
+        availability_zone=args.availability_zone,
     )
     return partial(runner, instance_creation_opts=instance_creation_opts)
 
@@ -200,7 +210,6 @@ class CreateInstanceWithPrefix(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self) -> argparse.ArgumentParser:
-
         parser = super().argument_parser()
         add_common_opts(parser)
         add_instance_creation_options(parser)
@@ -230,7 +239,6 @@ class CreateInstanceWithPrefix(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> "CreateInstanceWithPrefixRunner":
-
         return with_common_opts(
             self.spicerack,
             args,
@@ -250,7 +258,6 @@ class CreateInstanceWithPrefix(CookbookBase):
 
 
 class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -263,7 +270,6 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         sign_puppet_certs: bool = False,
         ssh_retries: int = 15,
     ):
-
         self.common_opts = common_opts
         self.cluster = instance_creation_opts.cluster
         self.openstack_api = OpenstackAPI(
@@ -278,6 +284,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         self.image = instance_creation_opts.image
         self.server_group = server_group if server_group is not None else self.prefix
         self.server_group_policy = server_group_policy
+        self.availability_zone = instance_creation_opts.availability_zone
         super().__init__(spicerack=spicerack, common_opts=common_opts)
         self.security_group = security_group
         self.ssh_retries = ssh_retries
@@ -290,7 +297,6 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
         return f"with prefix '{self.prefix}'"
 
     def run(self) -> None:
-
         self.create_instance()
 
     def _get_security_group_id(self, name: str) -> str:
@@ -371,6 +377,7 @@ class CreateInstanceWithPrefixRunner(WMCSCookbookRunnerBase):
             server_group_id=server_group_id,
             image=self.image or other_prefix_members[-1]["Image"],
             network=self.network or list(other_prefix_members[-1]["Networks"].keys())[0],
+            availability_zone=self.availability_zone,
             name=new_prefix_member_name,
         )
 
