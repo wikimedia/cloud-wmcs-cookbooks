@@ -30,7 +30,7 @@ from wmcs_libs.inventory.etcd import EtcdClusterName
 LOGGER = logging.getLogger(__name__)
 
 
-class ToolforgeAddK8sEtcdNode(CookbookBase):
+class AddClusterNode(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
@@ -71,6 +71,15 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
                 "VXLAN/IPv6-dualstack, ex. d8a16ddf-c01f-4f22-8b67-8ed18b4b1b45)"
             ),
         )
+        parser.add_argument(
+            "--availability-zone",
+            required=False,
+            default=None,
+            help=(
+                "OpenStack availability zone where the new instance should be scheduled "
+                "(ex. host:cloudvirtlocal100X)"
+            ),
+        )
 
         return parser
 
@@ -78,17 +87,18 @@ class ToolforgeAddK8sEtcdNode(CookbookBase):
         return with_etcd_cluster_opts(
             self.spicerack,
             args,
-            ToolforgeAddK8sEtcdNodeRunner,
+            AddClusterNodeRunner,
         )(
             skip_puppet_bootstrap=args.skip_puppet_bootstrap,
             image=args.image,
             flavor=args.flavor,
             network=args.network,
+            availability_zone=args.availability_zone,
             spicerack=self.spicerack,
         )
 
 
-class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
+class AddClusterNodeRunner(WMCSCookbookRunnerBase):
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -98,6 +108,7 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
         image: str | None = None,
         flavor: str | None = None,
         network: str | None = None,
+        availability_zone: str | None = None,
     ):
 
         self.common_opts = common_opts
@@ -107,6 +118,7 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
         self.image = image
         self.flavor = flavor
         self.network = network
+        self.availability_zone = availability_zone
 
     def run(self) -> None:
         etcd_prefix = get_cluster_node_prefix(self.cluster_name)
@@ -131,6 +143,8 @@ class ToolforgeAddK8sEtcdNodeRunner(WMCSCookbookRunnerBase):
             start_args.extend(["--flavor", self.flavor])
         if self.network:
             start_args.extend(["--network", self.network])
+        if self.availability_zone:
+            start_args.extend(["--availability-zone", self.availability_zone])
 
         create_instance_cookbook = CreateInstanceWithPrefix(spicerack=self.spicerack)
         new_member = create_instance_cookbook.get_runner(
