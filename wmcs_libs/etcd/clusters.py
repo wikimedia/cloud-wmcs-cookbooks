@@ -7,7 +7,11 @@ from spicerack import Spicerack
 from wmcs_libs.common import CommonOpts, add_common_opts
 from wmcs_libs.inventory.cluster import ClusterType
 from wmcs_libs.inventory.dynamic import get_inventory
-from wmcs_libs.inventory.etcd import EtcdCluster, EtcdClusterName
+from wmcs_libs.inventory.etcd import (
+    ClusterDnsRecord,
+    EtcdCluster,
+    EtcdClusterName,
+)
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
 
 
@@ -77,3 +81,9 @@ def get_cluster_hiera_prefix(cluster_name: EtcdClusterName) -> str:
     """Gets the Hiera key where the instance list is maintained in a given cluster."""
     cluster = _get_cluster(cluster_name)
     return cluster.hiera_prefix or cluster.instance_prefix
+
+
+def get_cluster_dns_records(cluster_name: EtcdClusterName) -> list[ClusterDnsRecord]:
+    """Gets the DNS records for an Etcd cluster, if any."""
+    cluster = _get_cluster(cluster_name)
+    return cluster.dns_records

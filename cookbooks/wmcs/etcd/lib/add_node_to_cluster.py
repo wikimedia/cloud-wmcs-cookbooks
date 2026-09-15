@@ -41,6 +41,7 @@ from wmcs_libs.etcd.clusters import (
     get_cluster_related_toolforge_k8s_cluster,
     with_etcd_cluster_opts,
 )
+from wmcs_libs.etcd.dns import update_etcd_cluster_dns_records
 from wmcs_libs.inventory.etcd import EtcdClusterName
 from wmcs_libs.k8s.clusters import get_control_nodes
 from wmcs_libs.openstack.enc import Enc
@@ -251,6 +252,13 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
         new_etcd_member_puppet.run()
 
         self._maybe_fix_k8s_cluster(remote=remote, etcd_members=etcd_members)
+
+        LOGGER.info("Updating DNS records")
+        update_etcd_cluster_dns_records(
+            remote=remote,
+            cluster_name=self.cluster_name,
+            cluster_members=etcd_members,
+        )
 
     def _add_node_to_hiera(self, keys: list[str]) -> dict[str, Any]:
         """Update Hiera keys."""

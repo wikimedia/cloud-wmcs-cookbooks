@@ -11,7 +11,7 @@ from collections.abc import Collection
 from dataclasses import dataclass
 from enum import Enum, auto
 from ipaddress import IPv4Address
-from typing import Any, Callable, Literal, NamedTuple, Type, Union, cast
+from typing import Any, Callable, Literal, NamedTuple, Type, cast
 
 from cumin.transports import Command
 from spicerack.administrative import Reason
@@ -28,16 +28,15 @@ from wmcs_libs.common import (
 )
 from wmcs_libs.inventory.libs import generic_get_node_cluster_name, get_node_inventory_info, get_nodes_by_role
 from wmcs_libs.inventory.openstack import OpenstackClusterName, OpenstackNodeRoleName
+from wmcs_libs.openstack.types import (
+    OpenstackID,
+    OpenstackIdentifier,
+    OpenstackName,
+)
 
 LOGGER = logging.getLogger(__name__)
 MINUTES_IN_HOUR = 60
 SECONDS_IN_MINUTE = 60
-
-
-OpenstackID = str
-OpenstackName = str
-# For some reason python 3.9 does not like using `|` for aliases
-OpenstackIdentifier = Union[OpenstackID, OpenstackName]
 
 
 def get_control_nodes(cluster_name: OpenstackClusterName) -> list[str]:
@@ -737,10 +736,17 @@ class OpenstackAPI(CommandRunnerMixin):
         """Delete a specified DNS zone."""
         self.run_formatted_as_dict("zone", "delete", zone_id, cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT)
 
-    def recordset_create(self, zone_id, record_type, name, record) -> dict[str, Any]:
-        """Get zone record for specified dns zone"""
+    def recordset_create(self, zone_id, record_type, name, *records) -> dict[str, Any]:
+        """Create a record in the specified dns zone."""
+        record_flags = [entry for record in records for entry in ["--record", _quote(record)]]
         return self.run_formatted_as_dict(
-            "recordset", "create", "--type", record_type, "--record", record, zone_id, name
+            "recordset",
+            "create",
+            "--type",
+            record_type,
+            *record_flags,
+            zone_id,
+            name,
         )
 
     def recordset_get(self, zone_id, record_type, name) -> list[dict[str, Any]]:
@@ -750,6 +756,17 @@ class OpenstackAPI(CommandRunnerMixin):
     def recordset_show(self, zone_id, record_id) -> dict[str, Any]:
         """Show zone record details for specified dns zone"""
         return self.run_formatted_as_dict("recordset", "show", zone_id, record_id)
+
+    def recordset_update(self, zone_id, record_id, *records) -> dict[str, Any]:
+        """Update a specified record in the specified dns zone."""
+        record_flags = [entry for record in records for entry in ["--record", _quote(record)]]
+        return self.run_formatted_as_dict(
+            "recordset",
+            "set",
+            *record_flags,
+            zone_id,
+            record_id,
+        )
 
     def recordset_delete(self, zone_id, recordset_id) -> dict[str, Any]:
         """Delete zone record for specified dns zone"""

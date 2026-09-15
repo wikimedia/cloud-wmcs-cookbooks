@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from wmcs_libs.inventory.cluster import Cluster, ClusterType
 from wmcs_libs.inventory.exceptions import InventoryError
@@ -7,6 +7,7 @@ from wmcs_libs.inventory.openstack import (
     OpenStackProjectSpecificClusterName,
 )
 from wmcs_libs.inventory.toolsk8s import ToolforgeKubernetesClusterName
+from wmcs_libs.openstack.types import OpenstackID
 
 
 class EtcdClusterName(OpenStackProjectSpecificClusterName):
@@ -37,6 +38,14 @@ class EtcdClusterName(OpenStackProjectSpecificClusterName):
 
 
 @dataclass(frozen=True)
+class ClusterDnsRecord:
+    zone_id: OpenstackID
+    zone_project_id: OpenstackID
+    record_name: str
+    port: int
+
+
+@dataclass(frozen=True)
 class EtcdCluster(Cluster):
     """Etcd cluster definition."""
 
@@ -55,3 +64,4 @@ class EtcdCluster(Cluster):
     the instance name prefix.
     """
     toolforge_k8s_cluster: ToolforgeKubernetesClusterName | None = None
+    dns_records: list[ClusterDnsRecord] = field(default_factory=list)

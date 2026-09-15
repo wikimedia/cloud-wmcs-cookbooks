@@ -40,6 +40,7 @@ from wmcs_libs.etcd.clusters import (
     get_cluster_related_toolforge_k8s_cluster,
     with_etcd_cluster_opts,
 )
+from wmcs_libs.etcd.dns import update_etcd_cluster_dns_records
 from wmcs_libs.inventory.etcd import EtcdClusterName
 from wmcs_libs.k8s.clusters import get_control_nodes
 from wmcs_libs.openstack.common import OpenstackAPI
@@ -231,6 +232,13 @@ class RemoveClusterNodeRunner(WMCSCookbookRunnerBase):
             self._refresh_etcd_certs(etcd_members=etcd_members)
 
         self._maybe_fix_k8s_cluster(remote=remote, etcd_members=etcd_members, fqdn_to_remove=fqdn_to_remove)
+
+        LOGGER.info("Updating DNS records")
+        update_etcd_cluster_dns_records(
+            remote=remote,
+            cluster_name=self.cluster_name,
+            cluster_members=etcd_members,
+        )
 
         remove_instance_cookbook = RemoveInstance(spicerack=self.spicerack)
         remove_instance_cookbook.get_runner(

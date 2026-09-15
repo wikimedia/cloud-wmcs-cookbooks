@@ -13,7 +13,11 @@ import logging
 from wmcs_libs.etcd import DNS_ALT_NAMES_HIERA_KEY
 from wmcs_libs.inventory.ceph import CephCluster, CephClusterName, CephNodeRoleName
 from wmcs_libs.inventory.cluster import ClusterType, Site, SiteName
-from wmcs_libs.inventory.etcd import EtcdCluster, EtcdClusterName
+from wmcs_libs.inventory.etcd import (
+    ClusterDnsRecord,
+    EtcdCluster,
+    EtcdClusterName,
+)
 from wmcs_libs.inventory.openstack import (
     OpenstackCluster,
     OpenstackClusterName,
@@ -91,6 +95,21 @@ _INVENTORY: Inventory = {
                     security_group_name="etcd",
                     server_group_name="etcd",
                     hiera_member_lists=["profile::wmcs::etcd::peer_hosts"],
+                    dns_records=[
+                        ClusterDnsRecord(
+                            zone_project_id="cloudinfra",
+                            zone_id="755b04d7-758e-4835-982a-0b99626e762e",  # svc.cloudinfra.eqiad1.wikimedia.cloud.
+                            record_name="_etcd._tcp.svc.cloudinfra.eqiad1.wikimedia.cloud.",
+                            port=4001,
+                        ),
+                        ClusterDnsRecord(
+                            zone_project_id="cloudinfra",
+                            zone_id="755b04d7-758e-4835-982a-0b99626e762e",
+                            # svc.cloudinfra.eqiad1.wikimedia.cloud.
+                            record_name="_etcd-client-ssl._tcp.svc.cloudinfra.eqiad1.wikimedia.cloud.",
+                            port=4001,
+                        ),
+                    ],
                 ),
                 EtcdClusterName.TOOLS_K8S: EtcdCluster(
                     name=EtcdClusterName.TOOLS_K8S,
