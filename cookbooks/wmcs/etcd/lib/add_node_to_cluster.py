@@ -37,7 +37,7 @@ from wmcs_libs.etcd import DNS_ALT_NAMES_HIERA_KEY
 from wmcs_libs.etcd.clusters import (
     add_etcd_cluster_opts,
     get_cluster_hiera_member_lists,
-    get_cluster_node_prefix,
+    get_cluster_hiera_prefix,
     get_cluster_related_toolforge_k8s_cluster,
     with_etcd_cluster_opts,
 )
@@ -255,7 +255,7 @@ class AddNodeToClusterRunner(WMCSCookbookRunnerBase):
     def _add_node_to_hiera(self, keys: list[str]) -> dict[str, Any]:
         """Update Hiera keys."""
         enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
-        enc_prefix = enc.prefix(self.cluster_name.get_project(), get_cluster_node_prefix(self.cluster_name))
+        enc_prefix = enc.prefix(self.cluster_name.get_project(), get_cluster_hiera_prefix(self.cluster_name))
 
         current_hiera_config = enc_prefix.get_current_hiera()
         changed = False

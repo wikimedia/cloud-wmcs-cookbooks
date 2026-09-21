@@ -24,6 +24,7 @@ from wmcs_libs.inventory.toolsk8s import (
     ToolforgeKubernetesClusterName,
     ToolforgeKubernetesNodeRoleName,
 )
+from wmcs_libs.openstack.types import ENC_PROJECT_PREFIX
 
 LOGGER = logging.getLogger(__name__)
 
@@ -86,9 +87,10 @@ _INVENTORY: Inventory = {
                     name=EtcdClusterName.CLOUDINFRA,
                     nodes_by_role={},
                     instance_prefix="cloudinfra-etcd",
+                    hiera_prefix=ENC_PROJECT_PREFIX,
                     security_group_name="etcd",
                     server_group_name="etcd",
-                    hiera_member_lists=["profile::wmcs::kubeadm::etcd_nodes"],
+                    hiera_member_lists=["profile::wmcs::etcd::peer_hosts"],
                 ),
                 EtcdClusterName.TOOLS_K8S: EtcdCluster(
                     name=EtcdClusterName.TOOLS_K8S,

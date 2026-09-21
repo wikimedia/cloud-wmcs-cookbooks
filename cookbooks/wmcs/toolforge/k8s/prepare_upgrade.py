@@ -29,6 +29,7 @@ from wmcs_libs.k8s.clusters import (
 from wmcs_libs.k8s.kubeadm import KUBEADM_VERSION_COMPONENT_HIERA_KEY, KUBERNETES_VERSION_HIERA_KEY
 from wmcs_libs.k8s.kubernetes import KubernetesController
 from wmcs_libs.openstack.enc import Enc
+from wmcs_libs.openstack.types import ENC_PROJECT_PREFIX
 
 LOGGER = logging.getLogger(__name__)
 
@@ -152,7 +153,7 @@ class ToolforgeK8sPrepareUpgradeRunner(WMCSCookbookRunnerBase):
 
         LOGGER.info("Updating Hiera key")
         enc = Enc(remote=self.spicerack.remote(), cluster_name=self.cluster_name.get_openstack_cluster_name())
-        enc_prefix = enc.prefix(self.cluster_name.get_project(), Enc.PROJECT_PREFIX)
+        enc_prefix = enc.prefix(self.cluster_name.get_project(), ENC_PROJECT_PREFIX)
 
         enc_prefix.set_hiera_values(
             {

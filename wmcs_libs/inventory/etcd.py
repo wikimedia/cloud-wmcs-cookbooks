@@ -49,4 +49,9 @@ class EtcdCluster(Cluster):
     containing a list of the cluster member nodes. Must not be empty, and the
     key listed first must not contain any other unrelated entries.
     """
+    hiera_prefix: str | None = None
+    """
+    Hiera prefix where the instance list is stored, if different from
+    the instance name prefix.
+    """
     toolforge_k8s_cluster: ToolforgeKubernetesClusterName | None = None

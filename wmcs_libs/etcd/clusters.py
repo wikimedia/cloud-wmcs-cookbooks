@@ -71,3 +71,9 @@ def get_cluster_related_toolforge_k8s_cluster(cluster_name: EtcdClusterName) -> 
     """Gets the name of the Kubernetes cluster a given Etcd cluster is related to, if any."""
     cluster = _get_cluster(cluster_name)
     return cluster.toolforge_k8s_cluster
+
+
+def get_cluster_hiera_prefix(cluster_name: EtcdClusterName) -> str:
+    """Gets the Hiera key where the instance list is maintained in a given cluster."""
+    cluster = _get_cluster(cluster_name)
+    return cluster.hiera_prefix or cluster.instance_prefix

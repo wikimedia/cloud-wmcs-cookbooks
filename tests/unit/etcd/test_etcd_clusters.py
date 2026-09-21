@@ -1,9 +1,11 @@
 from wmcs_libs.etcd.clusters import (
+    get_cluster_hiera_prefix,
     get_cluster_node_prefix,
     get_cluster_node_server_group_name,
     get_cluster_security_group_name,
 )
 from wmcs_libs.inventory.etcd import EtcdClusterName
+from wmcs_libs.openstack.types import ENC_PROJECT_PREFIX
 
 
 def test_get_cluster_security_group_name() -> None:
@@ -19,3 +21,8 @@ def test_get_cluster_node_prefix() -> None:
 def test_get_cluster_node_server_group_name() -> None:
     assert get_cluster_node_server_group_name(EtcdClusterName.TOOLS_K8S) == "tools-k8s-etcd"
     assert get_cluster_node_server_group_name(EtcdClusterName.TOOLSBETA_K8S) == "toolsbeta-k8s-etcd"
+
+
+def test_get_cluster_hiera_prefix() -> None:
+    assert get_cluster_hiera_prefix(EtcdClusterName.CLOUDINFRA) == ENC_PROJECT_PREFIX
+    assert get_cluster_hiera_prefix(EtcdClusterName.TOOLS_K8S) == "tools-k8s-etcd"

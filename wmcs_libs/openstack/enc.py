@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any
 
 import yaml
 from spicerack import Remote, RemoteHosts
@@ -107,9 +107,6 @@ class EncPrefix(CommandRunnerMixin):
 
 class Enc:
     """Class to interact with ENC in a specific OpenStack deployment."""
-
-    PROJECT_PREFIX: ClassVar[str] = "_"
-    """The prefix name that applies to the entire project."""
 
     def __init__(
         self,
