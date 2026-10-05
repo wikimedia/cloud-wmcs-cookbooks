@@ -53,7 +53,6 @@ class CreateProject(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self) -> argparse.ArgumentParser:
-
         parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
@@ -112,7 +111,6 @@ class CreateProject(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
         quotas = [
             OpenstackQuotaEntry.from_human_spec(
                 name=quota_name,
@@ -145,7 +143,6 @@ class CreateProject(CookbookBase):
 
 
 class CreateProjectRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -158,7 +155,6 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         quotas: list[OpenstackQuotaEntry],
         spicerack: Spicerack,
     ):  # pylint: disable=too-many-arguments
-
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         self.openstack_api = OpenstackAPI(
@@ -199,6 +195,13 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
             ask_confirmation(
                 "Project names should be lowercase, otherwise they have issues with puppet certificates. "
                 "Are you sure you want to use an underscore in the name? "
+                f"(current name {self.common_opts.project})"
+            )
+
+        if self.trove_only and not self.common_opts.project.endswith("-db"):
+            ask_confirmation(
+                "Trove-only projects typically end with -db. Are you sure you want this "
+                "project to have an ambiguous name?"
                 f"(current name {self.common_opts.project})"
             )
 
@@ -368,7 +371,6 @@ module "project_{self.common_opts.project}" {{
                 is_merged = self._is_mr_merged(mr_iid=change_mr.mr_iid)
 
     def run(self) -> None:
-
         self._do_preflight_checks()
 
         if not self.skip_mr:
