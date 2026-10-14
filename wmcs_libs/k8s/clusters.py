@@ -26,7 +26,7 @@ def add_toolforge_kubernetes_cluster_opts(parser: argparse.ArgumentParser) -> ar
         required=True,
         choices=list(ToolforgeKubernetesClusterName),
         type=ToolforgeKubernetesClusterName,
-        help="cluster to work on",
+        help="cluster to work on, only use 'paws' to deploy replica-cnf",
     )
 
     return add_common_opts(parser, project_default=None)

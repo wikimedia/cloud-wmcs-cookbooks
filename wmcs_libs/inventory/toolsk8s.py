@@ -13,6 +13,8 @@ class ToolforgeKubernetesClusterName(OpenStackProjectSpecificClusterName):
 
     TOOLS = "tools"
     TOOLSBETA = "toolsbeta"
+    # This is only needed for deploying replica-cnf
+    PAWS = "paws"
 
     def get_type(self) -> ClusterType:
         """Get the cluster type from the name"""
@@ -28,6 +30,8 @@ class ToolforgeKubernetesClusterName(OpenStackProjectSpecificClusterName):
             return "tools"
         if self == ToolforgeKubernetesClusterName.TOOLSBETA:
             return "toolsbeta"
+        if self == ToolforgeKubernetesClusterName.PAWS:
+            return "paws"
 
         raise InventoryError(f"I don't know which project the cluster {self} is in.")
 
@@ -42,6 +46,7 @@ class ToolforgeKubernetesNodeRoleName(NodeRoleName):
     HAPROXY = "haproxy"
     SERVICES = "service"
     BASTION = "bastion"
+    NFS_SERVER = "nfs"
 
     def __str__(self) -> str:
         """Needed to show the nice string values and for argparse to use those to call the `type` parameter."""

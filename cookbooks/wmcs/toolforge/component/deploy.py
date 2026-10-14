@@ -55,6 +55,7 @@ COMPONENT_TO_PACKAGE_NAME = {
     "jobs-cli": "toolforge-jobs-cli",
     "logs-cli": "toolforge-logs-cli",
     "misctools-cli": "toolforge-misctools-cli",
+    "replica-cnf": "toolforge-replica-cnf",
     "toolforge-cli": "toolforge-cli",
     "toolforge-weld": "python3-toolforge-weld",
     "webservice-cli": "toolforge-webservice",
@@ -140,8 +141,18 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self.cluster_name = cluster_name
         self.component = component
         self.git_branch = git_branch or f"bump_{component}"
-        self.run_tests = run_tests
-        self.run_all_tests = run_all_tests
+        if self.cluster_name == ToolforgeKubernetesClusterName.PAWS:
+            LOGGER.info("Skipping running any tests for paws")
+            self.run_tests = False
+            self.run_all_tests = False
+
+            if self.component != "replica-cnf":
+                raise Exception("Only replica-cnf is allowed for PAWS currently")
+
+        else:
+            self.run_tests = run_tests
+            self.run_all_tests = run_all_tests
+
         self.wait = wait
         self.filter_tags = filter_tags
         if filter_tags and not run_tests:
@@ -173,7 +184,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             )
             test_branch = self.git_branch
 
-        if self.run_tests:
+        if self.run_tests and self.cluster_name:
             tests_results = self._run_tests(
                 cluster_name=self.cluster_name,
                 test_branch=test_branch,
@@ -329,7 +340,11 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
 
         artifact_urls = self.gitlab_controller.get_artifact_urls(component=component, branch=branch or "main")
 
-        project = cluster_name.value
+        aptly_project = cluster_name.value
+        # paws uses tools apt repo
+        if cluster_name == ToolforgeKubernetesClusterName.PAWS:
+            aptly_project = "tools"
+
         LOGGER.info(
             "INFO: Uploading artifacts to %s at %s (same node for tools and toolsbeta)",
             service_node_fqdn,
@@ -344,7 +359,7 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
             if component in ["misctools-cli", "webservice-cli"] and distro == "buster":
                 continue
 
-            repo = f"{distro}-{project}"
+            repo = f"{distro}-{aptly_project}"
             LOGGER.info("INFO: Publishing artifacts on repo %s", repo)
             for package_path in package_paths:
                 aptly.add(package_path=package_path, repository=repo)
@@ -356,6 +371,43 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         package = COMPONENT_TO_PACKAGE_NAME[component]
         package_version = package_paths[0].name.split(f"{package}_", 1)[-1].rsplit("_", 1)[0]
         return package_version
+
+    def _install_package_on_nfs_servers(
+        self, component: str, cluster_name: ToolforgeKubernetesClusterName, version: str
+    ) -> None:
+        LOGGER.info("INFO: Installing packages on all nfs servers for project %s", cluster_name.value)
+        site = cluster_name.get_openstack_cluster_name().get_site()
+        nfs_fqdns = (
+            get_static_inventory()[site]
+            .clusters_by_type[cluster_name.get_type()][cluster_name]
+            .nodes_by_role[ToolforgeKubernetesNodeRoleName.NFS_SERVER]
+        )
+        nfs_servers = self.spicerack.remote().query(f"D{{{','.join(nfs_fqdns)}}}", use_sudo=True)
+
+        package = COMPONENT_TO_PACKAGE_NAME[component]
+        run_one_raw(command=["apt", "update"], node=nfs_servers, cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT)
+        run_one_raw(
+            command=["apt", "install", "--yes", "--upgrade", f"{package}={version}"],
+            node=nfs_servers,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
+        )
+        # to make sure that's the one that got installed
+        package_version = next(
+            line.split(":", 1)[-1]
+            for line in run_one_raw(
+                command=["apt", "policy", package],
+                node=nfs_servers,
+                cumin_params=CUMIN_SAFE_WITHOUT_OUTPUT,
+            ).splitlines()
+            if "Installed:" in line
+        )
+        # try to restart the running uwsgi, to pick up the new changes
+        run_one_raw(
+            command=["systemctl", "restart", "uwsgi-toolsdb-replica-cnf-web"],
+            node=nfs_servers,
+            cumin_params=CUMIN_UNSAFE_WITHOUT_OUTPUT,
+        )
+        LOGGER.info("INFO: installed %s version %s on %s", package, package_version, nfs_servers)
 
     def _install_package_on_bastions(
         self, component: str, cluster_name: ToolforgeKubernetesClusterName, version: str
@@ -397,7 +449,11 @@ class ToolforgeComponentDeployRunner(WMCSCookbookRunnerBase):
         self, component: str, cluster_name: ToolforgeKubernetesClusterName, branch: str | None = None
     ) -> str:
         version = self._upload_package_to_repos(cluster_name=cluster_name, branch=branch, component=component)
-        self._install_package_on_bastions(component=component, cluster_name=cluster_name, version=version)
+        # replica-cnf is installed on nfs servers only
+        if component == "replica-cnf":
+            self._install_package_on_nfs_servers(component=component, cluster_name=cluster_name, version=version)
+        else:
+            self._install_package_on_bastions(component=component, cluster_name=cluster_name, version=version)
         return version
 
     def _deploy_k8s_component(

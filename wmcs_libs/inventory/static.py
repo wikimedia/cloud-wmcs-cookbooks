@@ -14,7 +14,11 @@ from wmcs_libs.etcd import DNS_ALT_NAMES_HIERA_KEY
 from wmcs_libs.inventory.ceph import CephCluster, CephClusterName, CephNodeRoleName
 from wmcs_libs.inventory.cluster import ClusterType, Site, SiteName
 from wmcs_libs.inventory.etcd import EtcdCluster, EtcdClusterName
-from wmcs_libs.inventory.openstack import OpenstackCluster, OpenstackClusterName, OpenstackNodeRoleName
+from wmcs_libs.inventory.openstack import (
+    OpenstackCluster,
+    OpenstackClusterName,
+    OpenstackNodeRoleName,
+)
 from wmcs_libs.inventory.toolsk8s import (
     ToolforgeKubernetesCluster,
     ToolforgeKubernetesClusterName,
@@ -24,6 +28,9 @@ from wmcs_libs.inventory.toolsk8s import (
 LOGGER = logging.getLogger(__name__)
 
 Inventory = dict[SiteName, Site]
+
+# This one is shared between all the clusters for apt repositories
+TOOLS_SERVICES_FQDN = "tools-services-06.tools.eqiad1.wikimedia.cloud"
 
 # TODO: replace this with different sources (dynamic or not) for hosts, ex. netbox, openstack cluster, ceph cluster,
 #       k8s cluster ...
@@ -120,13 +127,14 @@ _INVENTORY: Inventory = {
                             "tools-k8s-control-8.tools.eqiad1.wikimedia.cloud",
                             "tools-k8s-control-9.tools.eqiad1.wikimedia.cloud",
                         ],
-                        ToolforgeKubernetesNodeRoleName.SERVICES: [
-                            "tools-services-06.tools.eqiad1.wikimedia.cloud",
-                        ],
+                        ToolforgeKubernetesNodeRoleName.SERVICES: [TOOLS_SERVICES_FQDN],
                         # Order matters, it will use the first to run functional tests
                         ToolforgeKubernetesNodeRoleName.BASTION: [
                             "tools-bastion-15.tools.eqiad1.wikimedia.cloud",
                             "tools-bastion-14.tools.eqiad1.wikimedia.cloud",
+                        ],
+                        ToolforgeKubernetesNodeRoleName.NFS_SERVER: [
+                            "tools-nfs-3.tools.eqiad1.wikimedia.cloud",
                         ],
                     },
                 ),
@@ -141,13 +149,27 @@ _INVENTORY: Inventory = {
                             "toolsbeta-test-k8s-control-11.toolsbeta.eqiad1.wikimedia.cloud",
                             "toolsbeta-test-k8s-control-12.toolsbeta.eqiad1.wikimedia.cloud",
                         ],
-                        ToolforgeKubernetesNodeRoleName.SERVICES: [
-                            "tools-services-06.tools.eqiad1.wikimedia.cloud",
-                        ],
+                        ToolforgeKubernetesNodeRoleName.SERVICES: [TOOLS_SERVICES_FQDN],
                         # Order matters, it will use the first to run functional tests
                         ToolforgeKubernetesNodeRoleName.BASTION: [
                             "toolsbeta-bastion-7.toolsbeta.eqiad1.wikimedia.cloud",
                         ],
+                        ToolforgeKubernetesNodeRoleName.NFS_SERVER: [
+                            "toolsbeta-nfs-4.toolsbeta.eqiad1.wikimedia.cloud",
+                        ],
+                    },
+                ),
+                # only needed to deploy replica-cnf
+                ToolforgeKubernetesClusterName.PAWS: ToolforgeKubernetesCluster(
+                    name=ToolforgeKubernetesClusterName.PAWS,
+                    security_group_name="nosecuritygroup",
+                    prometheus_url="nourl",
+                    instance_prefix="paws",
+                    nodes_by_role={
+                        ToolforgeKubernetesNodeRoleName.NFS_SERVER: [
+                            "paws-nfs-2.paws.eqiad1.wikimedia.cloud",
+                        ],
+                        ToolforgeKubernetesNodeRoleName.SERVICES: [TOOLS_SERVICES_FQDN],
                     },
                 ),
             },
