@@ -195,8 +195,9 @@ class CloudvirtBatchRunnerBase(WMCSCookbookBatchRunnerBase, metaclass=ABCMeta):
         else:
             raise ValueError("Either --fqdn or --cluster-name must be specified")
 
-        for version in args.exclude_kernel:
-            self.query += f" AND NOT P{{F:kernelversion = {version}}}"
+        if args.exclude_kernel:
+            for version in args.exclude_kernel:
+                self.query += f" AND NOT P{{F:kernelversion = {version}}}"
 
 
 class CloudwebBatchBase(CookbookBase, metaclass=ABCMeta):
