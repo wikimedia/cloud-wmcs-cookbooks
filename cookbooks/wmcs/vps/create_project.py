@@ -84,11 +84,18 @@ class CreateProject(CookbookBase):
             default=[],
             help="Users to add as maintainers to the project.",
         )
-        parser.add_argument(
+        only_options = parser.add_mutually_exclusive_group()
+        only_options.add_argument(
             "--trove-only",
             action="store_true",
             help="If set, the new project will have quotas that prevent "
             "creation of VMs or volumes and elevated DB quotas.",
+        )
+        only_options.add_argument(
+            "--s3-only",
+            action="store_true",
+            help="If set, the new project will have quotas that prevent "
+            "creation of VMs or volumes and set the S3/Swift objectstorage quota.",
         )
         parser.add_argument(
             "--skip-mr",
@@ -134,6 +141,7 @@ class CreateProject(CookbookBase):
             description=args.description,
             cluster_name=args.cluster_name,
             trove_only=args.trove_only,
+            s3_only=args.s3_only,
             users=args.users,
             skip_mr=args.skip_mr,
             skip_tofu_apply=args.skip_tofu_apply,
@@ -148,6 +156,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         common_opts: CommonOpts,
         description: str,
         trove_only: bool,
+        s3_only: bool,
         cluster_name: OpenstackClusterName,
         users: list[str],
         skip_mr: bool,
@@ -163,6 +172,7 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         )
         self.description = description
         self.trove_only = trove_only
+        self.s3_only = s3_only
         self.users = users
         self.quotas = quotas
         self.skip_mr = skip_mr
@@ -176,8 +186,12 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
     @property
     def runtime_description(self) -> str:
         """Return a nicely formatted string that represents the cookbook action."""
-        trove_only = "trove-only " if self.trove_only else ""
-        return f"for {trove_only}project {self.common_opts.project} in {self.openstack_api.cluster_name.value}"
+        prefix = ""
+        if self.trove_only:
+            prefix = "trove-only "
+        elif self.s3_only:
+            prefix = "s3-only "
+        return f"for {prefix}project {self.common_opts.project} in {self.openstack_api.cluster_name.value}"
 
     def _do_preflight_checks(self) -> None:
         # Checks mentioned in:
@@ -201,6 +215,13 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         if self.trove_only and not self.common_opts.project.endswith("-db"):
             ask_confirmation(
                 "Trove-only projects typically end with -db. Are you sure you want this "
+                "project to have an ambiguous name?"
+                f"(current name {self.common_opts.project})"
+            )
+
+        if self.s3_only and not self.common_opts.project.endswith("-s3"):
+            ask_confirmation(
+                "S3-only projects typically end with -s3. Are you sure you want this "
                 "project to have an ambiguous name?"
                 f"(current name {self.common_opts.project})"
             )
@@ -247,6 +268,19 @@ class CreateProjectRunner(WMCSCookbookRunnerBase):
         # confusingly, 'volumes' here refers to GB of database storage. It defaults to '2' so we need
         # to increase it for trove-only projects.
         self.openstack_api.trove_quota_set("volumes", "80")
+
+    def _create_s3_project(self) -> None:
+        self.openstack_api.quota_set(
+            OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.INSTANCES, human_spec="0")
+        )
+        self.openstack_api.quota_set(OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.CORES, human_spec="0"))
+        self.openstack_api.quota_set(OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.RAM, human_spec="0"))
+        self.openstack_api.quota_set(
+            OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.GIGABYTES, human_spec="0")
+        )
+        self.openstack_api.quota_set(
+            OpenstackQuotaEntry.from_human_spec(name=OpenstackQuotaName.VOLUMES, human_spec="0")
+        )
 
     def _get_tofu_project_data(self, task_id: str | None) -> dict[str, Any]:
         project_data = {
@@ -406,6 +440,8 @@ module "project_{self.common_opts.project}" {{
 
         if self.trove_only:
             self._create_trove_project()
+        elif self.s3_only:
+            self._create_s3_project()
 
         if self.quotas:
             LOGGER.info("Setting quotas")
