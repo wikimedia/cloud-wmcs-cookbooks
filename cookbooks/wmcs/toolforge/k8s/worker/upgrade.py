@@ -151,6 +151,13 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
 
         hosts = self.remote.query(f"D{{{fqdn}}}", use_sudo=True)
 
+        control_kubelet = None
+        if inventory_info.role_name == ToolforgeKubernetesNodeRoleName.CONTROL:
+            # make sure we don't have a in-flight/broken static pod restart
+            # that would crash later
+            control_kubelet = KubeletController(remote=self.remote, kubelet_node_fqdn=fqdn, k8s_control=self.kubectl)
+            control_kubelet.assert_static_pod_path_clean()
+
         LOGGER.info("Using control node %s", self.control_node_fqdn)
 
         kubeadm = KubeadmController(remote=self.remote, target_node_fqdn=fqdn)
@@ -209,13 +216,12 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         self.kubectl.uncordon_node(node_hostname=self.hostname)
 
         # TODO: for control nodes, tail service logs and ensure everything works
-        if inventory_info.role_name == ToolforgeKubernetesNodeRoleName.CONTROL:
+        if control_kubelet:
             # most likely, we need to restart static pods. It is known that controller-manager and/or scheduler
             # can show errors if they are started before the api-server by the kubelet. This is solved by another
             # manual restart in the right order, which this function should do
-            kubelet = KubeletController(remote=self.remote, kubelet_node_fqdn=fqdn, k8s_control=self.kubectl)
             LOGGER.info("Restarting static pods in kube-system namespace")
-            kubelet.restart_all_static_pods(namespace="kube-system")
+            control_kubelet.restart_all_static_pods(namespace="kube-system")
 
             ask_confirmation(
                 f"As {self.hostname} is a control node, please check that control plane services work fine"
