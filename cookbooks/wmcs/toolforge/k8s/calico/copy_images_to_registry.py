@@ -83,6 +83,6 @@ class CopyImagesToRepoRunner(WMCSCookbookRunnerBase):
 
         for image in IMAGES:
             image_ctrl.update_image(
-                pull_url=f"docker.io/calico/{image}:{self.calico_version}",
+                pull_url=f"quay.io/calico/{image}:{self.calico_version}",
                 push_url=f"{self.image_repo_url}/calico/{image}:{self.calico_version}",
             )
