@@ -26,7 +26,7 @@ from typing import cast
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
-from wmflib.interactive import ask_confirmation
+from wmflib.interactive import ask_confirmation, ensure_shell_is_durable
 
 from wmcs_libs.ceph import CephClusterController, CephException, CephOSDFlag, CephOSDNodeController, OSDTreeOSDNode
 from wmcs_libs.common import (
@@ -46,7 +46,6 @@ class DepoolAndDestroy(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
-
         parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
@@ -106,7 +105,6 @@ class DepoolAndDestroy(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
         if not args.all_osds and not args.osd_id:
             raise Exception("No --osd-id passed, and no --all-osds passed, please pass one of the two.")
 
@@ -149,7 +147,6 @@ def check_that_osds_belong_to_host(osd_ids: list[int], hostname: str, ceph_contr
 
 
 class DestroyRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -163,7 +160,6 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         be_mean_about_it: bool,
         spicerack: Spicerack,
     ):
-
         self.yes_i_know = yes_i_know
         self.common_opts = common_opts
         self.osd_hostname = osd_hostname
@@ -182,6 +178,7 @@ class DestroyRunner(WMCSCookbookRunnerBase):
         self.osd_controller = CephOSDNodeController(remote=self.spicerack.remote(), node_fqdn=self.osd_fqdn)
 
     def run_with_proxy(self) -> None:
+        ensure_shell_is_durable()
 
         if self.all_osds:
             self.ids = self.cluster_controller.get_host_osds(osd_host=self.osd_hostname)

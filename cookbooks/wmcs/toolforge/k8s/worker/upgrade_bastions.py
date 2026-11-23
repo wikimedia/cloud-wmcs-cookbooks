@@ -16,7 +16,7 @@ import logging
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
-from wmflib.interactive import ask_confirmation
+from wmflib.interactive import ask_confirmation, ensure_shell_is_durable
 
 from wmcs_libs.common import (
     CUMIN_SAFE_WITH_OUTPUT,
@@ -65,7 +65,6 @@ class ToolforgeK8sUpgradeBastions(CookbookBase):
 
 
 class ToolforgeK8sUpgradeBastionsRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -98,6 +97,8 @@ class ToolforgeK8sUpgradeBastionsRunner(WMCSCookbookRunnerBase):
         return f"for {', '.join(self.hostname_list)}"
 
     def run_with_proxy(self) -> None:
+        ensure_shell_is_durable()
+
         if not self.hostname_list:
             print("No bastion nodes to upgrade found, maybe failed to get from the cluster.")
             return

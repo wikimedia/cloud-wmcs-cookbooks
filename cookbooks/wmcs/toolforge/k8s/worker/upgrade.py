@@ -17,7 +17,7 @@ import logging
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
 from spicerack.decorators import retry
-from wmflib.interactive import ask_confirmation, confirm_on_failure
+from wmflib.interactive import ask_confirmation, confirm_on_failure, ensure_shell_is_durable
 
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, run_one_raw, validate_version
 from wmcs_libs.inventory.libs import NodeInventoryInfo, get_node_inventory_info
@@ -33,7 +33,6 @@ class Upgrade(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
-
         parser = super().argument_parser()
         add_toolforge_kubernetes_cluster_opts(parser)
         parser.add_argument(
@@ -57,7 +56,6 @@ class Upgrade(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
         return with_toolforge_kubernetes_cluster_opts(
             self.spicerack,
             args,
@@ -71,7 +69,6 @@ class Upgrade(CookbookBase):
 
 
 class UpgradeRunner(WMCSCookbookRunnerBase):
-
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -82,7 +79,6 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
         src_version: str | None,
         dst_version: str,
     ):
-
         self.common_opts = common_opts
         self.cluster_name = cluster_name
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -126,6 +122,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
             raise RuntimeError(f"Found unexpected version {node_info.kubelet_version} (instead of {self.dst_version})")
 
     def run_with_proxy(self) -> None:
+        ensure_shell_is_durable()
 
         if self.src_version and self.original_node_info.kubelet_version != self.src_version:
             LOGGER.error(

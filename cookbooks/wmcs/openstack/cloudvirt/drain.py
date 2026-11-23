@@ -12,6 +12,7 @@ import logging
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
+from wmflib.interactive import ensure_shell_is_durable
 
 from cookbooks.wmcs.openstack.cloudvirt.set_maintenance import SetMaintenance
 from wmcs_libs.common import CommonOpts, SALLogger, WMCSCookbookRunnerBase, add_common_opts, with_common_opts
@@ -24,7 +25,6 @@ class Drain(CookbookBase):
     __doc__ = __doc__
 
     def argument_parser(self):
-
         parser = super().argument_parser()
         add_common_opts(parser)
         parser.add_argument(
@@ -36,7 +36,6 @@ class Drain(CookbookBase):
         return parser
 
     def get_runner(self, args: argparse.Namespace) -> WMCSCookbookRunnerBase:
-
         return with_common_opts(
             self.spicerack,
             args,
@@ -48,14 +47,12 @@ class Drain(CookbookBase):
 
 
 class DrainRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
         fqdn: str,
         spicerack: Spicerack,
     ):
-
         self.common_opts = common_opts
         self.fqdn = fqdn
         super().__init__(spicerack=spicerack, common_opts=common_opts)
@@ -68,6 +65,7 @@ class DrainRunner(WMCSCookbookRunnerBase):
         return f"on host '{self.fqdn}'"
 
     def run_with_proxy(self) -> None:
+        ensure_shell_is_durable()
 
         set_maintenance_cookbook = SetMaintenance(spicerack=self.spicerack)
         set_maintenance_cookbook.get_runner(

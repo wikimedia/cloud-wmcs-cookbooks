@@ -15,6 +15,7 @@ import logging
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
+from wmflib.interactive import ensure_shell_is_durable
 
 from cookbooks.wmcs.ceph.osd.drain_node import DrainNodeRunner
 from wmcs_libs.ceph import CephClusterController
@@ -131,6 +132,7 @@ class DrainRackRunner(WMCSCookbookRunnerBase):
         )
 
     def run_with_proxy(self) -> None:
+        ensure_shell_is_durable()
 
         LOGGER.info("Draining all the nodes for rack %s", self.rack_to_drain)
 

@@ -21,7 +21,7 @@ import logging
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
-from wmflib.interactive import ask_confirmation
+from wmflib.interactive import ask_confirmation, ensure_shell_is_durable
 
 from cookbooks.wmcs.toolforge.k8s.worker.upgrade import UpgradeRunner
 from wmcs_libs.common import CommonOpts, WMCSCookbookRunnerBase, validate_version
@@ -112,7 +112,6 @@ class ToolforgeK8sUpgradeWorkers(CookbookBase):
 
 
 class ToolforgeK8sUpgradeWorkersRunner(WMCSCookbookRunnerBase):
-
     def __init__(
         self,
         common_opts: CommonOpts,
@@ -162,6 +161,8 @@ class ToolforgeK8sUpgradeWorkersRunner(WMCSCookbookRunnerBase):
         return f"for {', '.join(self.hostname_list)}"
 
     def run_with_proxy(self) -> None:
+        ensure_shell_is_durable()
+
         if not self.hostname_list:
             print(
                 "No workers to upgrade passed, pass one or more of `--nfs-workers`, `--non-nfs-workers` or `--hosts`."
