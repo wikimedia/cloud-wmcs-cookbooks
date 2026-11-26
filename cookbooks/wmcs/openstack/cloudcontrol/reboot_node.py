@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from spicerack import RemoteHosts
 
@@ -41,6 +41,6 @@ class RebootNodeRunner(CloudcontrolBatchRunnerBase):
 
     def run_on_hosts(self, hosts: RemoteHosts) -> None:
 
-        reboot_time = datetime.utcnow()
+        reboot_time = datetime.now(timezone.utc)
         hosts.reboot()
         hosts.wait_reboot_since(since=reboot_time)

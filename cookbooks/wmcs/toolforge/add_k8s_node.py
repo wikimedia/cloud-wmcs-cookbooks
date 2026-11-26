@@ -222,7 +222,7 @@ class ToolforgeAddK8sNodeRunner(WMCSCookbookRunnerBase):
             new_member.server_fqdn,
         )
 
-        reboot_time = datetime.datetime.utcnow()
+        reboot_time = datetime.datetime.now(datetime.timezone.utc)
         node.reboot()
         node.wait_reboot_since(since=reboot_time)
 

@@ -107,7 +107,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
             comment="Rebooting with wmcs.ceph.reboot_node",
             task_id=self.common_opts.task_id,
         )
-        reboot_time = datetime.datetime.utcnow()
+        reboot_time = datetime.datetime.now(datetime.timezone.utc)
         node.reboot()
 
         node.wait_reboot_since(since=reboot_time)

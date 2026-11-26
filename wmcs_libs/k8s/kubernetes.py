@@ -6,7 +6,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum, auto
 from typing import Any, Generator, Literal, overload
 
@@ -408,7 +408,7 @@ class KubernetesController:
         yield KubernetesRebootNodePhase.VM_REBOOT
         node_fqdn = f"{node_hostname}.{domain}"
         node = self._remote.query(f"D{{{node_fqdn}}}", use_sudo=True)
-        reboot_time = datetime.utcnow()
+        reboot_time = datetime.now(timezone.utc)
         node.reboot()
         node.wait_reboot_since(since=reboot_time)
 

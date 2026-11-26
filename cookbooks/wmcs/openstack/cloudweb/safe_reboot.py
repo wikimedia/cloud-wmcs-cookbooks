@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from spicerack import RemoteHosts
 
@@ -38,7 +38,7 @@ class SafeRebootRunner(CloudwebBatchRunnerBase):
     downtime_reason = "host reboot"
 
     def run_on_hosts(self, hosts: RemoteHosts) -> None:
-        reboot_time = datetime.utcnow()
+        reboot_time = datetime.now(timezone.utc)
 
         LOGGER.info("Rebooting %s", hosts)
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
@@ -117,7 +117,7 @@ class RebootNodeRunner(WMCSCookbookRunnerBase):
             ),
             duration=timedelta(hours=1),
         ):
-            reboot_time = datetime.utcnow()
+            reboot_time = datetime.now(timezone.utc)
             node.reboot()
 
             node.wait_reboot_since(since=reboot_time)

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from spicerack import Spicerack
 from spicerack.cookbook import CookbookBase
@@ -171,7 +171,7 @@ class ToolforgeK8sRebootRunner(WMCSCookbookRunnerBase):
                 )
 
                 host = self.spicerack.remote().query(f"D{{{node_hostname}.{self.domain}}}")
-                reboot_time = datetime.utcnow()
+                reboot_time = datetime.now(timezone.utc)
                 self.openstack_api.server_force_reboot(node_hostname)
                 host.wait_reboot_since(since=reboot_time)
 

@@ -118,7 +118,7 @@ class UpgradeCephNodeRunner(WMCSCookbookRunnerBase):
             ]
             run_one_raw(command=upgrade_cmd, node=remote_host)
 
-            reboot_time = datetime.datetime.utcnow()
+            reboot_time = datetime.datetime.now(datetime.timezone.utc)
             remote_host.reboot()
             remote_host.wait_reboot_since(reboot_time)
 

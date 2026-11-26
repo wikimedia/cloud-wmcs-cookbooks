@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from cumin.transports import Command
 from spicerack import RemoteHosts, Spicerack
@@ -197,7 +197,7 @@ class UpgradeRunner(WMCSCookbookRunnerBase):
             run_one_raw(node=node_to_upgrade, command=Command("nova-manage db online_data_migrations"))
             run_one_raw(node=node_to_upgrade, command=Command("neutron-db-manage upgrade heads"))
 
-        reboot_time = datetime.utcnow()
+        reboot_time = datetime.now(timezone.utc)
         node_to_upgrade.reboot()
 
         node_to_upgrade.wait_reboot_since(since=reboot_time)

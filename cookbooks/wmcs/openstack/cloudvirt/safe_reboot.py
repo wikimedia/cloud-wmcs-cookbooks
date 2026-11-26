@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from spicerack import RemoteHosts, Spicerack
 from wmflib.interactive import confirm_on_failure
@@ -70,7 +70,7 @@ class SafeRebootRunner(CloudvirtBatchRunnerBase):
         self._drain(fqdn)
 
         remote_host = self.spicerack.remote().query(f"D{{{fqdn}}}", use_sudo=True)
-        reboot_time = datetime.utcnow()
+        reboot_time = datetime.now(timezone.utc)
         LOGGER.info("Rebooting and waiting for %s up", remote_host)
         remote_host.reboot()
         remote_host.wait_reboot_since(reboot_time)
